@@ -1,13 +1,79 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>WebSocket demo</title>
+        <title>Malachi Server functionality test</title>
         <style type="text/css">
         </style>
     </head>
     <body>
+        <button id="previous_item">Previous item</button>
+        <button id="previous_slide">Previous slide</button>
+        <button id="next_slide">Next slide</button>
+        <button id="next_item">Next item</button>
+        <p>Current item: <span id="item_i">-</span></p>
+        <p>Current slide: <span id="slide_i">-</span></p>
+        <p>Current service plan:</p>
+        <ul id="service_items"></ul>
+        <p>Current item:</p>
+        <ul id="item_slides"></ul>
         <script>
-            let websocket = new WebSocket("ws://127.0.0.1:9001/singers");
+            let next_s = document.querySelector("#next_slide");
+            let next_i = document.querySelector("#next_item");
+            let prev_s = document.querySelector("#previous_slide");
+            let prev_i = document.querySelector("#previous_item");
+            let slide_idx = document.querySelector("#slide_i");
+            let item_idx = document.querySelector("#item_i");
+            let service_ul = document.querySelector("#service_items");
+            let slides_ul = document.querySelector("#item_slides");
+
+            let websocket = new WebSocket("ws://127.0.0.1:9001/control");
+            websocket.onmessage = function (event) {
+                console.log(event.data);
+                json_data = JSON.parse(event.data);
+                if (json_data.type == "update"){
+                    console.log(json_data)
+                    switch(json_data.subtype){
+                        case "service-overview-update":
+                            service_ul.innerHTML = "";
+                            for(let item in json_data.data.items){
+                                let li = document.createElement("li");
+                                li.appendChild(document.createTextNode(json_data.data.items[item]));
+                                service_ul.appendChild(li);
+                            }
+                            item_idx.textContent = json_data.data.item_index;
+                            slide_idx.textContent = json_data.data.slide_index;
+                            break;
+                        case "slide-index-update":
+                            item_idx.textContent = json_data.data.item_index;
+                            slide_idx.textContent = json_data.data.slide_index;
+                            break;
+                        case "item-index-update":
+                            item_idx.textContent = json_data.data.item_index;
+                            slide_idx.textContent = json_data.data.slide_index;
+                            slides_ul.innerHTML = "";
+                            for(let slide in json_data.data.item_slides){
+                                let li = document.createElement("li");
+                                li.appendChild(document.createTextNode(json_data.data.item_slides[slide]));
+                                slides_ul.appendChild(li);
+                            }
+                            break;
+                        default:
+                            console.error("Unsupported event", data);
+                    }
+                }
+            }
+            next_s.onclick = function(event){
+                websocket.send(JSON.stringify({type: "command", subtype: "next-slide", data: {}}));
+            }
+            next_i.onclick = function(event){
+                websocket.send(JSON.stringify({type: "command", subtype: "next-item", data: {}}));
+            }
+            prev_s.onclick = function(event){
+                websocket.send(JSON.stringify({type: "command", subtype: "previous-slide", data: {}}));
+            }
+            prev_i.onclick = function(event){
+                websocket.send(JSON.stringify({type: "command", subtype: "previous-item", data: {}}));
+            }
         </script>
     </body>
 </html>
