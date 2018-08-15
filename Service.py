@@ -71,23 +71,4 @@ class Service():
 
 ### TESTING ONLY ###
 if __name__ == "__main__":
-    s = Service()
-    s.add_item(BiblePassage('NIV', BibleReference(13,1,8), BibleReference(13,1,10)))
-    s.add_item(BiblePassage('NIV', BibleReference(13,2,8), BibleReference(13,2,10)))
-    s.add_item(BiblePassage('NIV', BibleReference(13,3,8), BibleReference(13,3,10)))
-    s.add_item(BiblePassage('NIV', BibleReference(13,4,8), BibleReference(13,4,10)))
-    s.set_item_index(1)
-    s.previous_item()
-    print(s.to_JSON_simple())
-    s.set_slide_index(2)
-    print(s.to_JSON_simple())
-    s.previous_slide()
-    print(s.to_JSON_simple())
-    s.previous_slide()
-    print(s.to_JSON_simple())
-    s.previous_slide()
-    print(s.to_JSON_simple())
-    s.next_item()
-    s.next_slide()
-    print(s.to_JSON_simple())
-    #print(s.to_JSON_full())
+    pass
