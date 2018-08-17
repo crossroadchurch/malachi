@@ -1,10 +1,10 @@
 import asyncio
 import json
+import time
 import websockets
 from ThreadedHTTPServer import ThreadedHTTPServer
 from Service import Service
-from BiblePassage import BiblePassage, InvalidVersionError, InvalidReferenceError, MalformedReferenceError
-from BibleReference import BibleReference
+from BiblePassage import BiblePassage, InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 
 SOCKET_TYPES = ['singers', 'control']
 SOCKETS = set()
@@ -123,9 +123,7 @@ async def move_item(websocket, params):
     await clients_service_items_update()
 
 async def add_bible_item(websocket, params):
-    s.add_item(BiblePassage(params["version"], 
-                            BibleReference.create_from_id(params["version"], params["start-verse"]),
-                            BibleReference.create_from_id(params["version"], params["end-verse"])))
+    s.add_item(BiblePassage(params["version"], params["start-verse"], params["end-verse"]))
     await clients_service_items_update()
 
 # Query functions - response to client only
@@ -177,16 +175,16 @@ async def bible_ref_query(websocket, params):
                 "verses": []
             }}))
 
-if __name__ == "__main__":
-    s = Service()
-    s.add_item(BiblePassage('NIV', BibleReference(13,1,8), BibleReference(13,1,10)))
-    s.add_item(BiblePassage('NIV', BibleReference(13,2,8), BibleReference(13,2,10)))
-    s.add_item(BiblePassage('NIV', BibleReference(13,3,8), BibleReference(13,3,10)))
-    s.add_item(BiblePassage('NIV', BibleReference(13,4,8), BibleReference(13,4,10)))
-
+if __name__ == "__main__":  
     # Start web server
     server = ThreadedHTTPServer('localhost', 8000)
     server.start()
+
+    time.sleep(2)
+    
+    s = Service()
+    s.load_service('http://localhost:8000/service_test.json')
+    s.save_to_JSON()
 
     # Start websocket server
     asyncio.get_event_loop().run_until_complete(

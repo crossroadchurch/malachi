@@ -1,6 +1,5 @@
-import json
+import json, requests
 from BiblePassage import BiblePassage
-from BibleReference import BibleReference
 
 class Service():
 
@@ -68,6 +67,21 @@ class Service():
         return json.dumps({"items": [json.loads(x.to_JSON()) for x in self.items],
                            "item_index": self.item_index,
                            "slide_index": self.slide_index}, indent=2)
+
+    def load_service(self, url):
+        # Precondition: url is a JSON file
+        # TODO: Exception catching and handling
+        result = requests.get(url)
+        json_data = result.json()
+        self.items = []
+        for item in json_data["items"]:
+            if item["type"] == "bible":
+                self.add_item(BiblePassage(item["version"], item["start_id"], item["end_id"]))
+
+    def save_to_JSON(self):
+        json_items = json.dumps({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, indent=2)
+        print(json_items)
+        return json_items
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

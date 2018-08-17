@@ -1,0 +1,16 @@
+{
+    "items": [
+        {
+            "type": "bible",
+            "version": "NIV",
+            "start_id": 30000,
+            "end_id": 30003
+        },
+        {
+            "type": "bible",
+            "version": "KJV",
+            "start_id": 20000,
+            "end_id": 20000
+        }
+    ]
+}
