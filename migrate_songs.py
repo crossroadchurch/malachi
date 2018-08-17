@@ -1,4 +1,5 @@
-import sqlite3
+import sqlite3, json
+import xml.etree.ElementTree as ET
 
 # Pre-condition: songs.sqlite is an OpenLP songs database used in Paul
 db = sqlite3.connect('./data/songs.sqlite')
@@ -95,6 +96,7 @@ db.commit()
 print("...done")
 
 # Create lyrics_chords - for now just copy chords if it exists, else use lyrics
+# Then convert to JSON formatting
 print("Creating lyrics_chords...")
 cursor.execute('''
     ALTER TABLE songs
@@ -110,11 +112,23 @@ for song in songs:
         l_c_str = song[2]
     else:
         l_c_str = song[1]
+
+    root = ET.fromstring(l_c_str)
+    l_c_data = []
+
+    for child in root[0]:
+        if child.tag == "verse":
+            part = child.attrib["type"] + child.attrib["label"]
+            data = child.text
+            data = data.replace("<chord name = \"", "[")
+            data = data.replace("\" />", "]")
+            l_c_data.append({"part": part, "data": data})
+
     cursor.execute('''
         UPDATE songs
         SET lyrics_chords = ?
         WHERE id = ?
-    ''',(l_c_str, song[0]))
+    ''',(json.dumps(l_c_data), song[0]))
 db.commit()
 print("...done")
 

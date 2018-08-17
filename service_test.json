@@ -11,6 +11,10 @@
             "version": "KJV",
             "start_id": 20000,
             "end_id": 20000
+        },
+        {
+            "type": "song",
+            "song_id": 1
         }
     ]
 }

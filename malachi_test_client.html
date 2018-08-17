@@ -18,12 +18,20 @@
         <p>Current item:</p>
         <ul id="item_slides"></ul>
         <hr />
+        <h3>Song methods</h3>
+        <input id="song_id"></input><button id="add_song">Add song with this id</button>
+        <input id="song_text_str"></input><button id="song_text_search">Search for text</button>
+        <p>Search results:</p>
+        <ul id="song_query_results"></ul>
+        <hr />
+        <h3>Add verse range</h3>
         <input id="from_verse"></input><input id="to_verse"></input><button id="add_bible_range">Add verse id range</button>
         <hr />
+        <h3>Verse search</h3>
         <input id="bible_text_str"></input><button id="bible_text_search">Search for text</button>
         <input id="bible_ref_str"></input><button id="bible_ref_search">Search for ref</button>
         <p>Search results: <span id="query_status"></span></p>
-        <ul id="query_results"></ul>
+        <ul id="verse_query_results"></ul>
         <script>
             let next_s = document.querySelector("#next_slide");
             let next_i = document.querySelector("#next_item");
@@ -38,11 +46,16 @@
             let move_t = document.querySelector("#move_to");
             let move_item = document.querySelector("#move_item");
             let slides_ul = document.querySelector("#item_slides");
+            let song_id = document.querySelector("#song_id");
+            let add_song = document.querySelector("#add_song");
+            let song_t_str = document.querySelector("#song_text_str");
+            let song_t_s = document.querySelector("#song_text_search");
+            let s_results_ul = document.querySelector("#song_query_results");
             let bible_t_s = document.querySelector("#bible_text_search");
             let bible_t_str = document.querySelector("#bible_text_str");
             let bible_r_s = document.querySelector("#bible_ref_search");
             let bible_r_str = document.querySelector("#bible_ref_str");
-            let results_ul = document.querySelector("#query_results");
+            let v_results_ul = document.querySelector("#verse_query_results");
             let query_s = document.querySelector("#query_status");
             let from_v = document.querySelector("#from_verse");
             let to_v = document.querySelector("#to_verse");
@@ -78,13 +91,23 @@
                         break;
                     case "result.bible-verses":
                         query_s.textContent = json_data.params.status;
-                        results_ul.innerHTML = "";
+                        v_results_ul.innerHTML = "";
                         for(let verse in json_data.params.verses){
                             let li = document.createElement("li");
                             li.appendChild(document.createTextNode(
                                 json_data.params.verses[verse][0] + " - " +
                                 json_data.params.verses[verse][4]));
-                            results_ul.appendChild(li);
+                            v_results_ul.appendChild(li);
+                        }
+                        break;
+                    case "result.song-titles":
+                        s_results_ul.innerHTML = "";
+                        for(let song in json_data.params.songs){
+                            let li = document.createElement("li");
+                            li.appendChild(document.createTextNode(
+                                json_data.params.songs[song][0] + " - " +
+                                json_data.params.songs[song][1]));
+                            s_results_ul.appendChild(li);
                         }
                         break;
                     default:
@@ -102,6 +125,12 @@
             }
             prev_i.onclick = function(event){
                 websocket.send(JSON.stringify({"action": "command.previous-item", "params": {}}));
+            }
+            add_song.onclick = function(event){
+                websocket.send(JSON.stringify({"action": "command.add-song-item", "params": {"song-id": song_id.value}}));
+            }
+            song_t_s.onclick = function(event){
+                websocket.send(JSON.stringify({"action": "query.song-by-text", "params": {"search-text": song_t_str.value}}));
             }
             bible_t_s.onclick = function(event){
                 websocket.send(JSON.stringify({"action": "query.bible-by-text", "params": {"version": "NIV", "search-text": bible_t_str.value}}));

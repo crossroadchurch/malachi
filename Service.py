@@ -1,5 +1,6 @@
 import json, requests
 from BiblePassage import BiblePassage
+from Song import Song, InvalidSongIdError
 
 class Service():
 
@@ -77,10 +78,11 @@ class Service():
         for item in json_data["items"]:
             if item["type"] == "bible":
                 self.add_item(BiblePassage(item["version"], item["start_id"], item["end_id"]))
+            elif item["type"] == "song":
+                self.add_item(Song(item["song_id"]))
 
     def save_to_JSON(self):
         json_items = json.dumps({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, indent=2)
-        print(json_items)
         return json_items
 
 ### TESTING ONLY ###

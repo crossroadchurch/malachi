@@ -5,6 +5,7 @@ import websockets
 from ThreadedHTTPServer import ThreadedHTTPServer
 from Service import Service
 from BiblePassage import BiblePassage, InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
+from Song import Song, InvalidSongIdError
 
 SOCKET_TYPES = ['singers', 'control']
 SOCKETS = set()
@@ -52,10 +53,13 @@ async def responder(websocket, path):
                 "command.next-item": next_item,
                 "command.previous-item": previous_item,
                 "command.add-bible-item": add_bible_item,
+                "command.add-song-item": add_song_item,
                 "command.remove-item": remove_item,
                 "command.move-item": move_item,
                 "query.bible-by-text": bible_text_query,
-                "query.bible-by-ref": bible_ref_query
+                "query.bible-by-ref": bible_ref_query,
+                "query.song-by-text": song_text_query,
+                "request.full-song": request_full_song
             }
             command_handler = command_switcher.get(json_data["action"], lambda: "None")
             await command_handler(websocket, json_data["params"])
@@ -126,6 +130,10 @@ async def add_bible_item(websocket, params):
     s.add_item(BiblePassage(params["version"], params["start-verse"], params["end-verse"]))
     await clients_service_items_update()
 
+async def add_song_item(websocket, params):
+    s.add_item(Song(params["song-id"]))
+    await clients_service_items_update()
+
 # Query functions - response to client only
 async def bible_text_query(websocket, params):
     try:
@@ -175,16 +183,44 @@ async def bible_ref_query(websocket, params):
                 "verses": []
             }}))
 
+async def song_text_query(websocket, params):
+    result = Song.text_search(params["search-text"])
+    await websocket.send(json.dumps({
+        "action": "result.song-titles",
+        "params": {
+            "songs": json.loads(result)
+        }}))
+
+# Other requests
+async def request_full_song(websocket, params):
+    try:
+        sg = Song(params["song-id"])
+        await websocket.send(json.dumps({
+            "action": "result.song-details",
+            "params": {
+                "status": "ok",
+                "song-data": json.loads(sg.to_JSON_full_data())
+            }
+        }))
+    except InvalidSongIdError:
+        await websocket.send(json.dumps({
+            "action": "result.song-details",
+            "params": {
+                "status": "invalid-id",
+                "song-data": {}
+            }
+        }))
+
+
+
 if __name__ == "__main__":  
     # Start web server
     server = ThreadedHTTPServer('localhost', 8000)
     server.start()
-
     time.sleep(2)
     
     s = Service()
     s.load_service('http://localhost:8000/service_test.json')
-    s.save_to_JSON()
 
     # Start websocket server
     asyncio.get_event_loop().run_until_complete(

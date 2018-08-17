@@ -49,6 +49,7 @@ class BiblePassage():
             WHERE v.id = {v_id}
         '''.format(v_id=id))
         result = cursor.fetchall()
+        db.close()
         if result == []:
             return False
         else:
