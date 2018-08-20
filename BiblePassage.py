@@ -135,7 +135,7 @@ class BiblePassage():
         return ref
 
 
-    def to_JSON(self):
+    def to_JSON(self, capo):
         return json.dumps({"type":"bible", "title":self.get_title(), "slides":self.slides}, indent=2)
 
     def __str__(self):

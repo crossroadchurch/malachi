@@ -1,6 +1,14 @@
 {
     "items": [
         {
+            "type": "song",
+            "song_id": 1
+        },
+        {
+            "type": "song",
+            "song_id": 297
+        },
+        {
             "type": "bible",
             "version": "NIV",
             "start_id": 30000,
@@ -11,10 +19,6 @@
             "version": "KJV",
             "start_id": 20000,
             "end_id": 20000
-        },
-        {
-            "type": "song",
-            "song_id": 1
         }
     ]
 }

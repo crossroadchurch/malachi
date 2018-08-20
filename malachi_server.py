@@ -7,16 +7,26 @@ from Service import Service
 from BiblePassage import BiblePassage, InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 from Song import Song, InvalidSongIdError
 
-SOCKET_TYPES = ['singers', 'control']
+SOCKET_TYPES = ['singers', 'control', 'display']
 SOCKETS = set()
+CAPOS = dict()
+MAIN_DISPLAYS = set()
+screen_state = "on"
 
 def register(websocket, path):
     # Use path to determine and store type of socket (e.g. display, musician, singer) in SOCKETS
     SOCKETS.add((websocket, path[1:]))
+    CAPOS[websocket] = 0
+    if path[1:] == "display":
+        MAIN_DISPLAYS.add((websocket, path[1:]))
 
 def unregister(websocket, path):
     # websocket has been closed by client
     SOCKETS.remove((websocket, path[1:]))
+    if websocket in CAPOS:
+        del CAPOS[websocket]
+    if path[1:] == "display":
+        MAIN_DISPLAYS.remove((websocket, path[1:]))
 
 async def singers_init(websocket):
     await websocket.send(json.dumps({
@@ -25,6 +35,12 @@ async def singers_init(websocket):
         }))
 
 async def control_init(websocket):
+    await websocket.send(json.dumps({
+        "action" : "update.service-overview-update", 
+        "params" : json.loads(s.to_JSON_titles_and_current(CAPOS[websocket]))
+        }))
+
+async def display_init(websocket):
     await websocket.send(json.dumps({
         "action" : "update.service-overview-update", 
         "params" : json.loads(s.to_JSON_simple())
@@ -50,12 +66,16 @@ async def responder(websocket, path):
             command_switcher = {
                 "command.next-slide": next_slide,
                 "command.previous-slide": previous_slide,
+                "command.goto-slide": goto_slide,
                 "command.next-item": next_item,
                 "command.previous-item": previous_item,
+                "command.goto-item": goto_item,
                 "command.add-bible-item": add_bible_item,
                 "command.add-song-item": add_song_item,
                 "command.remove-item": remove_item,
                 "command.move-item": move_item,
+                "command.set-display-state": set_display_state,
+                "client.set-capo": set_capo,
                 "query.bible-by-text": bible_text_query,
                 "query.bible-by-ref": bible_ref_query,
                 "query.song-by-text": song_text_query,
@@ -84,12 +104,16 @@ async def clients_item_index_update():
     for socket in SOCKETS:
         # TODO: Do we need to send this to all clients?
         # TODO: Do we need to allow the client to check that they have the current version of the service e.g. through MD5 sum?
+        if len(s.items) == 0:
+            cur_item = {}
+        else:
+            cur_item = json.loads(s.items[s.item_index].to_JSON(CAPOS[socket[0]]))
         await socket[0].send(json.dumps({
             "action" : "update.item-index-update", 
             "params" : {
                 "item_index": s.item_index, 
                 "slide_index": s.slide_index,
-                "item_slides": s.items[s.item_index].slides
+                "current_item": cur_item
                 }
             }))
 
@@ -98,25 +122,34 @@ async def clients_service_items_update():
         # TODO: Do we need to send this to all clients?
         await socket[0].send(json.dumps({
             "action" : "update.service-overview-update", 
-            "params" : json.loads(s.to_JSON_simple())
+            "params" : json.loads(s.to_JSON_titles_and_current(CAPOS[socket[0]]))
             }))
 
 # Command functions
 async def next_slide(websocket, params):
-    s.next_slide()
-    await clients_slide_index_update()
+    if s.next_slide():
+        await clients_slide_index_update()
 
 async def previous_slide(websocket, params):
-    s.previous_slide()
-    await clients_slide_index_update()
+    if s.previous_slide():
+        await clients_slide_index_update()
+
+async def goto_slide(websocket, params):
+    if s.set_slide_index(int(params["index"])):
+        await clients_slide_index_update()
+
 
 async def next_item(websocket, params):
-    s.next_item()
-    await clients_item_index_update()
+    if s.next_item():
+        await clients_item_index_update()
 
 async def previous_item(websocket, params):
-    s.previous_item()
-    await clients_item_index_update()
+    if s.previous_item():
+        await clients_item_index_update()
+
+async def goto_item(websocket, params):
+    if s.set_item_index(int(params["index"])):
+        await clients_item_index_update()
 
 async def remove_item(websocket, params):
     s.remove_item_at(int(params["index"]))
@@ -133,6 +166,32 @@ async def add_bible_item(websocket, params):
 async def add_song_item(websocket, params):
     s.add_item(Song(params["song-id"]))
     await clients_service_items_update()
+
+async def set_display_state(websocket, params):
+    screen_state = params["state"]
+    for socket in MAIN_DISPLAYS:
+        await socket[0].send(json.dumps({
+            "action" : "update.display-state", 
+            "params" : {
+                "state": screen_state
+                }
+            }))
+
+# Client functions - response to client only
+async def set_capo(websocket, params):
+    CAPOS[websocket] = int(params["capo"])
+    if len(s.items) == 0:
+        cur_item = {}
+    else:
+        cur_item = json.loads(s.items[s.item_index].to_JSON(CAPOS[websocket]))
+    await websocket.send(json.dumps({
+        "action" : "update.item-index-update", 
+        "params" : {
+            "item_index": s.item_index, 
+            "slide_index": s.slide_index,
+            "current_item": cur_item
+            }
+        }))
 
 # Query functions - response to client only
 async def bible_text_query(websocket, params):
@@ -221,6 +280,7 @@ if __name__ == "__main__":
     
     s = Service()
     s.load_service('http://localhost:8000/service_test.json')
+    s.set_item_index(0)
 
     # Start websocket server
     asyncio.get_event_loop().run_until_complete(

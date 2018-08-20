@@ -85,7 +85,7 @@ class Chords():
         The returned chord tag will be a valid chord in the transposed key.
         Pre-condition: root_key is a member of key_list
         """
-        chord_part = chord_tag[1,-1]
+        chord_part = chord_tag[1:-1]
         return '[' +  Chords.transpose_chord(chord_part, root_key, transpose_amount) + ']'
 
     def transpose_chord(chord, root_key, transpose_amount):
@@ -222,3 +222,24 @@ class Chords():
                     lyric_line += "#"
 
         return chord_line, lyric_line
+
+
+    def transpose_section(in_str, root_key, transpose_amount):
+        out_str = ""
+        i = 0
+        while i < len(in_str):
+            if in_str[i] != "[":
+                out_str += in_str[i]
+                i += 1
+            else:
+                # Read in entire chord tag
+                char_buffer = ""
+                while (in_str[i] != "]"):
+                    char_buffer += in_str[i]
+                    i += 1
+                # Include closing ]
+                char_buffer += in_str[i]
+                i += 1
+                # Add transposed chord to out_str
+                out_str += Chords.transpose_chord_tag(char_buffer, root_key, transpose_amount)
+        return out_str

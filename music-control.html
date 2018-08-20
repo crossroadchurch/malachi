@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Malachi Musician Control View</title>
+  <link rel="stylesheet" href="/music-control.css" />
+  <link rel="stylesheet" href="/jquery.dropdown.css" />
+  <script type="text/javascript" src="/jquery-1.12.4.min.js"></script>
+  <script type="text/javascript" src="/music-control.js"></script>
+  <script type="text/javascript" src="/jquery.dropdown.js"></script>
+</head>
+<body>
+  <div id="songarea">
+    <div id="header">
+      <div id="keyandcapo">
+        <button id="action-menu" data-jq-dropdown="#jq-dropdown-1" class="menu-button">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <button id="display-menu" data-jq-dropdown="#jq-dropdown-2" class="menu-button">
+          <span class="icon-box"></span>
+        </button>
+        <div id="playedkey"></div>
+        <div id="capoarea">
+          <select id="caposelect">
+            <option selected="selected" value="0">Capo 0</option>
+            <option value="1">Capo 1</option>
+            <option value="2">Capo 2</option>
+            <option value="3">Capo 3</option>
+            <option value="4">Capo 4</option>
+            <option value="5">Capo 5</option>
+            <option value="6">Capo 6</option>
+            <option value="7">Capo 7</option>
+            <option value="8">Capo 8</option>
+            <option value="9">Capo 9</option>
+            <option value="10">Capo 10</option>
+            <option value="11">Capo 11</option>
+          </select>
+        </div>
+      </div>
+      <div id="verseorder"></div>
+    </div>
+    <div id="musiccontrol">
+      <div id="musicarea">
+        <div id="currentslide"></div>
+        <div id="nextslide"></div>
+      </div>
+      <div id="controlarea">
+        <button id="controller-prev" class="vert-button-25 large-button">Previous</button>
+        <button id="controller-next" class="vert-button-75 large-button">Next</button>
+      </div>
+    </div>
+  </div>
+  <div id="jq-dropdown-1" class="jq-dropdown">
+    <ul class="jq-dropdown-menu">
+    </ul>
+  </div>
+  <div id="jq-dropdown-2" class="jq-dropdown">
+      <ul class="jq-dropdown-menu">
+        <li class='menu-display-item'>
+          <a onclick='display_off()'>Display OFF</a>
+        </li>
+        <li class='menu-display-item'>
+          <a onclick='display_on()'>Display ON</a>
+        </li>
+      </ul>
+    </div>
+</body>
+</html>

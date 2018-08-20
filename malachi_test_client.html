@@ -2,8 +2,6 @@
 <html>
     <head>
         <title>Malachi Server functionality test</title>
-        <style type="text/css">
-        </style>
     </head>
     <body>
         <button id="previous_item">Previous item</button>
@@ -83,9 +81,9 @@
                         item_idx.textContent = json_data.params.item_index;
                         slide_idx.textContent = json_data.params.slide_index;
                         slides_ul.innerHTML = "";
-                        for(let slide in json_data.params.item_slides){
+                        for(let slide in json_data.params.current_item.slides){
                             let li = document.createElement("li");
-                            li.appendChild(document.createTextNode(json_data.params.item_slides[slide]));
+                            li.appendChild(document.createTextNode(json_data.params.current_item.slides[slide]));
                             slides_ul.appendChild(li);
                         }
                         break;

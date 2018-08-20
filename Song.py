@@ -17,8 +17,8 @@ class Song():
         self.parts = {}
         self.verse_order = ""
         self.part_slide_count = []
+        self.get_nonslide_data() # Must call before updating slides
         self.update_slides()
-        self.get_nonslide_data()
         return
 
 
@@ -49,13 +49,21 @@ class Song():
         self.parts = dict([x["part"],x["data"]] for x in json.loads(result[0]))
         self.verse_order = result[1]
 
-        slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
+        if self.verse_order.strip() == "":
+            # Song with no verse order
+            slide_temp = list(self.parts)
+        else:
+            slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
         self.part_slide_count = []
         for slide in slide_temp:
             slide_sections = slide.split("[br]")
             self.part_slide_count.append(len(slide_sections))
             for slide_section in slide_sections:
-                self.slides.append(slide_section.strip())
+                # Transpose slide_section if appropriate:
+                if self.resultant_key != "" and self.transpose_by != 0:
+                    self.slides.append(Chords.transpose_section(slide_section.strip(), self.song_key, self.transpose_by))
+                else:
+                    self.slides.append(slide_section.strip())
             
         db.close()
 
@@ -74,6 +82,13 @@ class Song():
         self.author = result[1]
         self.song_key = result[2]
         self.transpose_by = result[3]
+        if self.song_key != None:
+            if self.transpose_by == 0:
+                self.resultant_key = self.song_key
+            else:
+                self.resultant_key = Chords.transpose_chord(self.song_key, self.song_key, self.transpose_by)
+        else:
+            self.resultant_key = ""
         self.copyright = result[4]
         self.song_book_name = result[5]
         self.song_number = result[6]
@@ -81,16 +96,26 @@ class Song():
     def get_title(self):
         return self.title
 
-    def to_JSON(self):
-        return json.dumps({"type":"song", "title":self.title, "slides":self.slides}, indent=2)
+    def to_JSON(self, capo):
+        # TODO: need to return song transposed by -capo, plus the new key - if the song has chords!
+        if self.resultant_key != "":
+            if capo == 0:
+                p_key = self.resultant_key
+                c_slides = self.slides
+            else:
+                capo_key = Chords.transpose_chord(self.resultant_key, self.resultant_key, -int(capo))
+                p_key = "Capo {n} ({c})".format(n=capo, c=capo_key)
+                c_slides = []
+                for slide in self.slides:
+                    c_slides.append(Chords.transpose_section(slide, self.resultant_key, -int(capo)))
+        else:
+            p_key = ""
+            c_slides = self.slides
+        return json.dumps({"type":"song", "title":self.title, "slides":c_slides, "played-key": p_key, "verse-order": self.verse_order, "part-counts": self.part_slide_count}, indent=2)
 
     def to_JSON_full_data(self):
         # Need to transform self.parts to match grammar specified in Malachi Wiki
         tr_parts = []
-        if self.song_key == None or self.song_key == "":
-            s_key = "C"
-        else:
-            s_key = self.song_key
         for p in self.parts:
             lc_raw = self.parts[p]
             lc_data = ""
