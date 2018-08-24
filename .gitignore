@@ -1,1 +1,6 @@
 /out
+/thumbnails/*
+!/thumbnails/.gitkeep
+/presentations/*
+!/presentations/.gitkeep
+/impress_uno.py

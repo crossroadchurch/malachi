@@ -1,11 +1,15 @@
 import asyncio
 import json
 import time
+import os, platform, pathlib
 import websockets
+import subprocess
 from ThreadedHTTPServer import ThreadedHTTPServer
 from Service import Service
 from BiblePassage import BiblePassage, InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 from Song import Song, InvalidSongIdError
+from Presentation import Presentation, InvalidPresentationUrlError
+from PresentationHandler import PresentationHandler
 
 SOCKET_TYPES = ['singers', 'control', 'display']
 SOCKETS = set()
@@ -79,7 +83,10 @@ async def responder(websocket, path):
                 "query.bible-by-text": bible_text_query,
                 "query.bible-by-ref": bible_ref_query,
                 "query.song-by-text": song_text_query,
-                "request.full-song": request_full_song
+                "request.full-song": request_full_song,
+                "request.bible-versions": request_bible_versions,
+                "request.bible-books": request_bible_books,
+                "request.chapter-structure": request_chapter_structure
             }
             command_handler = command_switcher.get(json_data["action"], lambda: "None")
             await command_handler(websocket, json_data["params"])
@@ -127,35 +134,44 @@ async def clients_service_items_update():
 
 # Command functions
 async def next_slide(websocket, params):
-    if s.next_slide():
-        await clients_slide_index_update()
+    result = update_impress_next_effect()
+    if result != s.slide_index:
+        if s.next_slide():
+            await clients_slide_index_update()
 
 async def previous_slide(websocket, params):
-    if s.previous_slide():
-        await clients_slide_index_update()
+    result = update_impress_previous_effect()
+    if result != s.slide_index:
+        if s.previous_slide():
+            await clients_slide_index_update()
 
 async def goto_slide(websocket, params):
+    update_impress_goto_slide(int(params["index"]))
     if s.set_slide_index(int(params["index"])):
         await clients_slide_index_update()
 
-
 async def next_item(websocket, params):
     if s.next_item():
+        update_impress_change_item()
         await clients_item_index_update()
 
 async def previous_item(websocket, params):
     if s.previous_item():
+        update_impress_change_item()
         await clients_item_index_update()
 
 async def goto_item(websocket, params):
     if s.set_item_index(int(params["index"])):
+        update_impres_change_item()
         await clients_item_index_update()
 
 async def remove_item(websocket, params):
+    # TODO: What if this is the current item???
     s.remove_item_at(int(params["index"]))
     await clients_service_items_update()
 
 async def move_item(websocket, params):
+    # TODO: How does this affect the current item, particularly if it's a presentation?
     s.move_item(int(params["from-index"]), int(params["to-index"]))
     await clients_service_items_update()
 
@@ -176,6 +192,7 @@ async def set_display_state(websocket, params):
                 "state": screen_state
                 }
             }))
+    update_impress_screen_state()
 
 # Client functions - response to client only
 async def set_capo(websocket, params):
@@ -270,6 +287,91 @@ async def request_full_song(websocket, params):
             }
         }))
 
+async def request_bible_versions(websocket, params):
+    await websocket.send(json.dumps({
+        "action": "result.bible-versions",
+        "params": {
+            "versions": BiblePassage.get_versions()
+        }
+    }))
+
+async def request_bible_books(websocket, params):
+    try:
+        books = BiblePassage.get_books(params["version"])
+        await websocket.send(json.dumps({
+            "action": "result.bible-books",
+            "params": {
+                "status": "ok",
+                "books": books
+            }
+        }))
+    except InvalidVersionError:
+        await websocket.send(json.dumps({
+            "action": "result.bible-books",
+            "params": {
+                "status": "invalid-version",
+                "books": []
+            }
+        }))
+
+async def request_chapter_structure(websocket, params):
+    try:
+        chapters = BiblePassage.get_chapter_structure(params["version"])
+        await websocket.send(json.dumps({
+            "action": "result.chapter-structure",
+            "params": {
+                "status": "ok",
+                "chapter-structure": chapters
+            }
+        }))
+    except InvalidVersionError:
+        await websocket.send(json.dumps({
+            "action": "result.chapter-structure",
+            "params": {
+                "status": "invalid-version",
+                "chapter-structure": []
+            }
+        }))
+
+
+# Presentation control with LibreOffice
+def update_impress_change_item():
+    # If previous item was a presentation then unload it
+    if ph.pres_loaded == True:
+        ph.unload_presentation()
+    # If current item is a presentation then load it
+    if s.get_current_item_type() == "Presentation":
+        ph.load_presentation(pathlib.Path(os.path.abspath(s.items[s.item_index].url)).as_uri())
+        # Show presentation if screen state allows it
+        if screen_state == "on":
+            ph.start_presentation()
+
+def update_impress_screen_state():
+    if s.get_current_item_type() == "Presentation":
+        # Start or end presentation as necessary
+        if screen_state == "on" and ph.pres_started == False:
+            ph.start_presentation()
+        elif screen_state == "off" and ph.pres_started == True:
+            ph.stop_presentation()
+
+def update_impress_goto_slide(index):
+    if s.get_current_item_type() == "Presentation":
+        if ph.pres_started == True:
+            ph.load_slide(index)
+
+def update_impress_next_effect():
+    if s.get_current_item_type() == "Presentation":
+        index = ph.next_effect()
+        return index
+    else:
+        return -1
+
+def update_impress_previous_effect():
+    if s.get_current_item_type() == "Presentation":
+        index = ph.previous_effect()
+        return index
+    else:
+        return -1
 
 
 if __name__ == "__main__":  
@@ -277,7 +379,11 @@ if __name__ == "__main__":
     server = ThreadedHTTPServer('localhost', 8000)
     server.start()
     time.sleep(2)
-    
+
+    # Start presentation handler
+    ph = PresentationHandler()
+
+    # Load service
     s = Service()
     s.load_service('http://localhost:8000/service_test.json')
     s.set_item_index(0)

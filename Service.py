@@ -1,6 +1,7 @@
 import json, requests
 from BiblePassage import BiblePassage
 from Song import Song, InvalidSongIdError
+from Presentation import Presentation, InvalidPresentationUrlError
 
 class Service():
 
@@ -29,6 +30,10 @@ class Service():
                     del self.items[from_index + 1]
             else:
                 return # Invalid index specified
+
+    def get_current_item_type(self):
+        if self.item_index >= 0:
+            return type(self.items[self.item_index]).__name__
 
     def set_item_index(self, index):
         if index >= 0 and index < len(self.items):
@@ -114,6 +119,8 @@ class Service():
                 self.add_item(BiblePassage(item["version"], item["start_id"], item["end_id"]))
             elif item["type"] == "song":
                 self.add_item(Song(item["song_id"]))
+            elif item["type"] == "presentation":
+                self.add_item(Presentation(item["url"]))
 
     def save_to_JSON(self):
         json_items = json.dumps({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, indent=2)
