@@ -35,7 +35,7 @@ def unregister(websocket, path):
 async def singers_init(websocket):
     await websocket.send(json.dumps({
         "action" : "update.service-overview-update", 
-        "params" : json.loads(s.to_JSON_simple())
+        "params" : json.loads(s.to_JSON_titles_and_current(CAPOS[websocket]))
         }))
 
 async def control_init(websocket):
@@ -76,6 +76,7 @@ async def responder(websocket, path):
                 "command.goto-item": goto_item,
                 "command.add-bible-item": add_bible_item,
                 "command.add-song-item": add_song_item,
+                "command.add-presentation": add_presentation,
                 "command.remove-item": remove_item,
                 "command.move-item": move_item,
                 "command.set-display-state": set_display_state,
@@ -86,7 +87,8 @@ async def responder(websocket, path):
                 "request.full-song": request_full_song,
                 "request.bible-versions": request_bible_versions,
                 "request.bible-books": request_bible_books,
-                "request.chapter-structure": request_chapter_structure
+                "request.chapter-structure": request_chapter_structure,
+                "request.all-presentations": request_all_presentations
             }
             command_handler = command_switcher.get(json_data["action"], lambda: "None")
             await command_handler(websocket, json_data["params"])
@@ -162,7 +164,7 @@ async def previous_item(websocket, params):
 
 async def goto_item(websocket, params):
     if s.set_item_index(int(params["index"])):
-        update_impres_change_item()
+        update_impress_change_item()
         await clients_item_index_update()
 
 async def remove_item(websocket, params):
@@ -176,11 +178,18 @@ async def move_item(websocket, params):
     await clients_service_items_update()
 
 async def add_bible_item(websocket, params):
+    # TODO: Exception handling
     s.add_item(BiblePassage(params["version"], params["start-verse"], params["end-verse"]))
     await clients_service_items_update()
 
 async def add_song_item(websocket, params):
+    # TODO: Exception handling
     s.add_item(Song(params["song-id"]))
+    await clients_service_items_update()
+
+async def add_presentation(websocket, params):
+    # TODO: Exception handling
+    s.add_item(Presentation(params["url"]))
     await clients_service_items_update()
 
 async def set_display_state(websocket, params):
@@ -332,6 +341,15 @@ async def request_chapter_structure(websocket, params):
                 "chapter-structure": []
             }
         }))
+
+async def request_all_presentations(websocket, params):
+    urls = Presentation.get_all_presentations()
+    await websocket.send(json.dumps({
+        "action": "result.all-presentations",
+        "params": {
+            "urls": urls
+        }
+    }))
 
 
 # Presentation control with LibreOffice

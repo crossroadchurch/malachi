@@ -22,6 +22,12 @@
         <p>Search results:</p>
         <ul id="song_query_results"></ul>
         <hr />
+        <h3>Presentation methods</h3>
+        <button id="list_pres">List presentations</button>
+        <input id="pres_url"></input><button id="add_pres">Add presentation with this (relative) url</button>
+        <p>Presentation URLs</p>
+        <ul id="pres_query_results"></ul>
+        <hr />
         <h3>Add verse range</h3>
         <input id="from_verse"></input><input id="to_verse"></input><button id="add_bible_range">Add verse id range</button>
         <hr />
@@ -49,6 +55,10 @@
             let song_t_str = document.querySelector("#song_text_str");
             let song_t_s = document.querySelector("#song_text_search");
             let s_results_ul = document.querySelector("#song_query_results");
+            let list_pres = document.querySelector("#list_pres");
+            let pres_url = document.querySelector("#pres_url");
+            let add_pres = document.querySelector("#add_pres");
+            let pres_ul = document.querySelector("#pres_query_results");
             let bible_t_s = document.querySelector("#bible_text_search");
             let bible_t_str = document.querySelector("#bible_text_str");
             let bible_r_s = document.querySelector("#bible_ref_search");
@@ -108,6 +118,14 @@
                             s_results_ul.appendChild(li);
                         }
                         break;
+                    case "result.all-presentations":
+                        pres_ul.innerHTML = "";
+                        for (let url in json_data.params.urls){
+                            let li = document.createElement("li");
+                            li.appendChild(document.createTextNode(json_data.params.urls[url]));
+                            pres_ul.appendChild(li);
+                        }
+                        break;
                     default:
                         console.error("Unsupported event", json_data);
                 }
@@ -144,6 +162,12 @@
             }
             move_item.onclick = function(event){
                 websocket.send(JSON.stringify({"action": "command.move-item", "params": {"from-index": move_f.value, "to-index": move_t.value}}));
+            }
+            list_pres.onclick = function(event){
+                websocket.send(JSON.stringify({"action": "request.all-presentations", "params": {}}));
+            }
+            add_pres.onclick = function(event){
+                websocket.send(JSON.stringify({"action": "command.add-presentation", "params": { "url": pres_url.value}}));
             }
         </script>
     </body>

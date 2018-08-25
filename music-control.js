@@ -1,4 +1,3 @@
-let update_id = "None";
 let capo = 0;
 let menustring = "";
 let verse_order = "";
@@ -206,6 +205,12 @@ function update_music() {
     }
     $("#currentslide").html(current_text);
     $("#nextslide").html(next_text);
+  } else if (slide_type == "presentation") {
+    $("#currentslide").html("<img class='pres-thumb' src = '" + current_slides[slide_index] + "' />");
+    $("#nextslide").html("");
+  } else {
+    $("#currentslide").html("");
+    $("#nextslide").html("");
   }
 }
 
@@ -336,5 +341,3 @@ if (params != ""){
   }
 }
 $("html").css("font-size", body_size);
-
-// $.ajaxSetup({ cache: false });

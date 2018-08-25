@@ -329,14 +329,4 @@ class BiblePassage():
 
 ### TESTING ONLY ###
 if __name__ == "__main__":
-    # BiblePassage.ref_search('NIV', 'Jude')
-    # BiblePassage.ref_search('NIV', '3   John')
-    # BiblePassage.ref_search('NIV', 'Psalm 117')
-    # BiblePassage.ref_search('NIV', '3    John   1')
-    # BiblePassage.ref_search('NIV', 'John 12 : 21')
-    # BiblePassage.ref_search('NIV', '1 John 2:2')
-    print(BiblePassage.ref_search('NIV', '1 Jo 2:2-4'))
-    # BiblePassage.ref_search('NIV', '1 John 2:2-6:1')
-    # BiblePassage.ref_search('NIV', '1 John 6:2-7:21')
-    
     pass

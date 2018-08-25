@@ -83,7 +83,14 @@ class Presentation():
         # TODO: Exception handling - pass upstream
         return Presentation(json_data["url"])
 
+    @classmethod
+    def get_all_presentations(cls):
+        urls = ['./presentations/' + f for f in os.listdir('./presentations')
+                if f.endswith('.odp') or f.endswith('.ppt') or f.endswith('.pptx')]
+        return urls
+
 ### TESTING ONLY ###
 if __name__ == "__main__":
-    p = Presentation('./test1.odp')
+    # p = Presentation('./test1.odp')
+    # print(Presentation.get_all_presentations())
     pass

@@ -9,6 +9,10 @@
             "url": "./presentations/test1.odp"
         },
         {
+            "type": "presentation",
+            "url": "./presentations/looper.odp"
+        },
+        {
             "type": "song",
             "song_id": 297
         },

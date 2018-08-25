@@ -1,0 +1,96 @@
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Raleway-Bold'), url(/fonts/Raleway-Bold.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Ubuntu Condensed';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Ubuntu Condensed'), url(/fonts/Ubuntu-C.ttf) format('truetype');
+}
+
+:root {
+  font-size: 32px;
+}
+
+p {
+  line-height: 1.2;
+}
+
+body {
+  background-color: rgb(20, 22, 29);
+  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  :root {
+    font-size: 10px;
+  }
+}
+
+#songarea {
+  max-width: 95%;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 0.25rem;
+  font-size: 2.5rem;
+}
+
+#header {
+  padding-bottom: 0.25rem;
+  font-size: 2rem;
+  float: right;
+}
+
+#currentslide {
+  font-family: 'Raleway', sans-serif;;
+  color: white;
+}
+
+#currentslide p {
+  margin: 0;
+}
+
+#nextslide {
+  font-family: 'Raleway', sans-serif;;
+  color: #999;
+}
+
+#nextslide p {
+  margin: 0;
+}
+
+#verseorder ul {
+  display: inline;
+  list-style-type: none;
+  padding: 0;
+}
+
+#verseorder ul li {
+  display: inline;
+  color: white;
+  margin: 0px 5px;
+}
+
+.current-verse {
+  color: magenta;
+}
+
+#playedkey, #verseorder {
+  display: inline;
+}
+
+#playedkey {
+  margin: 0px 5px;
+  color: yellow;
+  font-weight: bold !important;
+}
+
+.pres-thumb {
+  max-width: 95%;
+  max-height: 100%;
+}
