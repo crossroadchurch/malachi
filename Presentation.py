@@ -65,7 +65,7 @@ class Presentation():
 
             if platform.system() == "Windows" or platform.system() == "Linux":
                 document = desktop.loadComponentFromURL(pathlib.Path(os.path.abspath(self.url)).as_uri(), "_blank", 0, ())
-                Pages = document.getDrawPages()
+                oPages = document.getDrawPages()
                 total_effects = 0
 
                 for i in range(oPages.getCount()):
@@ -124,7 +124,8 @@ class Presentation():
                     sct_img = sct.grab(monitor_area)
                     mss.tools.to_png(sct_img.rgb, sct_img.size, output=str(thumb_path))
 
-                document.close(True) # Close document, discarding changes
+                pres_obj.end()
+                document.close(False) # Close document, discarding changes
 
         for f in os.listdir("./thumbnails/" + str(file_hash)):
             self.slides.append("./thumbnails/" + str(file_hash) + "/" + f)

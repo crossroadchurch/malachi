@@ -60,7 +60,9 @@ class PresentationHandler():
 
     def unload_presentation(self):
         if platform.system() == "Windows" or platform.system() == "Linux":
-            self.pres_doc.close(True)
+            if self.pres_obj.isRunning():
+                self.pres_obj.end()
+            self.pres_doc.close(False)
         self.pres_started = False
         self.pres_loaded = False
 

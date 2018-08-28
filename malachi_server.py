@@ -398,7 +398,8 @@ if __name__ == "__main__":
     server.start()
 
     # Setup LibreOffice to receive UNO connections (for Linux)
-    subprocess.Popen(["soffice", "--accept='socket,host=localhost,port=2002;urp'", "--quickstart"])
+    # Doesn't work.  Instead run soffice --accept="socket,host=localhost,port=2002;urp" --quickstart in a separate terminal before starting Malachi
+    # subprocess.Popen(["soffice", "--accept='socket,host=localhost,port=2002;urp'", "--quickstart"])
 
     time.sleep(2)
 
