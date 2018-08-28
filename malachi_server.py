@@ -375,7 +375,7 @@ def update_impress_screen_state():
 def update_impress_goto_slide(index):
     if s.get_current_item_type() == "Presentation":
         if ph.pres_started == True:
-            ph.load_slide(index)
+            ph.load_effect(index)
 
 def update_impress_next_effect():
     if s.get_current_item_type() == "Presentation":
@@ -396,6 +396,10 @@ if __name__ == "__main__":
     # Start web server
     server = ThreadedHTTPServer('localhost', 8000)
     server.start()
+
+    # Setup LibreOffice to receive UNO connections (for Linux)
+    subprocess.Popen(["soffice", "--accept='socket,host=localhost,port=2002;urp'", "--quickstart"])
+
     time.sleep(2)
 
     # Start presentation handler
