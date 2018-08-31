@@ -11,7 +11,7 @@ from Song import Song, InvalidSongIdError
 from Presentation import Presentation, InvalidPresentationUrlError
 from PresentationHandler import PresentationHandler
 
-SOCKET_TYPES = ['singers', 'control', 'display']
+SOCKET_TYPES = ['singers', 'control', 'display', 'music']
 SOCKETS = set()
 CAPOS = dict()
 MAIN_DISPLAYS = set()
@@ -57,7 +57,8 @@ async def responder(websocket, path):
     # Send initial data packet based on path
     initial_data_switcher =  {
         "singers": singers_init,
-        "control": control_init
+        "control": control_init,
+        "music": singers_init
     }
     if path[1:] in SOCKET_TYPES:
         initial_func = initial_data_switcher.get(path[1:], lambda: "None")
@@ -137,15 +138,25 @@ async def clients_service_items_update():
 # Command functions
 async def next_slide(websocket, params):
     result = update_impress_next_effect()
-    if result != s.slide_index:
+    if result == -1:
+        # We are not on a presentation, so advance slide as normal
         if s.next_slide():
             await clients_slide_index_update()
+    else:
+        # We are showing a presentation, so update service slide index based on result
+        s.set_slide_index(result)
+        await clients_slide_index_update()
 
 async def previous_slide(websocket, params):
     result = update_impress_previous_effect()
-    if result != s.slide_index:
+    if result == -1:
+        # We are not on a presentation, so advance slide as normal
         if s.previous_slide():
             await clients_slide_index_update()
+    else:
+        # We are showing a presentation, so update service slide index based on result
+        s.set_slide_index(result)
+        await clients_slide_index_update()
 
 async def goto_slide(websocket, params):
     update_impress_goto_slide(int(params["index"]))

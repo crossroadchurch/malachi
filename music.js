@@ -1,18 +1,15 @@
 let capo = 0;
-let menustring = "";
 let verse_order = "";
 let played_key = "";
 let slide_type = "";
-let service_items = [];
 let current_slides = [];
 let part_counts = [];
 let slide_index = -1;
-let item_index = -1;
 let websocket;
 
 function update_music() {
   $("#playedkey").html(played_key);
-  verse_control_list = "";
+  verse_control_list = "<ul>";
   verse_list = "";
 
   if (slide_type == "song"){
@@ -21,31 +18,18 @@ function update_music() {
     for (i=0; i < verse_list.length; i++){
       if ((slide_index >= part_counts_sum) && (slide_index < (part_counts_sum + part_counts[i]))) {
         verse_control_list = verse_control_list + 
-          "<button class='verse-button current-verse-button' onclick='change_verse(" + part_counts_sum + ")'>" + 
-          verse_list[i].toUpperCase() +
-          "</button>";
+        "<li><span class='current-verse'>" + verse_list[i].toUpperCase() + "</span></li>";
       } else {
         verse_control_list = verse_control_list + 
-          "<button class='verse-button' onclick='change_verse(" + part_counts_sum + ")'>" + 
-          verse_list[i].toUpperCase() +
-          "</button>";
+          "<li>" + verse_list[i].toUpperCase() + "</li>";
       }
       part_counts_sum = part_counts_sum + part_counts[i];
     }
+    verse_control_list = verse_control_list + "</ul>";
   } else if (slide_type != undefined) {
-    verse_control_list = "<span class='non-song-title'>" + service_items[item_index] + "</span>";
+    verse_control_list = "<ul><li>" + current_title + "</li></ul>";
   }
   $("#verseorder").html(verse_control_list);
-
-  /* Update widths of verse buttons to make sure they can all be seen */
-  header_width = $("#header").width();
-  keyandcapo_width = $("#keyandcapo").width();
-  button_margin = parseInt($(".verse-button").css("margin-right"));
-  buttons_width = header_width-keyandcapo_width - (button_margin * verse_list.length);
-  max_button_width = Math.floor(buttons_width / verse_list.length);
-  pref_width = 6 * parseInt($("html").css("font-size")); /* 6rem */
-  actual_width = Math.min(pref_width, max_button_width);
-  $(".verse-button").css("width", actual_width + "px");
 
   if (slide_type == "song"){
 
@@ -192,7 +176,6 @@ function update_music() {
     });
 
   } else if (slide_type == "bible"){
-    // TODO:
     current_text = "<div class =\"nonsong-block\"><p class=\"nonsong-line\">";
     current_text = current_text + current_slides[slide_index].replace(/\n/g, "</p><p class=\"nonsong-line\">");
     current_text = current_text + "</div>";
@@ -222,71 +205,22 @@ function update_music() {
   }
 }
 
-
-function update_menu(){
-  if (service_items.length > 0) {
-    temp_menu = "<ul class='jq-dropdown-menu'>";
-    // Build up song choice menu, place divider at current song location
-    for (i=0; i<service_items.length; i++){
-      if (i != item_index) {
-        temp_menu = temp_menu + "<li class='menu-song-item'><a onclick='change_song(" + i + ")' class='menu-song-link'>" + service_items[i] + "</a></li>";
-      } else {
-        temp_menu = temp_menu + "<li class='menu-song-current-item'><a>" + service_items[i] + "</a></li>";
-      }
-    }
-    temp_menu = temp_menu + "</ul>";
-  } else {
-    temp_menu = "<ul class='jq-dropdown-menu'></ul>";
-  }
-  temp_menu = temp_menu + "</ul>";
-  if (temp_menu != menustring) {
-      $("#jq-dropdown-1").html(temp_menu);
-      menustring = temp_menu;
-  }
-}
-
-function display_on() {
-  websocket.send(JSON.stringify({"action": "command.set-display-state", "params": {"state": "on"}}));
-}
-function display_off() {
-  websocket.send(JSON.stringify({"action": "command.set-display-state", "params": {"state": "off"}}));
-}
-
 function update_capo(){
   capo = $("#caposelect").val();
   websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
 }
 
-function next_slide(event){
-  event.preventDefault();
-  websocket.send(JSON.stringify({"action": "command.next-slide", "params": {}}));
-}
-
-function previous_slide(event){
-  event.preventDefault();
-  websocket.send(JSON.stringify({"action": "command.previous-slide", "params": {}}));
-}
-
-function change_verse(id){
-  websocket.send(JSON.stringify({"action": "command.goto-slide", "params": { "index": id }}));
-}
-
-function change_song(id){
-  websocket.send(JSON.stringify({"action": "command.goto-item", "params": { "index": id }}));
-}
-  
 $(document).ready(function(){
-  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/control");
+  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/music");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     switch(json_data.action){
       case "update.service-overview-update":
-        item_index = json_data.params.item_index;
         slide_index = json_data.params.slide_index;
-        service_items = json_data.params.items;
         if (JSON.stringify(json_data.params.current_item != "{}")){
           slide_type = json_data.params.current_item.type;
           current_slides = json_data.params.current_item.slides;
+          current_title = json_data.params.current_item["title"];
           if (slide_type == "song"){
             played_key = json_data.params.current_item["played-key"];
             verse_order = json_data.params.current_item["verse-order"];
@@ -301,7 +235,6 @@ $(document).ready(function(){
           verse_order = "";
           part_counts = [];
         }
-        update_menu();
         update_music();
         break;
       case "update.slide-index-update":
@@ -309,10 +242,10 @@ $(document).ready(function(){
         update_music();
         break;
       case "update.item-index-update":
-        item_index = json_data.params.item_index;
         slide_index = json_data.params.slide_index;
         slide_type = json_data.params.current_item.type;
         current_slides = json_data.params.current_item.slides;
+        current_title = json_data.params.current_item["title"];
         if (slide_type == "song"){
           played_key = json_data.params.current_item["played-key"];
           verse_order = json_data.params.current_item["verse-order"];
@@ -322,17 +255,13 @@ $(document).ready(function(){
           played_key = "";
           part_counts = [];
         }
-        update_menu();
         update_music();
         break;
       default:
         console.error("Unsupported event", json_data);
     }
   }
-
   $("#caposelect").change(update_capo);
-  $("#controller-next").on("click", next_slide);
-  $("#controller-prev").on("click", previous_slide);
 });
 
 

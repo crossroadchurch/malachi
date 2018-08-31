@@ -91,6 +91,6 @@ body {
 }
 
 .pres-thumb {
-  max-width: 95%;
-  max-height: 100%;
+  max-width: 90vw;
+  max-height: 85vh;
 }

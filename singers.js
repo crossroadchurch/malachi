@@ -26,6 +26,7 @@ function update_music() {
       }
       part_counts_sum = part_counts_sum + part_counts[i];
     }
+    verse_control_list = verse_control_list + "</ul>";
   } else if (slide_type != undefined) {
     verse_control_list = "<ul><li>" + current_title + "</li></ul>";
   }

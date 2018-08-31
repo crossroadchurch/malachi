@@ -28,6 +28,7 @@ class PresentationHandler():
         if platform.system() == "Windows" or platform.system() == "Linux":
             self.pres_doc = self.desktop.loadComponentFromURL(uri, "_blank", 0, ())
             self.pres_obj = self.pres_doc.Presentation
+            self.pres_obj.setPropertyValue("Display", 2) # Force display to use secondary monitor
             pres_wdw = self.desktop.getCurrentFrame().getContainerWindow()
             pres_wdw.setVisible(False)
 
@@ -109,9 +110,17 @@ class PresentationHandler():
     def next_effect(self):
         if self.pres_started:
             if platform.system() == "Windows" or platform.system() == "Linux":
+                before_index = self.controller.getCurrentSlideIndex()
                 self.controller.gotoNextEffect()
                 self.effect_index += 1
-                # return self.controller.getCurrentSlideIndex()
+                after_index = self.controller.getCurrentSlideIndex()
+                if after_index != before_index:
+                    # Starting new slide, so resync self.effect_index
+                    print("Resync")
+                    fx_count = 0
+                    for i in range(after_index):
+                        fx_count += self.effect_counts[i] + 1
+                    self.effect_index = fx_count
                 return self.effect_index
             else:
                 return -1
@@ -121,9 +130,16 @@ class PresentationHandler():
     def previous_effect(self):
         if self.pres_started:
             if platform.system() == "Windows" or platform.system() == "Linux":
+                before_index = self.controller.getCurrentSlideIndex()
                 self.controller.gotoPreviousEffect()
                 self.effect_index -= 1
-                # return self.controller.getCurrentSlideIndex()
+                after_index = self.controller.getCurrentSlideIndex()
+                if after_index != before_index:
+                    # Starting new slide, so resync self.effect_index
+                    fx_count = 0
+                    for i in range(after_index):
+                        fx_count += self.effect_counts[i] + 1
+                    self.effect_index = fx_count - 1
                 return self.effect_index
             else:
                 return -1

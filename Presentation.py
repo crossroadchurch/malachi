@@ -120,6 +120,7 @@ class Presentation():
                     time.sleep(0.5)
                     controller.gotoPreviousEffect()
                     load_check =  controller.getCurrentSlideIndex() # Ensures a slide is fully loaded before we start screenshots of it
+                    time.sleep(0.5)
                     thumb_path = pathlib.Path(os.path.join(os.path.abspath("./thumbnails/" + str(file_hash))), str(total_effects - idx - 1).zfill(3) + ".png")
                     sct_img = sct.grab(monitor_area)
                     mss.tools.to_png(sct_img.rgb, sct_img.size, output=str(thumb_path))
