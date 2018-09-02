@@ -3,5 +3,7 @@
 !/thumbnails/.gitkeep
 /presentations/*
 !/presentations/.gitkeep
-/impress_uno.py
+/services.*
+!/services/.gitkeep
 test_out.txt
+/malachi_server - Copy.py

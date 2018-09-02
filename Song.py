@@ -1,10 +1,6 @@
 import sqlite3, json
 from Chords import Chords
-
-class InvalidSongIdError(Exception):
-    def __init__(self, id):
-        msg = "Could not find a song that has id {id}".format(id=id)
-        super(InvalidSongIdError, self).__init__(msg)
+from MalachiExceptions import InvalidSongIdError
 
 class Song():
 

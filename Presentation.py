@@ -1,10 +1,6 @@
 import json, os, hashlib, platform, pathlib, time
 import mss, mss.tools
-
-class InvalidPresentationUrlError(Exception):
-    def __init__(self, url):
-        msg = "Could not find a presentation at that the url {url}".format(url=url)
-        super(InvalidPresentationUrlError, self).__init__(msg)
+from MalachiExceptions import InvalidPresentationUrlError
 
 class Presentation():
 

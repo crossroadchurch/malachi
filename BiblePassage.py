@@ -1,19 +1,5 @@
 import sqlite3, json, re
-
-class InvalidVersionError(Exception):
-    def __init__(self, version):
-        msg = "%s is not a recognised Bible version" % version
-        super(InvalidVersionError, self).__init__(msg)
-
-class InvalidVerseIdError(Exception):
-    def __init__(self, id, version):
-        msg = "Could not find a verse with id {id} in the {vs} version of the Bible".format(id=id, vs=version)
-        super(InvalidVerseIdError, self).__init__(msg)
-
-class MalformedReferenceError(Exception):
-    def __init__(self, ref):
-        msg = "%s is not a valid form for a Bible reference" % ref
-        super(MalformedReferenceError, self).__init__(msg)
+from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 
 class BiblePassage():
 
