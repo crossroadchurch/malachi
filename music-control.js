@@ -192,7 +192,6 @@ function update_music() {
     });
 
   } else if (slide_type == "bible"){
-    // TODO:
     current_text = "<div class =\"nonsong-block\"><p class=\"nonsong-line\">";
     current_text = current_text + current_slides[slide_index].replace(/\n/g, "</p><p class=\"nonsong-line\">");
     current_text = current_text + "</div>";

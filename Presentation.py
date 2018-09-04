@@ -141,13 +141,6 @@ class Presentation():
         return json.dumps({"type": "presentation", "url": self.url})
 
     @classmethod
-    def load_from_JSON(cls, json_data):
-        # Precondition json_data["type"] == "presentation"
-        json_obj = json.loads(json_data)
-        # TODO: Exception handling - pass upstream
-        return Presentation(json_data["url"])
-
-    @classmethod
     def get_all_presentations(cls):
         urls = ['./presentations/' + f for f in os.listdir('./presentations')
                 if f.endswith('.odp') or f.endswith('.ppt') or f.endswith('.pptx')]
@@ -155,6 +148,4 @@ class Presentation():
 
 ### TESTING ONLY ###
 if __name__ == "__main__":
-    # p = Presentation('./test1.odp')
-    # print(Presentation.get_all_presentations())
     pass

@@ -131,13 +131,6 @@ class BiblePassage():
         return json.dumps({"type": "bible", "version": self.version, "start_id": self.start_id, "end_id": self.end_id})
 
     @classmethod
-    def load_from_JSON(cls, json_data):
-        # Precondition json_data["type"] == "bible"
-        json_obj = json.loads(json_data)
-        # TODO: Exception handling - pass upstream
-        return BiblePassage(json_data["version"], json_data["start_id"], json_data["end_id"])
-
-    @classmethod
     def get_versions(cls):
         return cls.BIBLE_VERSIONS
 

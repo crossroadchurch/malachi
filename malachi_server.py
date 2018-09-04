@@ -1,5 +1,6 @@
 import asyncio, json, time, os, platform, pathlib
 import websockets
+from json.decoder import JSONDecodeError
 from ThreadedHTTPServer import ThreadedHTTPServer
 from Service import Service
 from BiblePassage import BiblePassage
@@ -28,13 +29,20 @@ class MalachiServer():
         if path[1:] == "display":
             self.MAIN_DISPLAYS.add((websocket, path[1:]))
 
-    def unregister(self,websocket, path):
+    def unregister(self, websocket, path):
         # websocket has been closed by client
         self.SOCKETS.remove((websocket, path[1:]))
         if websocket in self.CAPOS:
             del self.CAPOS[websocket]
         if path[1:] == "display":
             self.MAIN_DISPLAYS.remove((websocket, path[1:]))
+
+    def key_check(self, key_dict, required_keys):
+        missing_keys = ""
+        for key in required_keys:
+            if key not in key_dict:
+                missing_keys = missing_keys + key + " "
+        return missing_keys
 
     async def singers_init(self, websocket):
         await websocket.send(json.dumps({
@@ -70,38 +78,57 @@ class MalachiServer():
 
         try:
             # Websocket message loop
+            command_switcher = {
+                # Syntax: "command_name": [function, [params_needed]]
+                "command.next-slide": [self.next_slide, []],
+                "command.previous-slide": [self.previous_slide, []],
+                "command.goto-slide": [self.goto_slide, ["index"]],
+                "command.next-item": [self.next_item, []],
+                "command.previous-item": [self.previous_item, []],
+                "command.goto-item": [self.goto_item, ["index"]],
+                "command.add-bible-item": [self.add_bible_item, ["version", "start-verse", "end-verse"]],
+                "command.add-song-item": [self.add_song_item, ["song-id"]],
+                "command.add-presentation": [self.add_presentation, ["url"]],
+                "command.remove-item": [self.remove_item, ["index"]],
+                "command.move-item": [self.move_item, ["from-index", "to-index"]],
+                "command.set-display-state": [self.set_display_state, ["state"]],
+                "command.new-service": [self.new_service, ["force"]],
+                "command.load-service": [self.load_service, ["filename", "force"]],
+                "command.save-service": [self.save_service, []],
+                "command.save-service-as": [self.save_service_as, ["filename"]],
+                "client.set-capo": [self.set_capo, ["capo"]],
+                "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
+                "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
+                "query.song-by-text": [self.song_text_query, ["search-text"]],
+                "request.full-song": [self.request_full_song, ["song-id"]],
+                "request.bible-versions": [self.request_bible_versions, []],
+                "request.bible-books": [self.request_bible_books, ["version"]],
+                "request.chapter-structure": [self.request_chapter_structure, ["version"]],
+                "request.all-presentations": [self.request_all_presentations, []],
+                "request.all-services": [self.request_all_services, []]
+            }
             async for message in websocket:
-                json_data = json.loads(message)
-                command_switcher = {
-                    "command.next-slide": self.next_slide,
-                    "command.previous-slide": self.previous_slide,
-                    "command.goto-slide": self.goto_slide,
-                    "command.next-item": self.next_item,
-                    "command.previous-item": self.previous_item,
-                    "command.goto-item": self.goto_item,
-                    "command.add-bible-item": self.add_bible_item,
-                    "command.add-song-item": self.add_song_item,
-                    "command.add-presentation": self.add_presentation,
-                    "command.remove-item": self.remove_item,
-                    "command.move-item": self.move_item,
-                    "command.set-display-state": self.set_display_state,
-                    "command.new-service": self.new_service,
-                    "command.load-service": self.load_service,
-                    "command.save-service": self.save_service,
-                    "command.save-service-as": self.save_service_as,
-                    "client.set-capo": self.set_capo,
-                    "query.bible-by-text": self.bible_text_query,
-                    "query.bible-by-ref": self.bible_ref_query,
-                    "query.song-by-text": self.song_text_query,
-                    "request.full-song": self.request_full_song,
-                    "request.bible-versions": self.request_bible_versions,
-                    "request.bible-books": self.request_bible_books,
-                    "request.chapter-structure": self.request_chapter_structure,
-                    "request.all-presentations": self.request_all_presentations,
-                    "request.all-services": self.request_all_services
-                }
-                command_handler = command_switcher.get(json_data["action"], lambda: "None")
-                await command_handler(websocket, json_data["params"])
+                try:
+                    json_data = json.loads(message)
+                    # Check json_data has action and params keys
+                    k_check = self.key_check(json_data, ["action", "params"])
+                    if k_check == "":
+                        command_item = command_switcher.get(json_data["action"])
+                        if command_item != None:
+                            # Check that all required parameters have been supplied
+                            p_check = self.key_check(json_data["params"], command_item[1])
+                            if p_check == "":
+                                await command_item[0](websocket, json_data["params"])
+                            else:
+                                await self.server_response(websocket, "error.json", "missing-params", json_data["action"] + ": " + p_check)
+                        else:
+                            # Invalid command
+                            await self.server_response(websocket, "error.json", "invalid-command", json_data["action"])
+                    else:
+                        # Malformed JSON
+                        await self.server_response(websocket, "error.json", "missing-keys", k_check)
+                except JSONDecodeError:
+                    await self.server_response(websocket, "error.json", "decode-error", message)
         finally:
             # Websocket is closed by client
             self.unregister(websocket, path)
@@ -109,8 +136,6 @@ class MalachiServer():
     # Update functions
     async def clients_slide_index_update(self):
         for socket in self.SOCKETS:
-            # TODO: Do we need to send this to all clients?
-            # TODO: Do we need to allow the client to check that they have the current version of the service e.g. through MD5 sum?
             await socket[0].send(json.dumps({
                 "action" : "update.slide-index-update", 
                 "params" : {
@@ -121,12 +146,10 @@ class MalachiServer():
 
     async def clients_item_index_update(self):
         for socket in self.SOCKETS:
-            # TODO: Do we need to send this to all clients?
-            # TODO: Do we need to allow the client to check that they have the current version of the service e.g. through MD5 sum?
             if len(self.s.items) == 0:
                 cur_item = {}
             else:
-                cur_item = json.loads(self.s.items[s.item_index].to_JSON(self.CAPOS[socket[0]]))
+                cur_item = json.loads(self.s.items[self.s.item_index].to_JSON(self.CAPOS[socket[0]]))
             await socket[0].send(json.dumps({
                 "action" : "update.item-index-update", 
                 "params" : {
@@ -138,7 +161,6 @@ class MalachiServer():
 
     async def clients_service_items_update(self):
         for socket in self.SOCKETS:
-            # TODO: Do we need to send this to all clients?
             await socket[0].send(json.dumps({
                 "action" : "update.service-overview-update", 
                 "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[socket[0]]))
@@ -146,56 +168,99 @@ class MalachiServer():
 
     # Command functions
     async def next_slide(self, websocket, params):
+        status, details = "ok", ""
         result = self.update_impress_next_effect()
         if result == -1:
             # We are not on a presentation, so advance slide as normal
-            if self.s.next_slide():
+            s_result = self.s.next_slide()
+            if s_result == 1:
                 await self.clients_slide_index_update()
+            elif s_result == 0:
+                status, details = "invalid-index", "Already at last slide"
+            else:
+                status = "no-current-item"
         else:
             # We are showing a presentation, so update service slide index based on result
             self.s.set_slide_index(result)
             await self.clients_slide_index_update()
+        await self.server_response(websocket, "response.next-slide", status, details)
 
     async def previous_slide(self, websocket, params):
+        status, details = "ok", ""
         result = self.update_impress_previous_effect()
         if result == -1:
             # We are not on a presentation, so advance slide as normal
-            if self.s.previous_slide():
+            s_result = self.s.previous_slide()
+            if s_result == 1:
                 await self.clients_slide_index_update()
+            elif s_result == 0:
+                status, details = "invalid-index", "Already at first slide"
+            else:
+                status = "no-current-item"
         else:
             # We are showing a presentation, so update service slide index based on result
             self.s.set_slide_index(result)
             await self.clients_slide_index_update()
+        await self.server_response(websocket, "response.previous-slide", status, details)
 
     async def goto_slide(self, websocket, params):
+        status, details = "ok", ""
         self.update_impress_goto_slide(int(params["index"]))
-        if self.s.set_slide_index(int(params["index"])):
+        s_result = self.s.set_slide_index(int(params["index"]))
+        if s_result == 1:
             await self.clients_slide_index_update()
+        elif s_result == 0:
+            status, details = "invalid-index", "Index out of bounds error"
+        else:
+            status = "no-current-item"
+        await self.server_response(websocket, "response.goto-slide", status, details)
 
     async def next_item(self, websocket, params):
+        status, details = "ok", ""
         if self.s.next_item():
             self.update_impress_change_item()
             await self.clients_item_index_update()
+        else:
+            status, details = "invalid-index", "Already at last index"
+        await self.server_response(websocket, "response.next-item", status, details)
 
     async def previous_item(self, websocket, params):
+        status, details = "ok", ""
         if self.s.previous_item():
             self.update_impress_change_item()
             await self.clients_item_index_update()
+        else:
+            status, details = "invalid-index", "Already at first index"
+        await self.server_response(websocket, "response.previous-item", status, details)
 
     async def goto_item(self, websocket, params):
+        status, details = "ok", ""
         if self.s.set_item_index(int(params["index"])):
             self.update_impress_change_item()
             await self.clients_item_index_update()
+        else:
+            status, details = "invalid-index", "Index out of bounds error"
+        await self.server_response(websocket, "response.goto-item", status, details)
 
     async def remove_item(self, websocket, params):
+        # TODO: Response to websocket
         # TODO: Exception: What if this is the current item??
-        self.s.remove_item_at(int(params["index"]))
-        await self.clients_service_items_update()
+        index = int(params["index"])
+        result = self.s.remove_item_at(index)
+        if result == True:
+            # Update self.s.item_index and then call self.update_impress_change_item if needed...
+            await self.clients_service_items_update()
 
     async def move_item(self, websocket, params):
-        # TODO: How does this affect the current item, particularly if it's a presentation?
         self.s.move_item(int(params["from-index"]), int(params["to-index"]))
+        # TODO: Recode this block - currently assumes items swap, which they don't!
+        # Also add in different return values from s.move_item and update wiki with this server response
+        if self.s.item_index == int(params["from-index"]) or self.s.item_index == int(params["to-index"]):
+            # Current item has been changed as a result of the move
+            self.s.slide_index = 0
+            self.update_impress_change_item()
         await self.clients_service_items_update()
+        await self.server_response(websocket, "response.move-item", "ok", "")
 
     async def add_bible_item(self, websocket, params):
         status, details = "ok", ""
@@ -206,13 +271,7 @@ class MalachiServer():
         except InvalidVerseIdError as e:
             status, details = "invalid-verse", e.msg
         finally:
-            await websocket.send(json.dumps({
-                "action" : "response.add-bible-item", 
-                "params" : {
-                    "status": status, 
-                    "details": details
-                    }
-                }))
+            await self.server_response(websocket, "response.add-bible-item", status, details)
             await self.clients_service_items_update()
 
     async def add_song_item(self, websocket, params):
@@ -222,13 +281,7 @@ class MalachiServer():
         except InvalidSongIdError as e:
             status, details = "invalid-song", e.msg
         finally:
-            await websocket.send(json.dumps({
-                "action" : "response.add-song-item", 
-                "params" : {
-                    "status": status, 
-                    "details": details
-                    }
-                }))
+            await self.server_response(websocket, "response.add-song-item", status, details)
             await self.clients_service_items_update()
 
     async def add_presentation(self, websocket, params):
@@ -238,13 +291,7 @@ class MalachiServer():
         except InvalidPresentationUrlError as e:
             status, details = "invalid-presentation", e.msg
         finally:
-            await websocket.send(json.dumps({
-                "action" : "response.add-presentation", 
-                "params" : {
-                    "status": status, 
-                    "details": details
-                    }
-                }))
+            await self.server_response(websocket, "response.add-presentation", status, details)
             await self.clients_service_items_update()
 
     async def set_display_state(self, websocket, params):
@@ -257,12 +304,20 @@ class MalachiServer():
                     }
                 }))
         self.update_impress_screen_state()
+        await self.server_response(websocket, "response.set-display-state", "ok", "")
 
     async def new_service(self, websocket, params):
-        self.s = Service()
-        await self.clients_service_items_update()
+        status = "ok"
+        if self.s.modified == False or params["force"] == True:
+            self.s = Service()
+            await self.clients_service_items_update()
+        else:
+            status = "unsaved-service"
+        await self.server_response(websocket, "response.new-service", status, "")
 
     async def load_service(self, websocket, params):
+        # TODO: Check if current service needs to be saved before starting a new service
+        # Can be overridden with params
         status, details = "ok", ""
         try:
             self.s.load_service(params["filename"])
@@ -273,13 +328,7 @@ class MalachiServer():
             self.s = Service()
             status, details = "malformed-json", e.msg
         finally:
-            await websocket.send(json.dumps({
-                "action" : "response.load-service", 
-                "params" : {
-                    "status": status,
-                    "details": details
-                    }
-                }))
+            await self.server_response(websocket, "response.load-service", status, details)
             await self.clients_service_items_update()
         
     async def save_service(self, websocket, params):
@@ -289,21 +338,18 @@ class MalachiServer():
         except UnspecifiedServiceUrl as e:
             status, details = "unspecified-service", e.msg
         finally:
-            await websocket.send(json.dumps({
-                "action" : "response.save-service", 
-                "params" : {
-                    "status": status,
-                    "details": details
-                    }
-                }))
+            await self.server_response(websocket,"response.save-service", status, details)
 
     async def save_service_as(self, websocket, params):
         self.s.save_as(params["filename"])
+        await self.server_response(websocket, "response.save-service", "ok", "")
+
+    async def server_response(self, websocket, action, status, details):
         await websocket.send(json.dumps({
-            "action" : "response.save-service", 
+            "action" : action, 
             "params" : {
-                "status": "ok",
-                "details": ""
+                "status": status,
+                "details": details
                 }
             }))
 
@@ -313,7 +359,7 @@ class MalachiServer():
         if len(self.s.items) == 0:
             cur_item = {}
         else:
-            cur_item = json.loads(self.s.items[s.item_index].to_JSON(self.CAPOS[websocket]))
+            cur_item = json.loads(self.s.items[self.s.item_index].to_JSON(self.CAPOS[websocket]))
         await websocket.send(json.dumps({
             "action" : "update.item-index-update", 
             "params" : {
@@ -325,51 +371,35 @@ class MalachiServer():
 
     # Query functions - response to client only
     async def bible_text_query(self, websocket, params):
+        status, verses = "ok", []
         try:
-            result = BiblePassage.text_search(params["version"], params["search-text"])
-            await websocket.send(json.dumps({
-                "action": "result.bible-verses",
-                "params": {
-                    "status": "ok",
-                    "verses": json.loads(result)
-                }}))
+            verses = json.loads(BiblePassage.text_search(params["version"], params["search-text"]))
         except InvalidVersionError:
-            await websocket.send(json.dumps({
-                "action": "result.bible-verses",
-                "params": {
-                    "status": "invalid-version",
-                    "verses": []
-                }}))
+            status = "invalid-version"
         except (InvalidReferenceError, MalformedReferenceError):
+            status = "invalid-reference"
+        finally:
             await websocket.send(json.dumps({
                 "action": "result.bible-verses",
                 "params": {
-                    "status": "invalid-version",
-                    "verses": []
+                    "status": status,
+                    "verses": verses
                 }}))
 
     async def bible_ref_query(self, websocket, params):
+        status, verses = "ok", []
         try:
-            result = BiblePassage.ref_search(params["version"], params["search-ref"])
-            await websocket.send(json.dumps({
-                "action": "result.bible-verses",
-                "params": {
-                    "status": "ok",
-                    "verses": json.loads(result)
-                }}))
+            verses = json.loads(BiblePassage.ref_search(params["version"], params["search-ref"]))
         except InvalidVersionError:
-            await websocket.send(json.dumps({
-                "action": "result.bible-verses",
-                "params": {
-                    "status": "invalid-version",
-                    "verses": []
-                }}))
+            status = "invalid-version"
         except (InvalidReferenceError, MalformedReferenceError):
+            status = "invalid-reference"
+        finally:
             await websocket.send(json.dumps({
                 "action": "result.bible-verses",
                 "params": {
-                    "status": "invalid-version",
-                    "verses": []
+                    "status": status,
+                    "verses": verses
                 }}))
 
     async def song_text_query(self, websocket, params):
@@ -380,23 +410,19 @@ class MalachiServer():
                 "songs": json.loads(result)
             }}))
 
-    # Other requests
+    # Other client requests
     async def request_full_song(self, websocket, params):
+        status, data = "ok", {}
         try:
-            sg = Song(params["song-id"])
-            await websocket.send(json.dumps({
-                "action": "result.song-details",
-                "params": {
-                    "status": "ok",
-                    "song-data": json.loads(sg.to_JSON_full_data())
-                }
-            }))
+            data = json.loads(Song(params["song-id"]).to_JSON_full_data())
         except InvalidSongIdError:
+            status = "invalid-id"
+        finally:
             await websocket.send(json.dumps({
                 "action": "result.song-details",
                 "params": {
-                    "status": "invalid-id",
-                    "song-data": {}
+                    "status": status,
+                    "song-data": data
                 }
             }))
 
@@ -409,40 +435,32 @@ class MalachiServer():
         }))
 
     async def request_bible_books(self, websocket, params):
+        status, books = "ok", []
         try:
-            books = BiblePassage.get_books(params["version"])
-            await websocket.send(json.dumps({
-                "action": "result.bible-books",
-                "params": {
-                    "status": "ok",
-                    "books": books
-                }
-            }))
+            books = BiblePassage.get_books(params["version"]) 
         except InvalidVersionError:
+            status = "invalid-version"
+        finally:
             await websocket.send(json.dumps({
                 "action": "result.bible-books",
                 "params": {
-                    "status": "invalid-version",
-                    "books": []
+                    "status": status,
+                    "books": books
                 }
             }))
 
     async def request_chapter_structure(self, websocket, params):
+        status, chapters = "ok", []
         try:
             chapters = BiblePassage.get_chapter_structure(params["version"])
-            await websocket.send(json.dumps({
-                "action": "result.chapter-structure",
-                "params": {
-                    "status": "ok",
-                    "chapter-structure": chapters
-                }
-            }))
         except InvalidVersionError:
+            status = "invalid-version"
+        finally:
             await websocket.send(json.dumps({
                 "action": "result.chapter-structure",
                 "params": {
-                    "status": "invalid-version",
-                    "chapter-structure": []
+                    "status": status,
+                    "chapter-structure": chapters
                 }
             }))
 

@@ -11,13 +11,19 @@ class Service():
         self.item_index = -1
         self.slide_index = -1
         self.file_name = None
+        self.modified = False
 
     def add_item(self, item):
         self.items.append(item)
+        self.modified = True
 
     def remove_item_at(self, index):
         if index >=0 and len(self.items)>0 and index < len(self.items):
             del self.items[index]
+            self.modified = True
+            return True
+        else:
+            return False
 
     def move_item(self, from_index, to_index):
         if from_index == to_index or len(self.items)==0:
@@ -30,6 +36,7 @@ class Service():
                 else:
                     self.items.insert(to_index, self.items[from_index])
                     del self.items[from_index + 1]
+                self.modified = True
             else:
                 return # Invalid index specified
 
@@ -65,28 +72,31 @@ class Service():
         if self.item_index >= 0:
             if index >= 0 and index < len(self.items[self.item_index].slides):
                 self.slide_index = index
-                return True
+                return 1
             else:
-                return False
+                return 0
         else:
-            return False
+            return -1
 
     def next_slide(self):
         if self.item_index >= 0:
             if (self.slide_index + 1) < len(self.items[self.item_index].slides):
                 self.slide_index += 1
-                return True
+                return 1
             else:
-                return False
+                return 0
         else:
-            return False
+            return -1
 
     def previous_slide(self):
-        if self.item_index >= 0 and self.slide_index > 0:
-            self.slide_index -= 1
-            return True
+        if self.item_index >= 0:
+            if self.slide_index > 0:
+                self.slide_index -= 1
+                return 1
+            else:
+                return 0
         else:
-            return False
+            return -1
 
     def to_JSON_simple(self):
         return json.dumps({"items": [x.get_title() for x in self.items], 
@@ -119,6 +129,7 @@ class Service():
                 raise MalformedServiceFileError("./services/" + fname, "Missing key: 'items'")
             self.items = []
             self.file_name = fname
+            self.modified = False
             for item in json_data["items"]:
                 if "type" in item:
                     if item["type"] == "bible":
@@ -148,14 +159,11 @@ class Service():
         else:
             with open("./services/" + self.file_name, 'w') as json_file:
                 json.dump({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, json_file)
+            self.modified = False
 
     def save_as(self, fname):
         self.file_name = fname
         self.save()
-
-    def save_to_JSON(self):
-        json_items = json.dumps({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, indent=2)
-        return json_items
 
     @classmethod
     def get_all_services(cls):

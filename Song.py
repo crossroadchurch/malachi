@@ -93,7 +93,7 @@ class Song():
         return self.title
 
     def to_JSON(self, capo):
-        # TODO: need to return song transposed by -capo, plus the new key - if the song has chords!
+        # Need to return song transposed by -capo, plus the new key - if the song has chords!
         if self.resultant_key != "":
             if capo == 0:
                 p_key = self.resultant_key
@@ -137,13 +137,6 @@ class Song():
     
     def save_to_JSON(self):
         return json.dumps({"type": "song", "song_id": self.song_id})
-
-    @classmethod
-    def load_from_JSON(cls, json_data):
-        # Precondition json_data["type"] == "song"
-        json_obj = json.loads(json_data)
-        # TODO: Exception handling - pass upstream
-        return Song(json_data["song_id"])
 
     @classmethod
     def text_search(cls, search_text):
