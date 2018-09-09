@@ -243,24 +243,51 @@ class MalachiServer():
         await self.server_response(websocket, "response.goto-item", status, details)
 
     async def remove_item(self, websocket, params):
-        # TODO: Response to websocket
-        # TODO: Exception: What if this is the current item??
+        status, details = "ok", ""
         index = int(params["index"])
         result = self.s.remove_item_at(index)
         if result == True:
-            # Update self.s.item_index and then call self.update_impress_change_item if needed...
+            if index == self.s.item_index:
+                # Current item was removed
+                if self.s.item_index > 0:
+                    self.s.item_index -= 1
+                elif len(self.s.items) == 0:
+                    self.s.item_index = -1
+                    self.s.slide_index = -1
+                self.update_impress_change_item()
+            elif index < self.s.item_index:
+                self.s.item_index -= 1
             await self.clients_service_items_update()
+        else:
+            status, details = "invalid-index", str(index)
+        await self.server_response(websocket, "response.remove-item", status, details)
 
     async def move_item(self, websocket, params):
-        self.s.move_item(int(params["from-index"]), int(params["to-index"]))
-        # TODO: Recode this block - currently assumes items swap, which they don't!
-        # Also add in different return values from s.move_item and update wiki with this server response
-        if self.s.item_index == int(params["from-index"]) or self.s.item_index == int(params["to-index"]):
-            # Current item has been changed as a result of the move
-            self.s.slide_index = 0
-            self.update_impress_change_item()
+        status, details = "ok", ""
+        f_index, t_index = int(params["from-index"]), int(params["to-index"])
+        result = self.s.move_item(f_index, t_index)
+        if result == 1:
+            # Currently selected item was the item moved
+            if f_index == self.s.item_index:
+                if f_index < t_index:
+                    self.s.item_index = t_index - 1
+                else:
+                    self.s.item_index = t_index
+            # Position of currently selected item was affected by the move
+            elif f_index < t_index and self.s.item_index > f_index and self.s.item_index <= t_index:
+                self.s.item_index -= 1
+            elif t_index < f_index and self.s.item_index >= t_index and self.s.item_index < f_index:
+                self.s.item_index += 1
+        elif result == 0:
+            details = "No need to move items"
+        elif result == -1:
+            status = "invalid-index"
+            if f_index < 0 or f_index >= len(self.s.items):
+                details = "from-index (" + str(f_index) + ") "
+            if t_index < 0 or t_index >= len(self.s.items):
+                details = details + "to-index (" + str(t_index) + ") "
         await self.clients_service_items_update()
-        await self.server_response(websocket, "response.move-item", "ok", "")
+        await self.server_response(websocket, "response.move-item", status, details)
 
     async def add_bible_item(self, websocket, params):
         status, details = "ok", ""
@@ -316,20 +343,21 @@ class MalachiServer():
         await self.server_response(websocket, "response.new-service", status, "")
 
     async def load_service(self, websocket, params):
-        # TODO: Check if current service needs to be saved before starting a new service
-        # Can be overridden with params
         status, details = "ok", ""
-        try:
-            self.s.load_service(params["filename"])
-        except InvalidServiceUrlError as e:
-            self.s = Service()
-            status, details = "invalid-url", e.msg
-        except MalformedServiceFileError as e:
-            self.s = Service()
-            status, details = "malformed-json", e.msg
-        finally:
-            await self.server_response(websocket, "response.load-service", status, details)
-            await self.clients_service_items_update()
+        if self.s.modified == False or params["force"] == True:
+            try:
+                self.s.load_service(params["filename"])
+            except InvalidServiceUrlError as e:
+                self.s = Service()
+                status, details = "invalid-url", e.msg
+            except MalformedServiceFileError as e:
+                self.s = Service()
+                status, details = "malformed-json", e.msg
+            finally:
+                await self.server_response(websocket, "response.load-service", status, details)
+                await self.clients_service_items_update()
+        else:
+            await self.server_response(websocket, "response.load-service", "unsaved-service", "")
         
     async def save_service(self, websocket, params):
         status, details = "ok", ""

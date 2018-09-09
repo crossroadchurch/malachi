@@ -27,9 +27,9 @@ class Service():
 
     def move_item(self, from_index, to_index):
         if from_index == to_index or len(self.items)==0:
-            return # No need to move items
+            return 0 # No need to move items
         else:
-            if from_index < len(self.items) and to_index < len(self.items):
+            if 0 <= from_index and from_index < len(self.items) and 0 <= to_index and to_index <= len(self.items):
                 if from_index < to_index:
                     self.items.insert(to_index, self.items[from_index])
                     del self.items[from_index]
@@ -37,8 +37,9 @@ class Service():
                     self.items.insert(to_index, self.items[from_index])
                     del self.items[from_index + 1]
                 self.modified = True
+                return 1
             else:
-                return # Invalid index specified
+                return -1 # Invalid index specified
 
     def get_current_item_type(self):
         if self.item_index >= 0:
