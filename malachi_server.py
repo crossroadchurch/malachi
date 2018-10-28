@@ -59,7 +59,7 @@ class MalachiServer():
     async def display_init(self, websocket):
         await websocket.send(json.dumps({
             "action" : "update.service-overview-update", 
-            "params" : json.loads(self.s.to_JSON_simple())
+            "params" : json.loads(self.s.to_JSON_full())
             }))
 
     async def responder(self, websocket, path):
