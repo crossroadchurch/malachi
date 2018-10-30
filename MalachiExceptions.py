@@ -42,3 +42,9 @@ class UnspecifiedServiceUrl(Exception):
     def __init__(self):
         self.msg = "No file location was specified for saving the Service."
         super(UnspecifiedServiceUrl, self).__init__(self.msg)
+
+# Pagination
+class NonPaginatableItem(Exception):
+    def __init__(self, type_desc):
+        self.msg = "Service items of type {t} cannot be paginated".format(t=type_desc)
+        super(NonPaginatableItem, self).__init__(self.msg)

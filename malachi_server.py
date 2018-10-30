@@ -10,6 +10,7 @@ from PresentationHandler import PresentationHandler
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, UnspecifiedServiceUrl
+from MalachiExceptions import NonPaginatableItem
 
 class MalachiServer():
 
@@ -57,9 +58,10 @@ class MalachiServer():
             }))
 
     async def display_init(self, websocket):
+        # TODO: Document and also send style info in params
         await websocket.send(json.dumps({
             "action" : "update.service-overview-update", 
-            "params" : json.loads(self.s.to_JSON_simple())
+            "params" : json.loads(self.s.to_JSON_full())
             }))
 
     async def responder(self, websocket, path):
@@ -70,7 +72,8 @@ class MalachiServer():
         initial_data_switcher =  {
             "singers": self.singers_init,
             "control": self.control_init,
-            "music": self.singers_init
+            "music": self.singers_init,
+            "display": self.display_init
         }
         if path[1:] in self.SOCKET_TYPES:
             initial_func = initial_data_switcher.get(path[1:], lambda: "None")
@@ -105,7 +108,8 @@ class MalachiServer():
                 "request.bible-books": [self.request_bible_books, ["version"]],
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
                 "request.all-presentations": [self.request_all_presentations, []],
-                "request.all-services": [self.request_all_services, []]
+                "request.all-services": [self.request_all_services, []],
+                "pagination.request-item": [self.pagination_request, ["index"]]
             }
             async for message in websocket:
                 try:
@@ -509,6 +513,22 @@ class MalachiServer():
                 "filenames": fnames
             }
         }))
+
+    async def pagination_request(self, websocket, params):
+        status, data = "ok", {}
+        try:
+            # TODO: index in range?
+            data = json.loads(self.s.items[params["index"]].to_JSON_raw_pagination())
+        except NonPaginatableItem:
+            status = "not-paginatable"
+        finally:
+            await websocket.send(json.dumps({
+                "action": "result.pagination-request",
+                "params": {
+                    "status": status,
+                    "item-data": data
+                }
+            }))
 
 
     # Presentation control with LibreOffice

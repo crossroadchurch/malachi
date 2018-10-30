@@ -132,6 +132,10 @@ class Song():
                            "parts": tr_parts, "verse-order": self.verse_order, "copyright": self.copyright,
                            "song-book-name": self.song_book_name, "song-number": self.song_number})
 
+    def to_JSON_raw_pagination(self):
+        full_data = json.loads(self.to_JSON_full_data())
+        return json.dumps({"parts":full_data["parts"]})
+
     def __str__(self):
         return self.get_title()
     

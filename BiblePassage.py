@@ -46,13 +46,15 @@ class BiblePassage():
         db = sqlite3.connect('./data/' + self.version + '.sqlite')
         cursor = db.cursor()
         cursor.execute('''
-            SELECT v.text FROM Verse AS v
+            SELECT v.text, v.id FROM Verse AS v
             WHERE v.id>={s_id} AND v.id<={e_id}
         '''.format(s_id=self.start_id, e_id=self.end_id))
         verses = cursor.fetchall()
         self.slides = []
+        self.parts = []
         for verse in verses:
             self.slides.append(verse[0])
+            self.parts.append({"part":verse[1], "data":verse[0]})
         db.close()
 
     
@@ -123,6 +125,9 @@ class BiblePassage():
 
     def to_JSON(self, capo):
         return json.dumps({"type":"bible", "title":self.get_title(), "slides":self.slides}, indent=2)
+
+    def to_JSON_raw_pagination(self):
+        return json.dumps({"parts":self.parts}, indent=2)
 
     def __str__(self):
         return self.get_title()
