@@ -72,7 +72,7 @@ function update_music() {
 }
 
 $(document).ready(function(){
-  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/singers");
+  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/basic");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     switch(json_data.action){

@@ -211,7 +211,7 @@ function update_capo(){
 }
 
 $(document).ready(function(){
-  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/music");
+  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/basic");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     switch(json_data.action){

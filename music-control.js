@@ -275,7 +275,7 @@ function change_song(id){
 }
   
 $(document).ready(function(){
-  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/control");
+  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/leader");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     switch(json_data.action){

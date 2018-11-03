@@ -15,30 +15,35 @@ from MalachiExceptions import NonPaginatableItem
 class MalachiServer():
 
     def __init__(self):
-        self.SOCKET_TYPES = ['singers', 'control', 'display', 'music']
         self.SOCKETS = set()
+        self.DISPLAY_STATE_SOCKETS = set()
+        self.STYLE_STATE_SOCKETS = set()
         self.CAPOS = dict()
-        self.MAIN_DISPLAYS = set()
         self.screen_state = "on"
         self.s = Service()
         self.ph = PresentationHandler()
         self.style_list, self.current_style = self.load_styles()
 
     def register(self, websocket, path):
-        # Use path to determine and store type of socket (e.g. display, musician, singer) in SOCKETS
+        # Use path to determine and store type of socket in SOCKETS
         self.SOCKETS.add((websocket, path[1:]))
         self.CAPOS[websocket] = 0
-        if path[1:] == "display":
-            self.MAIN_DISPLAYS.add((websocket, path[1:]))
+        # Register socket capabilities
+        if path[1:] in ["display", "app"]:
+            self.STYLE_STATE_SOCKETS.add((websocket, path[1:]))
+        if path[1:] in ["leader", "display", "app"]:
+            self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
 
     def unregister(self, websocket, path):
         # websocket has been closed by client
         self.SOCKETS.remove((websocket, path[1:]))
         if websocket in self.CAPOS:
             del self.CAPOS[websocket]
-        if path[1:] == "display":
-            self.MAIN_DISPLAYS.remove((websocket, path[1:]))
-
+        if path[1:] in ["display", "app"]:
+            self.STYLE_STATE_SOCKETS.remove((websocket, path[1:]))
+        if path[1:] in ["leader", "display", "app"]:
+            self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
+        
     def key_check(self, key_dict, required_keys):
         missing_keys = ""
         for key in required_keys:
@@ -46,13 +51,13 @@ class MalachiServer():
                 missing_keys = missing_keys + key + " "
         return missing_keys
 
-    async def singers_init(self, websocket):
+    async def basic_init(self, websocket):
         await websocket.send(json.dumps({
             "action" : "update.service-overview-update", 
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
             }))
 
-    async def control_init(self, websocket):
+    async def leader_init(self, websocket):
         await websocket.send(json.dumps({
             "action" : "update.service-overview-update", 
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
@@ -67,18 +72,27 @@ class MalachiServer():
             "params" : service_data
             }))
 
+    async def app_init(self, websocket):
+        # TODO: Document in the wiki
+        service_data = json.loads(self.s.to_JSON_full())
+        service_data['style'] = self.style_list[self.current_style]
+        await websocket.send(json.dumps({
+            "action" : "update.styled-service-overview-update", 
+            "params" : service_data
+            }))
+
     async def responder(self, websocket, path):
         # Websocket is opened by client
         self.register(websocket, path)
 
         # Send initial data packet based on path
         initial_data_switcher =  {
-            "singers": self.singers_init,
-            "control": self.control_init,
-            "music": self.singers_init,
-            "display": self.display_init
+            "basic": self.basic_init,
+            "leader": self.leader_init,
+            "display": self.display_init,
+            "app": self.app_init
         }
-        if path[1:] in self.SOCKET_TYPES:
+        if path[1:] in initial_data_switcher:
             initial_func = initial_data_switcher.get(path[1:], lambda: "None")
             await initial_func(websocket)
 
@@ -102,6 +116,7 @@ class MalachiServer():
                 "command.load-service": [self.load_service, ["filename", "force"]],
                 "command.save-service": [self.save_service, []],
                 "command.save-service-as": [self.save_service_as, ["filename"]],
+                "command.set-current-style": [self.set_current_style, ["index"]],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -112,6 +127,7 @@ class MalachiServer():
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
                 "request.all-presentations": [self.request_all_presentations, []],
                 "request.all-services": [self.request_all_services, []],
+                "request.all-styles": [self.request_all_styles, []],
                 "pagination.request-item": [self.pagination_request, ["index"]]
             }
             async for message in websocket:
@@ -330,7 +346,7 @@ class MalachiServer():
 
     async def set_display_state(self, websocket, params):
         self.screen_state = params["state"]
-        for socket in self.MAIN_DISPLAYS:
+        for socket in self.DISPLAY_STATE_SOCKETS:
             await socket[0].send(json.dumps({
                 "action" : "update.display-state", 
                 "params" : {
@@ -378,6 +394,22 @@ class MalachiServer():
     async def save_service_as(self, websocket, params):
         self.s.save_as(params["filename"])
         await self.server_response(websocket, "response.save-service", "ok", "")
+
+    async def set_current_style(self, websocket, params):
+        status, details = "ok", ""
+        index = int(params["index"])
+        if index >= 0 and index < len(self.style_list):
+            self.current_style = index
+            for socket in self.STYLE_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.style-update", 
+                    "params" : {
+                        "style": self.style_list[self.current_style]
+                        }
+                    }))
+        else:
+            status, details = "invalid-index", "Index out of bounds error"
+        await self.server_response(websocket, "response.set-current-style", status, details)
 
     async def server_response(self, websocket, action, status, details):
         await websocket.send(json.dumps({
@@ -514,6 +546,14 @@ class MalachiServer():
             "action": "result.all-services",
             "params": {
                 "filenames": fnames
+            }
+        }))
+
+    async def request_all_styles(self, websocket, params):
+        await websocket.send(json.dumps({
+            "action": "result.all-styles",
+            "params": {
+                "styles": self.style_list
             }
         }))
 
