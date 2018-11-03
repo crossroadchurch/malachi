@@ -2,11 +2,17 @@
     "styles": [
         {
             "name": "default",
-            "style": "STYLE_STRING"
+            "params": {
+                "param1": "value1",
+                "param2": "value2"
+            }
         },
         {
             "name": "alt_style",
-            "style": "STYLE_STRING_2"
+            "params": {
+                "param1": "value1",
+                "param2": "value2"
+            }
         }
     ],
     "default_index": 0

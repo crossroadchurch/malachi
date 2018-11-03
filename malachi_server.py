@@ -22,6 +22,7 @@ class MalachiServer():
         self.screen_state = "on"
         self.s = Service()
         self.ph = PresentationHandler()
+        self.style_list, self.current_style = self.load_styles()
 
     def register(self, websocket, path):
         # Use path to determine and store type of socket (e.g. display, musician, singer) in SOCKETS
@@ -58,10 +59,12 @@ class MalachiServer():
             }))
 
     async def display_init(self, websocket):
-        # TODO: Document and also send style info in params
+        # TODO: Document in the wiki
+        service_data = json.loads(self.s.to_JSON_full())
+        service_data['style'] = self.style_list[self.current_style]
         await websocket.send(json.dumps({
-            "action" : "update.service-overview-update", 
-            "params" : json.loads(self.s.to_JSON_full())
+            "action" : "update.styled-service-overview-update", 
+            "params" : service_data
             }))
 
     async def responder(self, websocket, path):
@@ -570,6 +573,10 @@ class MalachiServer():
         else:
             return -1
 
+    def load_styles(self):
+        with open("./styles/global_styles.json") as f:
+            json_data = json.load(f)
+        return json_data["styles"], json_data["default_index"]
 
 if __name__ == "__main__":  
     # Start web server
