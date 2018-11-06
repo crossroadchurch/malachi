@@ -1,19 +1,20 @@
 {
-    "styles": [
-        {
-            "name": "default",
-            "params": {
-                "param1": "value1",
-                "param2": "value2"
-            }
-        },
-        {
-            "name": "alt_style",
-            "params": {
-                "param1": "value1",
-                "param2": "value2"
-            }
-        }
-    ],
-    "default_index": 0
+  "styles": [
+    {
+      "name": "default",
+      "params": {
+        "param1": "value1",
+        "param2": "value2"
+      }
+    },
+    {
+      "name": "bob2",
+      "params": {}
+    },
+    {
+      "name": "newstyle",
+      "params": {}
+    }
+  ],
+  "default_index": 0
 }

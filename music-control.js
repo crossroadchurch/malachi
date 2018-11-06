@@ -324,6 +324,13 @@ $(document).ready(function(){
         update_menu();
         update_music();
         break;
+      case "update.display-state":
+        if (json_data.params.state == "on"){
+          $("body").css("border-top", "6px solid #4CAF50");
+        } else {
+          $("body").css("border-top", "6px solid red");
+        }
+
       default:
         console.error("Unsupported event", json_data);
     }

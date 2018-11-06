@@ -18,6 +18,7 @@ class MalachiServer():
         self.SOCKETS = set()
         self.DISPLAY_STATE_SOCKETS = set()
         self.STYLE_STATE_SOCKETS = set()
+        self.APP_SOCKETS = set()
         self.CAPOS = dict()
         self.screen_state = "on"
         self.s = Service()
@@ -29,6 +30,8 @@ class MalachiServer():
         self.SOCKETS.add((websocket, path[1:]))
         self.CAPOS[websocket] = 0
         # Register socket capabilities
+        if path[1:] in ["app"]:
+            self.APP_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["display", "app"]:
             self.STYLE_STATE_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
@@ -39,6 +42,8 @@ class MalachiServer():
         self.SOCKETS.remove((websocket, path[1:]))
         if websocket in self.CAPOS:
             del self.CAPOS[websocket]
+        if path[1:] in ["app"]:
+            self.APP_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["display", "app"]:
             self.STYLE_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
@@ -52,6 +57,7 @@ class MalachiServer():
         return missing_keys
 
     async def basic_init(self, websocket):
+        # TODO: Need to differentiate between different service-overview-updates for basic/leader/...
         await websocket.send(json.dumps({
             "action" : "update.service-overview-update", 
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
@@ -76,6 +82,8 @@ class MalachiServer():
         # TODO: Document in the wiki
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.style_list[self.current_style]
+        service_data['style_list'] = self.style_list
+        service_data['current_style'] = self.current_style
         await websocket.send(json.dumps({
             "action" : "update.styled-service-overview-update", 
             "params" : service_data
@@ -117,6 +125,10 @@ class MalachiServer():
                 "command.save-service": [self.save_service, []],
                 "command.save-service-as": [self.save_service_as, ["filename"]],
                 "command.set-current-style": [self.set_current_style, ["index"]],
+                "command.rename-style": [self.rename_style, ["index", "name"]],
+                "command.delete-style": [self.delete_style, ["index"]],
+                "command.add-style": [self.add_style, ["style"]],
+                "command.edit-style": [self.edit_style, ["index", "style"]],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -411,6 +423,87 @@ class MalachiServer():
             status, details = "invalid-index", "Index out of bounds error"
         await self.server_response(websocket, "response.set-current-style", status, details)
 
+    async def rename_style(self, websocket, params):
+        status, details= "ok", ""
+        index = int(params["index"])
+        if index >= 0 and index < len(self.style_list):
+            self.style_list[index]["name"] = params["name"]
+            self.save_styles()
+            for socket in self.APP_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.style-list-update", 
+                    "params" : {
+                        "styles": self.style_list,
+                        "index": self.current_style
+                        }
+                    }))
+        else:
+            status, details = "invalid-index", "Indexout of bounds error"
+        await self.server_response(websocket, "response.rename-style", status, details)
+
+    async def add_style(self, websocket, params):
+        status, details = "ok", self.key_check(params["style"], ["name", "params"])
+        if details != "":
+            status = "invalid-json"
+            details = "Missing style key(s): " + details
+        else:
+            self.style_list.append(params["style"])
+            self.save_styles()
+            for socket in self.APP_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.style-list-update", 
+                    "params" : {
+                        "styles": self.style_list,
+                        "index": self.current_style
+                        }
+                    }))
+        await self.server_response(websocket, "response.rename-style", status, details)
+
+    async def delete_style(self, websocket, params):
+        status, details = "ok", ""
+        index = int(params["index"])
+        if index >= 0 and index < len(self.style_list) and index != self.current_style:
+            self.style_list.pop(index) # Delete style from list
+            if self.current_style > index:
+                self.current_style = self.current_style - 1
+            self.save_styles()
+            for socket in self.APP_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.style-list-update", 
+                    "params" : {
+                        "styles": self.style_list,
+                        "index": self.current_style
+                        }
+                    }))
+        else:
+            if index == self.current_style:
+                status, details = "invalid-index", "Can't delete currently selected style"
+            else:
+                status, details = "invalid-index", "Index out of bounds"
+        await self.server_response(websocket, "response.delete-style", status, details)
+
+    async def edit_style(self, websocket, params):
+        status, details = "ok", self.key_check(params["style"], ["name", "params"])
+        if details != "":
+            status = "invalid-json"
+            details = "Missing style key(s): " + details
+        else:
+            index = int(params["index"])
+            if index >= 0 and index < len(self.style_list):
+                self.style_list[index] = params["style"]
+                self.save_styles()
+                for socket in self.APP_SOCKETS:
+                    await socket[0].send(json.dumps({
+                        "action" : "update.style-list-update", 
+                        "params" : {
+                            "styles": self.style_list,
+                            "index": self.current_style
+                            }
+                        }))
+            else:
+                status, details = "invalid-index", "Index out of bounds"
+        await self.server_response(websocket, "response.rename-style", status, details)
+
     async def server_response(self, websocket, action, status, details):
         await websocket.send(json.dumps({
             "action" : action, 
@@ -617,6 +710,13 @@ class MalachiServer():
         with open("./styles/global_styles.json") as f:
             json_data = json.load(f)
         return json_data["styles"], json_data["default_index"]
+
+    def save_styles(self):
+        json_data = {}
+        json_data["styles"] = self.style_list
+        json_data["default_index"] = self.current_style
+        with open("./styles/global_styles.json", "w") as f:
+            f.write(json.dumps(json_data, indent=2))
 
 if __name__ == "__main__":  
     # Start web server
