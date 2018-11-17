@@ -48,3 +48,14 @@ class NonPaginatableItem(Exception):
     def __init__(self, type_desc):
         self.msg = "Service items of type {t} cannot be paginated".format(t=type_desc)
         super(NonPaginatableItem, self).__init__(self.msg)
+
+# Lighting
+class QLCConnectionError(Exception):
+    def __init__(self):
+        self.msg = "A connection with QLC is not currently active."
+        super(QLCConnectionError, self).__init__(self.msg)
+
+class LightingBlockedError(Exception):
+    def __init__(self):
+        self.msg = "The action could not be performed as another lighting action is in progress."
+        super(LightingBlockedError, self).__init__(self.msg)

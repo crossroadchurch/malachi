@@ -1,4 +1,4 @@
-import asyncio, json, time, os, platform, pathlib
+import asyncio, json, time, os, platform, pathlib, threading
 import websockets
 from json.decoder import JSONDecodeError
 from ThreadedHTTPServer import ThreadedHTTPServer
@@ -7,15 +7,18 @@ from BiblePassage import BiblePassage
 from Song import Song
 from Presentation import Presentation
 from PresentationHandler import PresentationHandler
+from LightHandler import LightHandler
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, UnspecifiedServiceUrl
 from MalachiExceptions import NonPaginatableItem
+from MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class MalachiServer():
 
     def __init__(self):
         self.SOCKETS = set()
+        self.LIGHT_STATE_SOCKETS = set()
         self.DISPLAY_STATE_SOCKETS = set()
         self.STYLE_STATE_SOCKETS = set()
         self.APP_SOCKETS = set()
@@ -23,7 +26,9 @@ class MalachiServer():
         self.screen_state = "on"
         self.s = Service()
         self.ph = PresentationHandler()
+        self.lh = LightHandler()
         self.style_list, self.current_style = self.load_styles()
+        self.light_preset_list = self.load_light_presets()
 
     def register(self, websocket, path):
         # Use path to determine and store type of socket in SOCKETS
@@ -36,6 +41,8 @@ class MalachiServer():
             self.STYLE_STATE_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
+        if path[1:] in ["lights", "app"]:
+            self.LIGHT_STATE_SOCKETS.add((websocket, path[1:]))
 
     def unregister(self, websocket, path):
         # websocket has been closed by client
@@ -48,7 +55,9 @@ class MalachiServer():
             self.STYLE_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
-        
+        if path[1:] in ["lights", "app"]:
+            self.LIGHT_STATE_SOCKETS.add((websocket, path[1:]))
+
     def key_check(self, key_dict, required_keys):
         missing_keys = ""
         for key in required_keys:
@@ -89,6 +98,14 @@ class MalachiServer():
             "params" : service_data
             }))
 
+    async def light_init(self, websocket):
+        # TODO: Document in the wiki, exception handling from get_channels...
+        light_data = self.lh.get_channels()
+        await websocket.send(json.dumps({
+            "action": "update.light-init",
+            "params": light_data
+            }))
+
     async def responder(self, websocket, path):
         # Websocket is opened by client
         self.register(websocket, path)
@@ -98,7 +115,8 @@ class MalachiServer():
             "basic": self.basic_init,
             "leader": self.leader_init,
             "display": self.display_init,
-            "app": self.app_init
+            "app": self.app_init,
+            "lights": self.light_init
         }
         if path[1:] in initial_data_switcher:
             initial_func = initial_data_switcher.get(path[1:], lambda: "None")
@@ -129,6 +147,12 @@ class MalachiServer():
                 "command.delete-style": [self.delete_style, ["index"]],
                 "command.add-style": [self.add_style, ["style"]],
                 "command.edit-style": [self.edit_style, ["index", "style"]],
+                "command.set-light-channel": [self.set_light_channel, ["channel", "value"]],
+                "command.set-light-channels": [self.set_light_channels, ["channels"]],
+                "command.get-light-channels": [self.get_light_channels, []],
+                "command.fade-light-channels": [self.fade_light_channels, ["end-channels"]],
+                "command.blackout-lights": [self.blackout_lights, []],
+                "command.unblackout-lights": [self.unblackout_lights, []],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -200,6 +224,123 @@ class MalachiServer():
                 "action" : "update.service-overview-update", 
                 "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[socket[0]]))
                 }))
+
+    # Lighting commands
+    async def set_light_channel(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            channel, value = params["channel"], params["value"]
+            self.lh.set_channel(channel, value)
+            for socket in self.LIGHT_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.light-channel-update", 
+                    "params" : {
+                        "channel": channel,
+                        "value": value
+                    }
+                }))
+        except QLCConnectionError as e:
+            status, details = "no-connection", e.msg
+        except LightingBlockedError as e:
+            status, details = "lighting-blocked", e.msg
+        finally:
+            await self.server_response(websocket, "response.set-light-channel", status, details)
+
+    async def set_light_channels(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            self.lh.set_channels(params["channels"])
+            for socket in self.LIGHT_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.light-channels-update", 
+                    "params" : {
+                        "channels": params["channels"]
+                    }
+                }))
+        except QLCConnectionError as e:
+            status, details = "no-connection", e.msg
+        except LightingBlockedError as e:
+            status, details = "lighting-blocked", e.msg
+        finally:
+            await self.server_response(websocket, "response.set-light-channels", status, details)
+
+    async def get_light_channels(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            details = self.lh.get_channels()
+        except QLCConnectionError as e:
+            status, details = "no-connection", e.msg
+        except LightingBlockedError as e:
+            status, details = "lighting-blocked", e.msg
+        finally:
+            await websocket.send(json.dumps({
+                "action": "result.get-light-channels",
+                "params": {
+                    "status": status,
+                    "details": details
+                }
+            }))
+
+    async def fade_light_channels(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            fade_thread = threading.Thread(target=self.lh.fade_channels, args=(params["end-channels"], 4000))
+            fade_thread.start()
+            for socket in self.LIGHT_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.fade-update", 
+                    "params" : {
+                        "channels": self.lh.params["end-channels"],
+                        "duration": 4000
+                    }
+                }))
+        except QLCConnectionError as e:
+            status, details = "no-connection", e.msg
+        except LightingBlockedError as e:
+            status, details = "lighting-blocked", e.msg
+        finally:
+            await self.server_response(websocket, "response.fade-light-channels", status, details)
+
+    async def blackout_lights(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            self.lh.save_fixture_channels()
+            fade_thread = threading.Thread(target=self.lh.fade_channels, args=(self.lh.blackout_channels, 4000))
+            fade_thread.start()
+            for socket in self.LIGHT_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.fade-update", 
+                    "params" : {
+                        "channels": self.lh.blackout_channels,
+                        "duration": 4000
+                    }
+                }))
+        except QLCConnectionError as e:
+            status, details = "no-connection", e.msg
+        except LightingBlockedError as e:
+            status, details = "lighting-blocked", e.msg
+        finally:
+            await self.server_response(websocket, "response.blackout-lights", status, details)
+
+    async def unblackout_lights(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            fade_thread = threading.Thread(target=self.lh.fade_channels, args=(self.lh.saved_channels, 4000))
+            fade_thread.start()
+            for socket in self.LIGHT_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.fade-update", 
+                    "params" : {
+                        "channels": self.lh.saved_channels,
+                        "duration": 4000
+                    }
+                }))
+        except QLCConnectionError as e:
+            status, details = "no-connection", e.msg
+        except LightingBlockedError as e:
+            status, details = "lighting-blocked", e.msg
+        finally:
+            await self.server_response(websocket, "response.unblackout-lights", status, details)
 
     # Command functions
     async def next_slide(self, websocket, params):
@@ -717,6 +858,11 @@ class MalachiServer():
         json_data["default_index"] = self.current_style
         with open("./styles/global_styles.json", "w") as f:
             f.write(json.dumps(json_data, indent=2))
+
+    def load_light_presets(self):
+        with open("./lights/light_presets.json") as f:
+            json_data = json.load(f)
+        return json_data["presets"]
 
 if __name__ == "__main__":  
     # Start web server

@@ -1,0 +1,11 @@
+.channel-slider {
+    height:200px;
+}
+
+.channel-container {
+    display:inline-block;
+}
+
+.channel-text {
+    width: 50px;
+}
