@@ -22,6 +22,7 @@ $(document).ready(function(){
         orientation: "vertical",
         min: 0,
         max: 255,
+        range: "min",
         value: 0,
         slide: function(event, ui){
             if (sliders_enabled == true){
@@ -36,6 +37,7 @@ $(document).ready(function(){
         orientation: "vertical",
         min: 0,
         max: 255,
+        range: "min",
         value: 0,
         slide: function(event, ui){
             if (sliders_enabled == true){
@@ -50,6 +52,7 @@ $(document).ready(function(){
         orientation: "vertical",
         min: 0,
         max: 255,
+        range: "min",
         value: 0,
         slide: function(event, ui){
             if (sliders_enabled == true){
@@ -64,6 +67,7 @@ $(document).ready(function(){
         orientation: "vertical",
         min: 0,
         max: 255,
+        range: "min",
         value: 0,
         slide: function(event, ui){
             if (sliders_enabled == true){
@@ -74,6 +78,10 @@ $(document).ready(function(){
             }
         }
     });
+    $("#ch5-slider").draggable();
+    $("#ch6-slider").draggable();
+    $("#ch7-slider").draggable();
+    $("#ch8-slider").draggable();
     $("#blackout, #unblackout").button();
     $("#blackout").button("enable");
     $("#unblackout").button("disable");
@@ -91,7 +99,7 @@ $(document).ready(function(){
         enabled_button = "blackout";
     });
 
-    websocket = new WebSocket("ws://127.0.0.1:9001/lights");
+    websocket = new WebSocket("ws://" + window.location.hostname + ":9001/lights");
     websocket.onmessage = function (event) {
         json_data = JSON.parse(event.data);
         console.log(json_data);

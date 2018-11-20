@@ -279,6 +279,7 @@ $(document).ready(function(){
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     switch(json_data.action){
+      case "update.leader-init":
       case "update.service-overview-update":
         item_index = json_data.params.item_index;
         slide_index = json_data.params.slide_index;
@@ -330,7 +331,14 @@ $(document).ready(function(){
         } else {
           $("body").css("border-top", "6px solid red");
         }
-
+        break;
+      case "response.set-display-state":
+      case "response.next-slide":
+      case "response.previous-slide":
+      case "response.goto-slide":
+      case "response.goto-item":
+        console.log("Server response: [" + json_data.action + "], Status: [" + json_data.params.status + "], Details: [" + json_data.params.details + "]");
+        break;
       default:
         console.error("Unsupported event", json_data);
     }

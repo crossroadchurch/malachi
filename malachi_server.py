@@ -56,7 +56,7 @@ class MalachiServer():
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["lights", "app"]:
-            self.LIGHT_STATE_SOCKETS.add((websocket, path[1:]))
+            self.LIGHT_STATE_SOCKETS.remove((websocket, path[1:]))
 
     def key_check(self, key_dict, required_keys):
         missing_keys = ""
@@ -66,15 +66,16 @@ class MalachiServer():
         return missing_keys
 
     async def basic_init(self, websocket):
-        # TODO: Need to differentiate between different service-overview-updates for basic/leader/...
+        # TODO: Document in the wiki
         await websocket.send(json.dumps({
-            "action" : "update.service-overview-update", 
+            "action" : "update.basic-init", 
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
             }))
 
     async def leader_init(self, websocket):
+        # TODO: Document in the wiki
         await websocket.send(json.dumps({
-            "action" : "update.service-overview-update", 
+            "action" : "update.leader-init", 
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
             }))
 
@@ -83,7 +84,7 @@ class MalachiServer():
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.style_list[self.current_style]
         await websocket.send(json.dumps({
-            "action" : "update.styled-service-overview-update", 
+            "action" : "update.display-init", 
             "params" : service_data
             }))
 
@@ -94,7 +95,7 @@ class MalachiServer():
         service_data['style_list'] = self.style_list
         service_data['current_style'] = self.current_style
         await websocket.send(json.dumps({
-            "action" : "update.styled-service-overview-update", 
+            "action" : "update.app-init", 
             "params" : service_data
             }))
 
@@ -866,7 +867,7 @@ class MalachiServer():
 
 if __name__ == "__main__":  
     # Start web server
-    server = ThreadedHTTPServer('localhost', 8000)
+    server = ThreadedHTTPServer('0.0.0.0', 8000)
     server.start()
 
     # In Linux need to run soffice --accept="socket,host=localhost,port=2002;urp" --quickstart in a separate terminal before starting Malachi
@@ -879,7 +880,7 @@ if __name__ == "__main__":
 
     # Start websocket server
     asyncio.get_event_loop().run_until_complete(
-        websockets.serve(m.responder, 'localhost', 9001)
+        websockets.serve(m.responder, '0.0.0.0', 9001)
     )
     asyncio.get_event_loop().run_forever()
     server.stop()

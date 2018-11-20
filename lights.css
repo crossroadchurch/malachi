@@ -1,5 +1,6 @@
 .channel-slider {
     height:200px;
+    background: #eeeeee;
 }
 
 .channel-container {
@@ -8,4 +9,51 @@
 
 .channel-text {
     width: 50px;
+}
+
+.ui-slider {
+    width: 4em;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+.ui-slider .ui-slider-handle {
+    width: 5em;
+    left: -0.5em;
+}
+
+.red-channel .ui-slider-range{
+    background-color: #FF0000;
+}
+
+.green-channel .ui-slider-range{
+    background-color: #00FF00;
+}
+
+.blue-channel .ui-slider-range{
+    background-color: #0000ff;
+}
+
+.white-channel .ui-slider-range{
+    background-color: #FFFFFF;
+}
+
+.red-channel .ui-slider-handle{
+    border-color: #ff0000;
+    background-color: #ffffff;
+}
+
+.green-channel .ui-slider-handle{
+    border-color: #00ff00;
+    background-color: #ffffff;
+}
+
+.blue-channel .ui-slider-handle{
+    border-color: #0000ff;
+    background-color: #ffffff;
+}
+
+.white-channel .ui-slider-handle{
+    border-color: #777777;
+    background-color: #FFFFFF;
 }

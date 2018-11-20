@@ -68,12 +68,12 @@
             let from_v = document.querySelector("#from_verse");
             let to_v = document.querySelector("#to_verse");
             let add_bible = document.querySelector("#add_bible_range");
-            let websocket = new WebSocket("ws://127.0.0.1:9001/app");
+            let websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
             websocket.onmessage = function (event) {
                 json_data = JSON.parse(event.data);
                 console.log(json_data);
                 switch(json_data.action){
-                    case "update.styled-service-overview-update":
+                    case "update.app-init":
                         service_ul.innerHTML = "";
                         for(let item in json_data.params.items){
                             let li = document.createElement("li");

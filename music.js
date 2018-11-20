@@ -215,6 +215,7 @@ $(document).ready(function(){
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     switch(json_data.action){
+      case "update.basic-init":
       case "update.service-overview-update":
         slide_index = json_data.params.slide_index;
         if (JSON.stringify(json_data.params.current_item != "{}")){

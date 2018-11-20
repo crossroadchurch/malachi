@@ -39,9 +39,9 @@ class LightHandler():
     def get_channels(self):
         if not self.connected:
             raise QLCConnectionError()
+        output_channels = [[0 for j in range(2)] for i in range(len(self.fixture_channels))]
         self.light_socket.send("QLC+API|getChannelsValues|1|1|32")
         result = self.light_socket.recv().split("|")[2:]
-        output_channels = [[0 for j in range(2)] for i in range(len(self.fixture_channels))]
         for i in range(len(self.fixture_channels)):
             output_channels[i][0] = self.fixture_channels[i]
             output_channels[i][1] = int(result[(3*self.fixture_channels[i])-2])
