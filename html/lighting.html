@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <title>Malachi Lighting Control</title>
-  <link rel="stylesheet" href="/jquery-ui.min.css">
-  <link rel="stylesheet" href="/lights.css">
-  <script type="text/javascript" src="/jquery-1.12.4.min.js"></script>
-  <script type="text/javascript" src="/jquery-ui.min.js"></script>
-  <script type="text/javascript" src="/jquery.ui.touch-punch.min.js"></script>
-  <script type="text/javascript" src="/lights.js"></script>
+  <link rel="stylesheet" href="/html/jquery-ui.min.css">
+  <link rel="stylesheet" href="/html/lighting.css">
+  <link rel="icon" href="/html/favicon.png" type="image/png" />
+  <script type="text/javascript" src="/html/jquery-1.12.4.min.js"></script>
+  <script type="text/javascript" src="/html/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="/html/jquery.ui.touch-punch.min.js"></script>
+  <script type="text/javascript" src="/html/lighting.js"></script>
 </head>
 <body>
   <div class="channels">
@@ -27,6 +28,9 @@
     <div class="channel-container">
       <div class="channel-slider white-channel" id="ch8-slider"></div>
       <p><input type="text" class="channel-text" id="ch8-text" readonly /></p>
+    </div>
+    <div class="channel-container">
+      <div id="swatch" class="ui-widget-content ui-corner-all"></div>
     </div>
   </div>
   <button id="blackout">Blackout</button>

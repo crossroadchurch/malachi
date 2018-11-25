@@ -4,6 +4,26 @@ let sliders_enabled = true;
 let slider_map = {};
 let text_map = {};
 
+function update_swatch(){
+    let r_in = $(slider_map[5]).slider("option", "value")/255;
+    let g_in = $(slider_map[6]).slider("option", "value")/255;
+    let b_in = $(slider_map[7]).slider("option", "value")/255;
+    let w = $(slider_map[8]).slider("option", "value")/255;
+    console.log(r_in + ", " + g_in + ", " + b_in + ", " + w);
+    // let w2 = 1.0 - ((1.0-w)*(1.0-w));
+    // let alpha = 0.6 * w2;
+    // let beta = 1.0 - alpha;
+    // console.log(w2 + " - " + alpha + " - " + beta);
+    // let r_out = (alpha * r_in + beta)*255;
+    // let g_out = (alpha * g_in + beta)*255;
+    // let b_out = (alpha * b_in + beta)*255;
+    let r_out = r_in*255;
+    let g_out = g_in*255;
+    let b_out = b_in*255;
+    console.log(r_out + ", " + g_out + ", " + b_out);
+    $('#swatch').css('background', 'rgb('+r_out+","+g_out+","+b_out+")");
+}
+
 function restore_channels(){
     for(let channel in slider_map){
         $(slider_map[channel]).slider({animate:0});
@@ -25,6 +45,7 @@ $(document).ready(function(){
         range: "min",
         value: 0,
         slide: function(event, ui){
+            update_swatch();
             if (sliders_enabled == true){
                 $("#ch5-text").val(ui.value);
                 websocket.send(JSON.stringify({"action": "command.set-light-channel", "params": {"channel": 5, "value": ui.value}}));
@@ -40,6 +61,7 @@ $(document).ready(function(){
         range: "min",
         value: 0,
         slide: function(event, ui){
+            update_swatch();
             if (sliders_enabled == true){
                 $("#ch6-text").val(ui.value);
                 websocket.send(JSON.stringify({"action": "command.set-light-channel", "params": {"channel": 6, "value": ui.value}}));
@@ -55,6 +77,7 @@ $(document).ready(function(){
         range: "min",
         value: 0,
         slide: function(event, ui){
+            update_swatch();
             if (sliders_enabled == true){
                 $("#ch7-text").val(ui.value);
                 websocket.send(JSON.stringify({"action": "command.set-light-channel", "params": {"channel": 7, "value": ui.value}}));
@@ -70,6 +93,7 @@ $(document).ready(function(){
         range: "min",
         value: 0,
         slide: function(event, ui){
+            update_swatch();
             if (sliders_enabled == true){
                 $("#ch8-text").val(ui.value);
                 websocket.send(JSON.stringify({"action": "command.set-light-channel", "params": {"channel": 8, "value": ui.value}}));
