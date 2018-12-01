@@ -116,7 +116,7 @@ class PresentationHandler():
                 after_index = self.controller.getCurrentSlideIndex()
                 if after_index != before_index:
                     # Starting new slide, so resync self.effect_index
-                    print("Resync")
+                    # print("Resync")
                     fx_count = 0
                     for i in range(after_index):
                         fx_count += self.effect_counts[i] + 1

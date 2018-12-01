@@ -11,7 +11,6 @@ from LightHandler import LightHandler
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, UnspecifiedServiceUrl
-from MalachiExceptions import NonPaginatableItem
 from MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class MalachiServer():
@@ -164,8 +163,7 @@ class MalachiServer():
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
                 "request.all-presentations": [self.request_all_presentations, []],
                 "request.all-services": [self.request_all_services, []],
-                "request.all-styles": [self.request_all_styles, []],
-                "pagination.request-item": [self.pagination_request, ["index"]]
+                "request.all-styles": [self.request_all_styles, []]
             }
             async for message in websocket:
                 try:
@@ -469,7 +467,11 @@ class MalachiServer():
     async def add_bible_item(self, websocket, params):
         status, details = "ok", ""
         try:
-            self.s.add_item(BiblePassage(params["version"], params["start-verse"], params["end-verse"]))
+            self.s.add_item(BiblePassage(
+                params["version"], 
+                params["start-verse"], 
+                params["end-verse"],
+                self.style_list[self.current_style]))
         except InvalidVersionError as e:
             status, details = "invalid-version", e.msg
         except InvalidVerseIdError as e:
@@ -481,7 +483,7 @@ class MalachiServer():
     async def add_song_item(self, websocket, params):
         status, details = "ok", ""
         try:
-            self.s.add_item(Song(params["song-id"]))
+            self.s.add_item(Song(params["song-id"], self.style_list[self.current_style]))
         except InvalidSongIdError as e:
             status, details = "invalid-song", e.msg
         finally:
@@ -523,7 +525,7 @@ class MalachiServer():
         status, details = "ok", ""
         if self.s.modified == False or params["force"] == True:
             try:
-                self.s.load_service(params["filename"])
+                self.s.load_service(params["filename"], self.style_list[self.current_style])
             except InvalidServiceUrlError as e:
                 self.s = Service()
                 status, details = "invalid-url", e.msg
@@ -554,6 +556,9 @@ class MalachiServer():
         index = int(params["index"])
         if index >= 0 and index < len(self.style_list):
             self.current_style = index
+            for i in range(len(self.s.items)):
+                if type(self.s.items[i]) is Song or type(self.s.items[i]) is BiblePassage:
+                    self.s.items[i].paginate_from_style(self.style_list[self.current_style])
             for socket in self.STYLE_STATE_SOCKETS:
                 await socket[0].send(json.dumps({
                     "action" : "update.style-update", 
@@ -561,6 +566,7 @@ class MalachiServer():
                         "style": self.style_list[self.current_style]
                         }
                     }))
+            await self.clients_item_index_update()
         else:
             status, details = "invalid-index", "Index out of bounds error"
         await self.server_response(websocket, "response.set-current-style", status, details)
@@ -716,7 +722,7 @@ class MalachiServer():
     async def request_full_song(self, websocket, params):
         status, data = "ok", {}
         try:
-            data = json.loads(Song(params["song-id"]).to_JSON_full_data())
+            data = json.loads(Song(params["song-id"], self.style_list[self.current_style]).to_JSON_full_data())
         except InvalidSongIdError:
             status = "invalid-id"
         finally:
@@ -792,23 +798,6 @@ class MalachiServer():
             }
         }))
 
-    async def pagination_request(self, websocket, params):
-        status, data = "ok", {}
-        try:
-            # TODO: index in range?
-            data = json.loads(self.s.items[params["index"]].to_JSON_raw_pagination())
-        except NonPaginatableItem:
-            status = "not-paginatable"
-        finally:
-            await websocket.send(json.dumps({
-                "action": "result.pagination-request",
-                "params": {
-                    "status": status,
-                    "item-data": data
-                }
-            }))
-
-
     # Presentation control with LibreOffice
     def update_impress_change_item(self):
         # If previous item was a presentation then unload it
@@ -875,7 +864,7 @@ if __name__ == "__main__":
     time.sleep(2)
 
     m = MalachiServer()
-    m.s.load_service('service_test.json')
+    m.s.load_service('service_test.json', m.style_list[m.current_style])
     m.s.set_item_index(0)
 
     # Start websocket server

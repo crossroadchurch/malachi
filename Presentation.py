@@ -1,6 +1,6 @@
 import json, os, hashlib, platform, pathlib, time
 import mss, mss.tools
-from MalachiExceptions import InvalidPresentationUrlError, NonPaginatableItem
+from MalachiExceptions import InvalidPresentationUrlError
 
 class Presentation():
 
@@ -134,10 +134,6 @@ class Presentation():
     def to_JSON(self, capo):
         return json.dumps({"type":"presentation", "title":self.title, "slides":self.slides}, indent=2)
     
-    def to_JSON_raw_pagination(self):
-        raise NonPaginatableItem("presentation")
-        return
-
     def __str__(self):
         return self.get_title()
     

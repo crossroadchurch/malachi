@@ -121,7 +121,7 @@ class Service():
                             "item_index": self.item_index,
                             "slide_index": self.slide_index}, indent=2)
 
-    def load_service(self, fname):
+    def load_service(self, fname, cur_style):
         # Precondition: fname is a JSON file in the folder ./services
         if os.path.isfile("./services/" + fname):
             with open("./services/" + fname) as f:
@@ -135,12 +135,12 @@ class Service():
                 if "type" in item:
                     if item["type"] == "bible":
                         if "version" in item and "start_id" in item and "end_id" in item:
-                            self.add_item(BiblePassage(item["version"], item["start_id"], item["end_id"]))
+                            self.add_item(BiblePassage(item["version"], item["start_id"], item["end_id"], cur_style))
                         else:
                             raise MalformedServiceFileError("./services/" + fname, "Missing key for Bible passage")
                     elif item["type"] == "song":
                         if "song_id" in item:
-                            self.add_item(Song(item["song_id"]))
+                            self.add_item(Song(item["song_id"], cur_style))
                         else:
                             raise MalformedServiceFileError("./services/" + fname, "Missing key: 'song_id'")
                     elif item["type"] == "presentation":

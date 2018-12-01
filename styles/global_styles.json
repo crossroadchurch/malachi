@@ -1,15 +1,34 @@
 {
   "styles": [
     {
-      "name": "default",
+      "name": "windowed-widescreen",
       "params": {
-        "param1": "value1",
-        "param2": "value2"
+        "aspect-ratio": 2.095,
+        "font-size-vh": 10,
+        "div-width-vw": 90,
+        "max-lines": 6,
+        "font-file": "./fonts/Raleway-Bold.ttf"
       }
     },
     {
-      "name": "bob2",
-      "params": {}
+      "name": "full-widescreen",
+      "params": {
+        "aspect-ratio": 1.777,
+        "font-size-vh": 20,
+        "div-width-vw": 80,
+        "max-lines": 3,
+        "font-file": "./fonts/Raleway-Bold.ttf"
+      }
+    },
+    {
+      "name": "large-text-windowed-test",
+      "params": {
+        "aspect-ratio": 2.095,
+        "font-size-vh": 20,
+        "div-width-vw": 80,
+        "max-lines": 3,
+        "font-file": "./fonts/Raleway-Bold.ttf"
+      }
     },
     {
       "name": "newstyle",

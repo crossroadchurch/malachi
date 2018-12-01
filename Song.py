@@ -1,10 +1,11 @@
-import sqlite3, json
+import sqlite3, json, re, math
+from PIL import ImageFont
 from Chords import Chords
 from MalachiExceptions import InvalidSongIdError
 
 class Song():
 
-    def __init__(self, song_id):
+    def __init__(self, song_id, cur_style):
         if self.is_valid_song_id(song_id):
             self.song_id = song_id
         else:
@@ -13,8 +14,8 @@ class Song():
         self.parts = {}
         self.verse_order = ""
         self.part_slide_count = []
-        self.get_nonslide_data() # Must call before updating slides
-        self.update_slides()
+        self.get_nonslide_data() # Must call before paginating slides
+        self.paginate_from_style(cur_style)
         return
 
 
@@ -31,37 +32,6 @@ class Song():
             return False
         else:
             return True
-
-
-    def update_slides(self):
-        db = sqlite3.connect('./data/songs.sqlite')
-        cursor = db.cursor()
-        cursor.execute('''
-            SELECT s.lyrics_chords, s.verse_order FROM songs AS s
-            WHERE s.id={s_id}
-        '''.format(s_id=self.song_id))
-        result = cursor.fetchone()
-
-        self.parts = dict([x["part"],x["data"]] for x in json.loads(result[0]))
-        self.verse_order = result[1]
-
-        if self.verse_order.strip() == "":
-            # Song with no verse order
-            slide_temp = list(self.parts)
-        else:
-            slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
-        self.part_slide_count = []
-        for slide in slide_temp:
-            slide_sections = slide.split("[br]")
-            self.part_slide_count.append(len(slide_sections))
-            for slide_section in slide_sections:
-                # Transpose slide_section if appropriate:
-                if self.resultant_key != "" and self.transpose_by != 0:
-                    self.slides.append(Chords.transpose_section(slide_section.strip(), self.song_key, self.transpose_by))
-                else:
-                    self.slides.append(slide_section.strip())
-            
-        db.close()
 
 
     def get_nonslide_data(self):
@@ -132,15 +102,112 @@ class Song():
                            "parts": tr_parts, "verse-order": self.verse_order, "copyright": self.copyright,
                            "song-book-name": self.song_book_name, "song-number": self.song_number})
 
-    def to_JSON_raw_pagination(self):
-        full_data = json.loads(self.to_JSON_full_data())
-        return json.dumps({"parts":full_data["parts"]})
-
     def __str__(self):
         return self.get_title()
-    
+
     def save_to_JSON(self):
         return json.dumps({"type": "song", "song_id": self.song_id})
+
+    def paginate_from_style(self, style):
+        # TODO: Test for existance of keys within params...
+        self.paginate(style["params"]["aspect-ratio"],
+            style["params"]["font-size-vh"], 
+            style["params"]["div-width-vw"],
+            style["params"]["max-lines"],
+            style["params"]["font-file"])
+
+    def paginate(self, aspect_ratio, font_size_vh, div_width_vw, max_lines, font_file):
+        window_height = 800 # Arbitrary value chosen
+        window_width = window_height * aspect_ratio
+        font_size_px = window_height * font_size_vh / 100
+        div_width_px = window_width * div_width_vw / 100
+        font = ImageFont.truetype(font_file, math.ceil(font_size_px))
+        # print("--fsp: " + str(font_size_px))
+        # print("--dwp: " + str(div_width_px))
+
+        # Need to track chords along with words, but not include chords in width calculations
+        db = sqlite3.connect('./data/songs.sqlite')
+        cursor = db.cursor()
+        cursor.execute('''
+            SELECT s.lyrics_chords, s.verse_order FROM songs AS s
+            WHERE s.id={s_id}
+        '''.format(s_id=self.song_id))
+        result = cursor.fetchone()
+
+        self.parts = dict([x["part"],x["data"]] for x in json.loads(result[0]))
+        self.verse_order = result[1]
+
+        if self.verse_order.strip() == "":
+            # Song with no verse order
+            slide_temp = list(self.parts)
+        else:
+            slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
+        
+        self.slides = []
+        self.part_slide_count = []
+
+        ### FOR EACH V1, C1 etc IN SONG ORDER:
+        for slide in slide_temp:
+            m_slide_sections = slide.split("[br]") # Mandatory slide breaks
+            section_length = 0
+            ### FOR EACH MANDATORY SLIDE SECTION
+            for m_slide_section in m_slide_sections:
+                # Transpose m_slide_section if appropriate:
+                if self.resultant_key != "" and self.transpose_by != 0:
+                    m_section = Chords.transpose_section(m_slide_section.strip(), self.song_key, self.transpose_by)
+                else:
+                    m_section = m_slide_section.strip()
+
+                cur_slide_lines = 0
+                cur_slide_text = ""
+                section_lines = m_section.split("\n")
+                for line in section_lines:
+                    # Determine how many display lines are used for this line
+                    line_words = line.split(" ")
+                    line_count, line_start, slide_start = 0, 0, 0
+                    for i in range(len(line_words)):
+                        line_part_chorded = ' '.join(line_words[line_start:i+1])
+                        line_part = re.sub(r'\[[\w\+#\/]*\]', '', line_part_chorded)
+                        size = font.getsize(line_part)
+                        # print("  line_part: " + line_part + "  size: " + str(size[0]))
+                        if size[0] > div_width_px:
+                            # print("  NEW LINE!")
+                            line_count += 1
+                            line_start = i
+                            # Line is longer than an entire slide, so break over two slides
+                            # This is a very unlikely case...!
+                            if line_count == max_lines:
+                                self.slides.append(' '.join(line_words[slide_start:i]))
+                                section_length += 1
+                                # print("  ADDING SLIDE: " + ' '.join(line_words[slide_start:i]))
+                                slide_start, line_count = i, 0
+                                pass
+                    line_count += 1
+                    # print("  Line takes up " + str(line_count) + " display lines")
+                    # print("  cur_slide_lines + line_count = " + str(cur_slide_lines+line_count))
+                    if (cur_slide_lines + line_count) <= max_lines:
+                        # Add current line to current slide
+                        if cur_slide_text == "":
+                            cur_slide_text = ' '.join(line_words[slide_start:])
+                        else:
+                            cur_slide_text = cur_slide_text + "\n" + ' '.join(line_words[slide_start:])
+                        # print("  cur_slide_text now is: " + cur_slide_text)
+                        cur_slide_lines += line_count
+                    else:
+                        # Start new slide for current line after writing out previous slide
+                        self.slides.append(cur_slide_text)
+                        # print("  NEW SLIDE: " + cur_slide_text)
+                        section_length += 1
+                        cur_slide_text = ' '.join(line_words[slide_start:])
+                        # print("  cur_slide_text now is: " + cur_slide_text)
+                        cur_slide_lines = line_count
+                # Add on final slide of section
+                self.slides.append(cur_slide_text)
+                section_length += 1
+            # Update parts length
+            self.part_slide_count.append(section_length)
+        db.close()
+        return
 
     @classmethod
     def text_search(cls, search_text):
