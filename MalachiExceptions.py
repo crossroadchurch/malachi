@@ -37,6 +37,11 @@ class InvalidSongIdError(Exception):
         self.msg = "Could not find a song that has id {id}".format(id=id)
         super(InvalidSongIdError, self).__init__(self.msg)
 
+class InvalidSongFieldError(Exception):
+    def __init__(self, data):
+        self.msg = "Invalid field data provided: {data}".format(data=data)
+        super(InvalidSongFieldError, self).__init__(self.msg)
+
 # Service
 class UnspecifiedServiceUrl(Exception):
     def __init__(self):

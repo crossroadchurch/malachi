@@ -1,12 +1,16 @@
 import sqlite3, json, re, math
 from PIL import ImageFont
 from Chords import Chords
-from MalachiExceptions import InvalidSongIdError
+from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError
 
 class Song():
 
+    EDITABLE_STR_FIELDS = ['song_book_name', 'title', 'author', 'song_key', 
+        'verse_order', 'copyright', 'song_number']
+    EDITABLE_INT_FIELDS = ['transpose_by']
+
     def __init__(self, song_id, cur_style):
-        if self.is_valid_song_id(song_id):
+        if Song.is_valid_song_id(song_id):
             self.song_id = song_id
         else:
             raise InvalidSongIdError(song_id)
@@ -18,8 +22,8 @@ class Song():
         self.paginate_from_style(cur_style)
         return
 
-
-    def is_valid_song_id(self, id):
+    @classmethod
+    def is_valid_song_id(cls, id):
         db = sqlite3.connect('./data/songs.sqlite')
         cursor = db.cursor()
         cursor.execute('''
@@ -137,11 +141,15 @@ class Song():
         self.parts = dict([x["part"],x["data"]] for x in json.loads(result[0]))
         self.verse_order = result[1]
 
-        if self.verse_order.strip() == "":
+        if self.verse_order is None:
             # Song with no verse order
             slide_temp = list(self.parts)
         else:
-            slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
+            if self.verse_order.strip() == "":
+                # Song with no verse order
+                slide_temp = list(self.parts)
+            else:
+                slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
         
         self.slides = []
         self.part_slide_count = []
@@ -223,6 +231,105 @@ class Song():
         db.close()
         return json.dumps(songs, indent=2)
        
+    @classmethod
+    def edit_song(cls, song_id, fields):
+        db = sqlite3.connect('./data/songs.sqlite')
+        cursor = db.cursor()
+        cursor.execute('''
+            SELECT s.id, s.song_key FROM songs AS s
+            WHERE s.id = {s_id}
+        '''.format(s_id=song_id))
+        result = cursor.fetchone()
+        db.close()
+        if result == []:
+            raise InvalidSongIdError(song_id)
+        # print("Song with this id exists")
+        saved_song_key = str(result[1])
+        # print("Saved key is " + saved_song_key)
+        # Field validation
+        if "title" in fields:
+            # print("Title check...")
+            if fields["title"].strip == "":
+                raise InvalidSongFieldError("The title was blank")
+            else:
+                fields["title"] = fields["title"].strip()
+                # search_title only has alphanumeric characters and spaces
+                fields["search_title"] = ''.join(re.findall(r'[\w\s]*', fields["title"].lower()))
+                # print("Search title: " + fields["search_title"])
+        if "song_key" in fields:
+            # print("Song key check...")
+            if fields["song_key"] not in Chords.key_list:
+                raise InvalidSongFieldError("Unrecognised song key: " + fields["song_key"])
+        if "transpose_by" in fields:
+            # print("Transpose check...")
+            if type(fields["transpose_by"]) is int:
+                fields["transpose_by"] = fields["transpose_by"] % 12
+            else:
+                if fields["transpose_by"].isdigit() == False:
+                    raise InvalidSongFieldError("Unrecognised transpose amount: " + fields["transpose_by"])
+                else:
+                    fields["transpose_by"] = int(fields["transpose_by"]) % 12
+            # print("Transpose: " + str(fields["transpose_by"]))
+        if "lyrics_chords" in fields:
+            # print("Lyrics check")
+            search_lyrics = ""
+            uses_chords = False
+            for section in fields["lyrics_chords"]:
+                # e.g. section = { "part": "c1", "data": "some [C] lyrics" }
+                if "part" in section and "data" in section:
+                    # print("  Section: " + section["part"])
+                    # Add data to search_lyrics, less anything in []
+                    # print("  Lyrics: " + section["data"])
+                    search_lyrics = search_lyrics + re.sub(r'\[.*?\]', '', section["data"].lower().replace('\n',' ')) + " "
+                    # print("  Search lyrics: " + search_lyrics)
+                    # Detect whether chords have been used
+                    if uses_chords == False:
+                        chord_br_tags = re.findall(r'\[.*?\]', section["data"])
+                        # print("  chord_br_tags: " + str(chord_br_tags))
+                        if chord_br_tags.count("[br]") < len(chord_br_tags):
+                            # print("    Chords exist, is there a key?")
+                            # Some of the tags are chords
+                            uses_chords = True
+                            # Check a key has been specified, either in saved record or fields["song_key"]
+                            # If fields["song_key"] exists then it is already verified as a valid key
+                            if "song_key" not in fields and saved_song_key not in Chords.key_list:
+                                raise InvalidSongFieldError("No key specified for a song with chords")
+                else:
+                    raise InvalidSongFieldError("lyrics_chords is not correctly formatted")
+            fields["search_lyrics"] = search_lyrics
+        # Once checks complete, create update query for all valid fields in param["fields"] and update song
+        update_str = "UPDATE songs SET "
+        for field in fields:
+            if field in Song.EDITABLE_STR_FIELDS:
+                update_str = update_str + field + "=\'" + str(fields[field]) + "\', "
+            if field in Song.EDITABLE_INT_FIELDS:
+                update_str = update_str + field + "=" + str(fields[field]) + ", "
+        db = sqlite3.connect('./data/songs.sqlite')
+        cursor = db.cursor()
+        if len(update_str) > 17:
+            if update_str[-2] == ",":
+                update_str = update_str[:-2] # Remove trailing comma, if it exists
+            update_str = update_str + " WHERE id=" + str(song_id)
+            print(update_str)
+            cursor.execute(update_str)
+            db.commit()
+        if "lyrics_chords" in fields:
+            print("Updating lyrics")
+            cursor.execute('''
+                UPDATE songs
+                SET lyrics_chords = ?
+                WHERE id = ?
+            ''',(json.dumps(fields["lyrics_chords"]), song_id))
+            db.commit()
+        db.close()
+        return
+
+
 ### TESTING ONLY ###
 if __name__ == "__main__":
+    Song.edit_song(1759,{"title": "A new hope", "song_key": "D", "transpose_by": 3, "author": "AN Other",
+        "lyrics_chords": [
+            {"part":"v1", "data": "It's a[br] verse\nwith some lyrics"},
+            {"part":"c1", "data": "This is a [A/C#sus4]chorus"}
+        ]})
     pass

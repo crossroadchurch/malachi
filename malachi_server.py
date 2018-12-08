@@ -9,7 +9,7 @@ from Presentation import Presentation
 from PresentationHandler import PresentationHandler
 from LightHandler import LightHandler
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
-from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError
+from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, UnspecifiedServiceUrl
 from MalachiExceptions import QLCConnectionError, LightingBlockedError
 
@@ -67,14 +67,14 @@ class MalachiServer():
     async def basic_init(self, websocket):
         # TODO: Document in the wiki
         await websocket.send(json.dumps({
-            "action" : "update.basic-init", 
+            "action" : "update.basic-init",
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
             }))
 
     async def leader_init(self, websocket):
         # TODO: Document in the wiki
         await websocket.send(json.dumps({
-            "action" : "update.leader-init", 
+            "action" : "update.leader-init",
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
             }))
 
@@ -83,7 +83,7 @@ class MalachiServer():
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.style_list[self.current_style]
         await websocket.send(json.dumps({
-            "action" : "update.display-init", 
+            "action" : "update.display-init",
             "params" : service_data
             }))
 
@@ -94,7 +94,7 @@ class MalachiServer():
         service_data['style_list'] = self.style_list
         service_data['current_style'] = self.current_style
         await websocket.send(json.dumps({
-            "action" : "update.app-init", 
+            "action" : "update.app-init",
             "params" : service_data
             }))
 
@@ -153,6 +153,9 @@ class MalachiServer():
                 "command.fade-light-channels": [self.fade_light_channels, ["end-channels"]],
                 "command.blackout-lights": [self.blackout_lights, []],
                 "command.unblackout-lights": [self.unblackout_lights, []],
+                "command.save-preset": [self.save_preset, []],
+                # "command.create-song": [self.create_song, ["title", "fields"]],
+                "command.edit-song": [self.edit_song, ["song-id", "fields"]],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -163,7 +166,8 @@ class MalachiServer():
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
                 "request.all-presentations": [self.request_all_presentations, []],
                 "request.all-services": [self.request_all_services, []],
-                "request.all-styles": [self.request_all_styles, []]
+                "request.all-styles": [self.request_all_styles, []],
+                "request.all-presets": [self.request_all_presets, []]
             }
             async for message in websocket:
                 try:
@@ -289,7 +293,7 @@ class MalachiServer():
                 await socket[0].send(json.dumps({
                     "action" : "update.fade-update", 
                     "params" : {
-                        "channels": self.lh.params["end-channels"],
+                        "channels": params["end-channels"],
                         "duration": 4000
                     }
                 }))
@@ -340,6 +344,48 @@ class MalachiServer():
             status, details = "lighting-blocked", e.msg
         finally:
             await self.server_response(websocket, "response.unblackout-lights", status, details)
+
+    async def save_preset(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            preset = self.lh.get_channels()
+            self.light_preset_list.append(preset)
+            self.save_light_presets()
+        except QLCConnectionError as e:
+            status, details = "no-connection", e.msg
+        finally:
+            await self.server_response(websocket, "response.save-light-channels", status, details)
+
+    async def create_song(self, websocket, params):
+        # Declare list of valid fields (Table column names)
+        # Field check: params["title"] can't be empty
+        # Field check: if params["fields"] contains lyrics_chords and this contains chords
+        #  then also need to have non-empty song_key in params["fields"]
+        # Field check: tranpose: int (0 - 11)
+        # Field check: song_key
+        # Lyrics -> search lyrics, title -> search title
+        # Once checks complete, create insert query using all valid fields in param["fields"] and run query
+        # Send server_response
+        pass
+
+    async def edit_song(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            Song.edit_song(int(params["song-id"]), params["fields"])
+            for i in range(len(self.s.items)):
+                if type(self.s.items[i]) is Song:
+                    if self.s.items[i].song_id == int(params["song-id"]):
+                        # Refresh instance of edited Song in service
+                        self.s.items[i].get_nonslide_data()
+                        self.s.items[i].paginate_from_style(self.style_list[self.current_style])
+            # Update all clients
+            await self.clients_item_index_update()
+        except InvalidSongIdError as e:
+            status, details = "invalid-id", e.msg
+        except InvalidSongFieldError as e:
+            status, details = "invalid-field", e.msg
+        finally:
+            await self.server_response(websocket, "response.edit-song", status, details)
 
     # Command functions
     async def next_slide(self, websocket, params):
@@ -798,6 +844,14 @@ class MalachiServer():
             }
         }))
 
+    async def request_all_presets(self, websocket, params):
+        await websocket.send(json.dumps({
+            "action": "result.all-presets",
+            "params": {
+                "presets": self.light_preset_list
+            }
+        }))
+
     # Presentation control with LibreOffice
     def update_impress_change_item(self):
         # If previous item was a presentation then unload it
@@ -853,6 +907,12 @@ class MalachiServer():
         with open("./lights/light_presets.json") as f:
             json_data = json.load(f)
         return json_data["presets"]
+
+    def save_light_presets(self):
+        json_data = {}
+        json_data["presets"] = self.light_preset_list
+        with open("./lights/light_presets.json", "w") as f:
+            f.write(json.dumps(json_data))
 
 if __name__ == "__main__":  
     # Start web server

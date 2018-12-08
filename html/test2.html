@@ -17,7 +17,7 @@
                 console.log(json_data);
                 switch(json_data.action){
                     case "update.basic-init":
-                        item_index = json_data.params.item_index;
+                    case "update.item-index-update":
                         slide_index = json_data.params.slide_index;
                         current_slides = json_data.params.current_item.slides;
                         current_text = '';
@@ -38,8 +38,6 @@
                             current_text = current_text + cur_seg;
                         }
                         text_area.innerHTML = current_text;
-                        break;
-                    case "update.item-index-update":
                         break;
                     default:
                         console.error("Unsupported event", json_data);
