@@ -58,3 +58,15 @@ class LightingBlockedError(Exception):
     def __init__(self):
         self.msg = "The action could not be performed as another lighting action is in progress."
         super(LightingBlockedError, self).__init__(self.msg)
+
+# Styles
+class MissingStyleParameterError(Exception):
+    def __init__(self, data):
+        self.msg = "The current style is missing a parameter: {data}".format(data=data)
+        super(MissingStyleParameterError, self).__init__(self.msg)
+
+# Videos
+class InvalidVideoUrlError(Exception):
+    def __init__(self, url):
+        self.msg = "Could not find a video at the url {url}".format(url=url)
+        super(InvalidVideoUrlError, self).__init__(self.msg)

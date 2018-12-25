@@ -62,6 +62,12 @@ function update_music() {
       next_text = next_text + "</p>"
     }
     $("#nextslide").html(next_text);
+  } else if (slide_type == "video") {
+    current_text = "<div class =\"nonsong-block\"><p class=\"nonsong-line\">";
+    current_text = current_text + current_slides[0].replace(/\n/g, "</p><p class=\"nonsong-line\">");
+    current_text = current_text + "</div>";
+    $("#currentslide").html(current_text);
+    $("#nextslide").html("");
   } else if (slide_type == "presentation"){
     $("#currentslide").html("<img class='pres-thumb' src = '" + current_slides[slide_index] + "' />");
     $("#nextslide").html("");

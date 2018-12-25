@@ -1,6 +1,6 @@
 import sqlite3, json, re, math
 from PIL import ImageFont
-from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
+from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError, MissingStyleParameterError
 
 class BiblePassage():
 
@@ -136,7 +136,13 @@ class BiblePassage():
             "end_id": self.end_id})
 
     def paginate_from_style(self, style):
-        # TODO: Test for existance of keys within params...
+        # Test for existance of necessary formatting keys within params
+        missing_params = []
+        for param in ["aspect-ratio", "font-size-vh", "div-width-vw", "max-lines", "font-file"]:
+            if param not in style["params"]:
+                missing_params.append(param)
+        if len(missing_params) > 0:
+            raise MissingStyleParameterError(', '.join(missing_params))
         self.paginate(style["params"]["aspect-ratio"],
             style["params"]["font-size-vh"], 
             style["params"]["div-width-vw"],

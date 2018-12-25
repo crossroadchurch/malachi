@@ -5,5 +5,5 @@
 !/presentations/.gitkeep
 /services.*
 !/services/.gitkeep
-test_out.txt
-/malachi_server - Copy.py
+/videos/*
+!/videos/.gitkeep

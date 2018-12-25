@@ -8,9 +8,12 @@ from Song import Song
 from Presentation import Presentation
 from PresentationHandler import PresentationHandler
 from LightHandler import LightHandler
+from Video import Video
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
 from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, UnspecifiedServiceUrl
+from MalachiExceptions import InvalidVideoUrlError
+from MalachiExceptions import MissingStyleParameterError
 from MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class MalachiServer():
@@ -21,13 +24,14 @@ class MalachiServer():
         self.DISPLAY_STATE_SOCKETS = set()
         self.STYLE_STATE_SOCKETS = set()
         self.APP_SOCKETS = set()
+        self.MEDIA_SOCKETS = set()
         self.CAPOS = dict()
         self.screen_state = "on"
         self.s = Service()
         self.ph = PresentationHandler()
-        self.lh = LightHandler()
+        self.light_preset_list, self.light_channel_list = self.load_light_presets()
+        self.lh = LightHandler(self.light_channel_list)
         self.style_list, self.current_style = self.load_styles()
-        self.light_preset_list = self.load_light_presets()
 
     def register(self, websocket, path):
         # Use path to determine and store type of socket in SOCKETS
@@ -38,11 +42,12 @@ class MalachiServer():
             self.APP_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["display", "app"]:
             self.STYLE_STATE_SOCKETS.add((websocket, path[1:]))
+            self.MEDIA_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["lights", "app"]:
             self.LIGHT_STATE_SOCKETS.add((websocket, path[1:]))
-
+        
     def unregister(self, websocket, path):
         # websocket has been closed by client
         self.SOCKETS.remove((websocket, path[1:]))
@@ -52,6 +57,7 @@ class MalachiServer():
             self.APP_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["display", "app"]:
             self.STYLE_STATE_SOCKETS.remove((websocket, path[1:]))
+            self.MEDIA_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["lights", "app"]:
@@ -65,22 +71,19 @@ class MalachiServer():
         return missing_keys
 
     async def basic_init(self, websocket):
-        # TODO: Document in the wiki
         await websocket.send(json.dumps({
             "action" : "update.basic-init",
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
             }))
 
     async def leader_init(self, websocket):
-        # TODO: Document in the wiki
         await websocket.send(json.dumps({
             "action" : "update.leader-init",
             "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
             }))
 
     async def display_init(self, websocket):
-        # TODO: Document in the wiki
-        service_data = json.loads(self.s.to_JSON_full())
+        service_data = json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
         service_data['style'] = self.style_list[self.current_style]
         await websocket.send(json.dumps({
             "action" : "update.display-init",
@@ -88,23 +91,28 @@ class MalachiServer():
             }))
 
     async def app_init(self, websocket):
-        # TODO: Document in the wiki
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.style_list[self.current_style]
-        service_data['style_list'] = self.style_list
-        service_data['current_style'] = self.current_style
+        service_data['style-list'] = self.style_list
+        service_data['current-style'] = self.current_style
+        service_data['light-preset-list'] = self.light_preset_list
         await websocket.send(json.dumps({
             "action" : "update.app-init",
             "params" : service_data
             }))
 
     async def light_init(self, websocket):
-        # TODO: Document in the wiki, exception handling from get_channels...
-        light_data = self.lh.get_channels()
-        await websocket.send(json.dumps({
-            "action": "update.light-init",
-            "params": light_data
-            }))
+        try:
+            light_data = self.lh.get_channels()
+        except QLCConnectionError as e:
+            light_data = []
+        finally:
+            await websocket.send(json.dumps({
+                "action": "update.light-init",
+                "params": { 
+                    "channels": light_data,
+                    "light-preset-list": self.light_preset_list
+                }}))
 
     async def responder(self, websocket, path):
         # Websocket is opened by client
@@ -135,6 +143,7 @@ class MalachiServer():
                 "command.add-bible-item": [self.add_bible_item, ["version", "start-verse", "end-verse"]],
                 "command.add-song-item": [self.add_song_item, ["song-id"]],
                 "command.add-presentation": [self.add_presentation, ["url"]],
+                "command.add-video": [self.add_video, ["url"]],
                 "command.remove-item": [self.remove_item, ["index"]],
                 "command.move-item": [self.move_item, ["from-index", "to-index"]],
                 "command.set-display-state": [self.set_display_state, ["state"]],
@@ -150,12 +159,16 @@ class MalachiServer():
                 "command.set-light-channel": [self.set_light_channel, ["channel", "value"]],
                 "command.set-light-channels": [self.set_light_channels, ["channels"]],
                 "command.get-light-channels": [self.get_light_channels, []],
-                "command.fade-light-channels": [self.fade_light_channels, ["end-channels"]],
+                "command.fade-light-channels": [self.fade_light_channels, ["end-channels"]], 
                 "command.blackout-lights": [self.blackout_lights, []],
                 "command.unblackout-lights": [self.unblackout_lights, []],
                 "command.save-preset": [self.save_preset, []],
-                # "command.create-song": [self.create_song, ["title", "fields"]],
+                "command.create-song": [self.create_song, ["title", "fields"]],
                 "command.edit-song": [self.edit_song, ["song-id", "fields"]],
+                "command.play-video": [self.play_video, []],
+                "command.pause-video": [self.pause_video, []],
+                "command.stop-video": [self.stop_video, []],
+                "command.seek-video": [self.seek_video, ["seconds"]],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -165,6 +178,7 @@ class MalachiServer():
                 "request.bible-books": [self.request_bible_books, ["version"]],
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
                 "request.all-presentations": [self.request_all_presentations, []],
+                "request.all-videos": [self.request_all_videos, []],
                 "request.all-services": [self.request_all_services, []],
                 "request.all-styles": [self.request_all_styles, []],
                 "request.all-presets": [self.request_all_presets, []]
@@ -351,22 +365,26 @@ class MalachiServer():
             preset = self.lh.get_channels()
             self.light_preset_list.append(preset)
             self.save_light_presets()
+            for socket in self.LIGHT_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "update.light-preset-list-update", 
+                    "params" : {
+                        "list-preset-list": self.light_preset_list
+                    }
+                }))
         except QLCConnectionError as e:
             status, details = "no-connection", e.msg
         finally:
-            await self.server_response(websocket, "response.save-light-channels", status, details)
+            await self.server_response(websocket, "response.save-preset", status, details)
 
     async def create_song(self, websocket, params):
-        # Declare list of valid fields (Table column names)
-        # Field check: params["title"] can't be empty
-        # Field check: if params["fields"] contains lyrics_chords and this contains chords
-        #  then also need to have non-empty song_key in params["fields"]
-        # Field check: tranpose: int (0 - 11)
-        # Field check: song_key
-        # Lyrics -> search lyrics, title -> search title
-        # Once checks complete, create insert query using all valid fields in param["fields"] and run query
-        # Send server_response
-        pass
+        status, details = "ok", ""
+        try:
+            details = Song.create_song(params["title"], params["fields"])
+        except InvalidSongFieldError as e:
+            status, details = "invalid-field", e.msg
+        finally:
+            await self.server_response(websocket, "respose.create-song", status, details)
 
     async def edit_song(self, websocket, params):
         status, details = "ok", ""
@@ -384,6 +402,8 @@ class MalachiServer():
             status, details = "invalid-id", e.msg
         except InvalidSongFieldError as e:
             status, details = "invalid-field", e.msg
+        except MissingStyleParameterError as e:
+            status, details = "invalid-style", e.msg
         finally:
             await self.server_response(websocket, "response.edit-song", status, details)
 
@@ -546,6 +566,16 @@ class MalachiServer():
             await self.server_response(websocket, "response.add-presentation", status, details)
             await self.clients_service_items_update()
 
+    async def add_video(self, websocket, params):
+        status, details = "ok", ""
+        try:
+            self.s.add_item(Video(params["url"]))
+        except InvalidVideoUrlError as e:
+            status, details = "invalid-video", e.msg
+        finally:
+            await self.server_response(websocket, "response.add-video", status, details)
+            await self.clients_service_items_update()
+
     async def set_display_state(self, websocket, params):
         self.screen_state = params["state"]
         for socket in self.DISPLAY_STATE_SOCKETS:
@@ -698,6 +728,61 @@ class MalachiServer():
                 status, details = "invalid-index", "Index out of bounds"
         await self.server_response(websocket, "response.rename-style", status, details)
 
+    async def play_video(self, websocket, params):
+        status, details = "ok", ""
+        if self.s.get_current_item_type() == "Video":
+            for socket in self.MEDIA_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "trigger.play-video", 
+                    "params" : {}
+                    }))
+        else:
+            status, details = "invalid-item", "Current service item is not a video"
+        await self.server_response(websocket, "response.play-video", status, details)
+
+    async def pause_video(self, websocket, params):
+        status, details = "ok", ""
+        if self.s.get_current_item_type() == "Video":
+            for socket in self.MEDIA_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "trigger.pause-video", 
+                    "params" : {}
+                    }))
+        else:
+            status, details = "invalid-item", "Current service item is not a video"
+        await self.server_response(websocket, "response.pause-video", status, details)
+
+    async def stop_video(self, websocket, params):
+        status, details = "ok", ""
+        if self.s.get_current_item_type() == "Video":
+            for socket in self.MEDIA_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action" : "trigger.stop-video", 
+                    "params" : {}
+                    }))
+        else:
+            status, details = "invalid-item", "Current service item is not a video"
+        await self.server_response(websocket, "response.stop-video", status, details)
+
+    async def seek_video(self, websocket, params):
+        status, details = "ok", ""
+        if self.s.get_current_item_type() == "Video":
+            sec = int(params["seconds"])
+            if 0 <= sec and sec <= self.s.items[self.s.item_index].get_duration():
+                for socket in self.MEDIA_SOCKETS:
+                    await socket[0].send(json.dumps({
+                        "action" : "trigger.seek-video",
+                        "params" : {
+                            "seconds": int(params["seconds"])
+                        }
+                    }))
+            else:
+                status, details = "invalid-time", "Invalid seek time: " + str(params["seconds"])
+        else:
+            status, details = "invalid-item", "Current service item is not a video"
+        await self.server_response(websocket, "response.seek-video", status, details)
+
+    # Server response function
     async def server_response(self, websocket, action, status, details):
         await websocket.send(json.dumps({
             "action" : action, 
@@ -827,6 +912,15 @@ class MalachiServer():
             }
         }))
 
+    async def request_all_videos(self, websocket, params):
+        urls = Video.get_all_videos()
+        await websocket.send(json.dumps({
+            "action": "result.all-videos",
+            "params": {
+                "urls": urls
+            }
+        }))
+
     async def request_all_services(self, websocket, params):
         fnames = Service.get_all_services()
         await websocket.send(json.dumps({
@@ -906,10 +1000,11 @@ class MalachiServer():
     def load_light_presets(self):
         with open("./lights/light_presets.json") as f:
             json_data = json.load(f)
-        return json_data["presets"]
+        return json_data["presets"], json_data["channels"]
 
     def save_light_presets(self):
         json_data = {}
+        json_data["channels"] = self.light_channel_list
         json_data["presets"] = self.light_preset_list
         with open("./lights/light_presets.json", "w") as f:
             f.write(json.dumps(json_data))

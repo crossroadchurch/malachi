@@ -4,9 +4,9 @@ from MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class LightHandler():
 
-    def __init__(self):
+    def __init__(self, channel_list):
         try:
-            self.fixture_channels = [5, 6, 7, 8] # TODO: Store and load in from JSON
+            self.fixture_channels = channel_list
             self.saved_channels = [[0 for j in range(2)] for i in range(len(self.fixture_channels))]
             self.blackout_channels = [[0 for j in range(2)] for i in range(len(self.fixture_channels))]
             for i in range(len(self.fixture_channels)):

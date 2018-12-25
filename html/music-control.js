@@ -158,8 +158,8 @@ function update_music() {
           if ($(element.children('.midword')).length > 0){
             spacerWidth = chordOuterWidth-element.width();
             element.append('<span class="midword-spacer">-</span>');
-            if (spacerWidth < 16){ // TODO: Replace with relative size condition
-              element.children('.midword-spacer').width(16);
+            if (spacerWidth < body_size_int){
+              element.children('.midword-spacer').width(body_size_int);
             } else {
               element.children('.midword-spacer').width(spacerWidth);
             }
@@ -179,8 +179,8 @@ function update_music() {
           if ($(element.children('.midword')).length > 0){
             spacerWidth = chordOuterWidth-element.width();
             element.append('<span class="next-midword-spacer">-</span>');
-            if (spacerWidth < 16){ // TODO: Replace with relative size condition
-              element.children('.next-midword-spacer').width(16);
+            if (spacerWidth < body_size_int){
+              element.children('.next-midword-spacer').width(body_size_int);
             } else {
               element.children('.next-midword-spacer').width(spacerWidth);
             }
@@ -204,6 +204,12 @@ function update_music() {
     }
     $("#currentslide").html(current_text);
     $("#nextslide").html(next_text);
+  } else if (slide_type == "video") {
+    current_text = "<div class =\"nonsong-block\"><p class=\"nonsong-line\">";
+    current_text = current_text + current_slides[0].replace(/\n/g, "</p><p class=\"nonsong-line\">");
+    current_text = current_text + "</div>";
+    $("#currentslide").html(current_text);
+    $("#nextslide").html("");
   } else if (slide_type == "presentation") {
     if (slide_index < current_slides.length - 1){
       $("#currentslide").html(
@@ -352,12 +358,14 @@ $(document).ready(function(){
 
 // Adjust document body size based on ?size=n parameter, if it exists
 params = window.location.search.slice(1);
+body_size_int = 16;
 body_size = "16px";
 if (params != ""){
   param_arr = params.split('&');
   for(var i=0; i<param_arr.length; i++){
     param_pair = param_arr[i].split('=');
     if (param_pair[0] == 'size'){
+      body_size_int = parseInt(param_pair[1]);
       body_size = param_pair[1] + "px";
     }
   }

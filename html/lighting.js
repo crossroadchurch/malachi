@@ -70,7 +70,7 @@ function update_swatch(){
         b_out = 255 * y;
     }
 
-    $('#swatch').css('background', 'rgb('+r_out+","+g_out+","+b_out+")");
+    $('#swatch').css('background', 'rgb('+Math.floor(r_out)+","+Math.floor(g_out)+","+Math.floor(b_out)+")");
 }
 
 function restore_channels(){
@@ -178,14 +178,15 @@ $(document).ready(function(){
         console.log(json_data);
         switch(json_data.action){
             case "update.light-init":
-                $("#ch5-slider").slider("value", json_data.params[0][1]);
-                $("#ch5-text").val(json_data.params[0][1]);
-                $("#ch6-slider").slider("value", json_data.params[1][1]);
-                $("#ch6-text").val(json_data.params[1][1]);
-                $("#ch7-slider").slider("value", json_data.params[2][1]);
-                $("#ch7-text").val(json_data.params[2][1]);
-                $("#ch8-slider").slider("value", json_data.params[3][1]);
-                $("#ch8-text").val(json_data.params[3][1]);
+                let channels = json_data.params.channels;
+                $("#ch5-slider").slider("value", channels[0][1]);
+                $("#ch5-text").val(channels[0][1]);
+                $("#ch6-slider").slider("value", channels[1][1]);
+                $("#ch6-text").val(channels[1][1]);
+                $("#ch7-slider").slider("value", channels[2][1]);
+                $("#ch7-text").val(channels[2][1]);
+                $("#ch8-slider").slider("value", channels[3][1]);
+                $("#ch8-text").val(channels[3][1]);
                 slider_map[5] = "#ch5-slider";
                 slider_map[6] = "#ch6-slider";
                 slider_map[7] = "#ch7-slider";
