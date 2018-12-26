@@ -1,7 +1,7 @@
 import sqlite3, json, re, math
 from PIL import ImageFont
-from Chords import Chords
-from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError, MissingStyleParameterError
+from .Chords import Chords
+from .MalachiExceptions import InvalidSongIdError, InvalidSongFieldError, MissingStyleParameterError
 
 class Song():
 
@@ -247,7 +247,6 @@ class Song():
         ''', ("", "", "", "", 0, "", "", "", "", "", ""))
         db.commit()
         song_id = cursor.lastrowid
-        print(song_id)
         db.close()
         fields["title"] = title
         try:
@@ -269,7 +268,6 @@ class Song():
 
     @classmethod
     def edit_song(cls, song_id, fields):
-        print(fields)
         db = sqlite3.connect('./data/songs.sqlite')
         cursor = db.cursor()
         cursor.execute('''
@@ -283,7 +281,6 @@ class Song():
         saved_song_key = str(result[1])
         # Field validation
         if "title" in fields:
-            print(fields["title"])
             if fields["title"].strip() == "":
                 raise InvalidSongFieldError("The title was blank")
             else:

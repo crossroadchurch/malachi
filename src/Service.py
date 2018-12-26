@@ -1,8 +1,8 @@
 import os, json, requests
-from BiblePassage import BiblePassage
-from Song import Song
-from Presentation import Presentation
-from MalachiExceptions import InvalidPresentationUrlError, InvalidServiceUrlError, InvalidSongIdError, MalformedServiceFileError, UnspecifiedServiceUrl
+from .BiblePassage import BiblePassage
+from .Song import Song
+from .Presentation import Presentation
+from .MalachiExceptions import InvalidPresentationUrlError, InvalidServiceUrlError, InvalidSongIdError, MalformedServiceFileError, UnspecifiedServiceUrl
 
 class Service():
 

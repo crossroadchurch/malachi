@@ -1,6 +1,6 @@
 import os, math, json
 import cv2
-from MalachiExceptions import InvalidVideoUrlError
+from .MalachiExceptions import InvalidVideoUrlError
 
 class Video():
 
@@ -41,5 +41,4 @@ class Video():
 
 ### TESTING ONLY ###
 if __name__ == "__main__":
-    v = Video("./videos/07 - 400000 Errors In the New Testament How Did That Happen.mp4")
-    print(v.to_JSON(0))
+    pass

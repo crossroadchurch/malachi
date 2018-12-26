@@ -1,20 +1,21 @@
-import asyncio, json, time, os, platform, pathlib, threading
+import json, os, platform, pathlib, threading
 import websockets
 from json.decoder import JSONDecodeError
-from ThreadedHTTPServer import ThreadedHTTPServer
-from Service import Service
-from BiblePassage import BiblePassage
-from Song import Song
-from Presentation import Presentation
-from PresentationHandler import PresentationHandler
-from LightHandler import LightHandler
-from Video import Video
-from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
-from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError, InvalidSongFieldError
-from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, UnspecifiedServiceUrl
-from MalachiExceptions import InvalidVideoUrlError
-from MalachiExceptions import MissingStyleParameterError
-from MalachiExceptions import QLCConnectionError, LightingBlockedError
+from .ThreadedHTTPServer import ThreadedHTTPServer
+from .Service import Service
+from .BiblePassage import BiblePassage
+from .Song import Song
+from .Presentation import Presentation
+from .PresentationHandler import PresentationHandler
+from .LightHandler import LightHandler
+from .Video import Video
+from .Tracker import Tracker
+from .MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
+from .MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError, InvalidSongFieldError
+from .MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, UnspecifiedServiceUrl
+from .MalachiExceptions import InvalidVideoUrlError
+from .MalachiExceptions import MissingStyleParameterError
+from .MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class MalachiServer():
 
@@ -28,6 +29,7 @@ class MalachiServer():
         self.CAPOS = dict()
         self.screen_state = "on"
         self.s = Service()
+        self.tracker = Tracker()
         self.ph = PresentationHandler()
         self.light_preset_list, self.light_channel_list = self.load_light_presets()
         self.lh = LightHandler(self.light_channel_list)
@@ -459,6 +461,7 @@ class MalachiServer():
     async def next_item(self, websocket, params):
         status, details = "ok", ""
         if self.s.next_item():
+            self.track_usage()
             self.update_impress_change_item()
             await self.clients_item_index_update()
         else:
@@ -468,6 +471,7 @@ class MalachiServer():
     async def previous_item(self, websocket, params):
         status, details = "ok", ""
         if self.s.previous_item():
+            self.track_usage()
             self.update_impress_change_item()
             await self.clients_item_index_update()
         else:
@@ -477,6 +481,7 @@ class MalachiServer():
     async def goto_item(self, websocket, params):
         status, details = "ok", ""
         if self.s.set_item_index(int(params["index"])):
+            self.track_usage()
             self.update_impress_change_item()
             await self.clients_item_index_update()
         else:
@@ -492,6 +497,7 @@ class MalachiServer():
                 # Current item was removed
                 if self.s.item_index > 0:
                     self.s.item_index -= 1
+                    self.track_usage()
                 elif len(self.s.items) == 0:
                     self.s.item_index = -1
                     self.s.slide_index = -1
@@ -946,6 +952,11 @@ class MalachiServer():
             }
         }))
 
+    # Song usage tracking
+    def track_usage(self):
+        if self.s.get_current_item_type() == "Song":
+            self.tracker.log(self.s.items[self.s.item_index].song_id)
+
     # Presentation control with LibreOffice
     def update_impress_change_item(self):
         # If previous item was a presentation then unload it
@@ -1008,23 +1019,3 @@ class MalachiServer():
         json_data["presets"] = self.light_preset_list
         with open("./lights/light_presets.json", "w") as f:
             f.write(json.dumps(json_data))
-
-if __name__ == "__main__":  
-    # Start web server
-    server = ThreadedHTTPServer('0.0.0.0', 8000)
-    server.start()
-
-    # In Linux need to run soffice --accept="socket,host=localhost,port=2002;urp" --quickstart in a separate terminal before starting Malachi
-
-    time.sleep(2)
-
-    m = MalachiServer()
-    m.s.load_service('service_test.json', m.style_list[m.current_style])
-    m.s.set_item_index(0)
-
-    # Start websocket server
-    asyncio.get_event_loop().run_until_complete(
-        websockets.serve(m.responder, '0.0.0.0', 9001)
-    )
-    asyncio.get_event_loop().run_forever()
-    server.stop()

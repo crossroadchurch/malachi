@@ -165,6 +165,18 @@ cursor.execute('''DROP TABLE temp_songs''')
 db.commit()
 print("...done")
 
+# Create tracking table for song usage
+print("Creating tracking table for song usage...")
+cursor.execute('''
+    CREATE TABLE tracking (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        song_id INTEGER,
+        tracked_date` TEXT
+    )
+''')
+db.commit()
+print("...done")
+
 db.execute("VACUUM")
 db.close()
 print("Migration complete!")

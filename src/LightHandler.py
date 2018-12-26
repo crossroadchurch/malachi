@@ -1,6 +1,6 @@
 import time, threading, math, json
 from websocket import create_connection
-from MalachiExceptions import QLCConnectionError, LightingBlockedError
+from .MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class LightHandler():
 

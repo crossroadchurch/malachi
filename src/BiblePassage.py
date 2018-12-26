@@ -1,6 +1,6 @@
 import sqlite3, json, re, math
 from PIL import ImageFont
-from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError, MissingStyleParameterError
+from .MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError, MissingStyleParameterError
 
 class BiblePassage():
 

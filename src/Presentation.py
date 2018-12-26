@@ -1,6 +1,6 @@
 import json, os, hashlib, platform, pathlib, time
 import mss, mss.tools
-from MalachiExceptions import InvalidPresentationUrlError
+from .MalachiExceptions import InvalidPresentationUrlError
 
 class Presentation():
 
