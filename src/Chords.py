@@ -1,13 +1,21 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103 # Snake-case naming convention
+# pylint: disable=R1705 # Unnecessary "else" after "return".  Disabled for code readability
+
+"""Provide methods for formatting and transposing chords"""
+
 class Chords():
+    """Provide methods for formatting and transposing chords"""
+
     # List of valid keys
     key_list = ('C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B')
 
     # Dictionary of enharmonically equivalent notes
-    notes_replacements = { 'C#':'Db', 'Db':'C#',
-                           'D#':'Eb', 'Eb':'D#',
-                           'F#':'Gb', 'Gb':'F#',
-                           'G#':'Ab', 'Ab':'G#',
-                           'A#':'Bb', 'Bb':'A#'}
+    notes_replacements = {'C#':'Db', 'Db':'C#',
+                          'D#':'Eb', 'Eb':'D#',
+                          'F#':'Gb', 'Gb':'F#',
+                          'G#':'Ab', 'Ab':'G#',
+                          'A#':'Bb', 'Bb':'A#'}
 
     # Dictionary of invalid note names for each key
     # For each of the five notes C#, D#, F#, G# and A# the dictionary states which
@@ -30,11 +38,21 @@ class Chords():
                           'Bb' : ['C#', 'D#', 'F#', 'G#', 'A#'],
                           'B' :  ['Db', 'Eb', 'Gb', 'Ab', 'Bb']}
 
-    def sanitize_chord(chord, song_key):
+    @classmethod
+    def sanitize_chord(cls, chord, song_key):
         """
-        Method to properly format a chord, using notes that are appropriate to the specified key.
-        If the root note or bass note is not in the range [A-G] then it will not be changed, and no error will be thrown.
+        Format and return a chord, using notes that are appropriate to the specified key.
+        If the root note or bass note is not in the range [A-G] then it will not be changed,
+        and no error will be thrown.
+        If song_key is not a valid key then chord will be returned unchanged.
+
+        Key arguments:
+        chord -- the chord to be sanitized.
+        song_key -- the key to be used for sanitizing the chord.
         """
+
+        if song_key not in Chords.key_list:
+            return chord
 
         chord = chord.replace("B#", 'C')
         chord = chord.replace('Cb', 'B')
@@ -79,23 +97,42 @@ class Chords():
 
         return chord
 
-    def transpose_chord_tag(chord_tag, root_key, transpose_amount):
+    @classmethod
+    def transpose_chord_tag(cls, chord_tag, root_key, transpose_amount):
         """
-        Method to transpose and return a chord tag in a given root_key by a specified number of semitones.
+        Transpose and return a chord in a given root key by a specified number of semitones.
         The returned chord tag will be a valid chord in the transposed key.
-        Pre-condition: root_key is a member of key_list
+        If root_key is not a member of key_list, chord_tag will be returned, untransposed.
+
+        Key arguments:
+        chord_tag -- the chord tag to be transposed.
+        root_key -- the key that chord_tag is written in.
+        transpose_amount -- the number of semitones to transpose chord_tag by.
         """
         chord_part = chord_tag[1:-1]
-        return '[' +  Chords.transpose_chord(chord_part, root_key, transpose_amount) + ']'
+        if root_key in Chords.key_list:
+            return '[' +  Chords.transpose_chord(chord_part, root_key, transpose_amount) + ']'
+        else:
+            return chord_tag
 
-    def transpose_chord(chord, root_key, transpose_amount):
+    @classmethod
+    def transpose_chord(cls, chord, root_key, transpose_amount):
         """
-        Method to transpose and return a chord in a given root_key by a specified number of semitones.
+        Transpose and return a chord in a given root_key by a specified number of semitones.
         The returned chord will be a valid chord in the transposed key.
-        Pre-condition: root_key is a member of key_list
+        If root_key is not a member of key_list the chord will be returned, untransposed.
+
+        Key arguments:
+        chord -- the chord to be transposed.
+        root_key -- the key that chord is written in.
+        transpose_amount -- the number of semitones to transpose chord by.
         """
 
-        transposed_key = Chords.key_list[(Chords.key_list.index(root_key) + int(transpose_amount)) % 12]
+        if root_key not in Chords.key_list:
+            return chord
+
+        transposed_key = Chords.key_list[(Chords.key_list.index(root_key) + \
+            int(transpose_amount)) % 12]
 
         # Split chord into root_note, modifier and bass_note
         if (len(chord) > 1) and (chord[1].lower() == "b" or chord[1] == "#"):
@@ -122,7 +159,8 @@ class Chords():
         if bass_note != "":
             if bass_note in Chords.invalid_note_names['C']:
                 bass_note = Chords.notes_replacements[bass_note]
-            bass_note = Chords.key_list[(Chords.key_list.index(bass_note) + int(transpose_amount)) % 12]
+            bass_note = Chords.key_list[(Chords.key_list.index(bass_note) + \
+                int(transpose_amount)) % 12]
 
         # Reform chord and sanitize in transposed key
         transposed_chord = root_note + chord_mod
@@ -131,14 +169,25 @@ class Chords():
 
         return Chords.sanitize_chord(transposed_chord, transposed_key)
 
-    def combine_chords_and_lyrics(chord_line, lyric_line, key):
+    @classmethod
+    def combine_chords_and_lyrics(cls, chord_line, lyric_line, key):
         """
-        Method to combine a line of chords with a corresponding line of lyrics.
+        Combine a line of chords with a corresponding line of lyrics.
+
         e.g.  chord_line =        A7sus4        Bm
               lyric_line = Be the reason that I live
               output = Be the [A7sus4]reason that I [Bm]live
-        Any # characters in lyric_line are ignored - these are used to pad out the lyrics to fit the chords.
+
+        Any '#' in lyric_line are ignored - these are used to pad out the lyrics to fit the chords.
         All chords will be sanitized to ensure they are valid chords in the specified key.
+
+        Arguments:
+        chord_line -- the line of chords corresponding to lyric_line
+        lyric_line -- the line of lyrics
+        key -- the key that the chords are written in
+
+        Return value:
+        line_out -- string, the combined lyric and chord line
         """
 
         char_buffer, line_out = "", ""
@@ -146,15 +195,15 @@ class Chords():
 
         # Pad strings to size
         if len(chord_line) < len(lyric_line):
-            while(len(chord_line)<len(lyric_line)):
+            while len(chord_line) < len(lyric_line):
                 chord_line += " "
         elif len(lyric_line) < len(chord_line):
             while len(lyric_line) < len(chord_line):
                 lyric_line += "#"
 
         while i < len(chord_line):
-            if (chord_line[i] == " "):
-                if (lyric_line[i] != "#"):
+            if chord_line[i] == " ":
+                if lyric_line[i] != "#":
                     line_out += lyric_line[i]
                 i += 1
                 j += 1
@@ -164,20 +213,29 @@ class Chords():
                     i += 1
                 line_out = line_out + "[" + Chords.sanitize_chord(char_buffer, key) + "]"
                 char_buffer = ""
-                line_out +=  lyric_line[j:i].replace("#", "")
+                line_out += lyric_line[j:i].replace("#", "")
                 j = i
 
         return line_out
 
-
-    def extract_chords_and_lyrics(in_line):
+    @classmethod
+    def extract_chords_and_lyrics(cls, in_line):
         """
-        Method to turn a valid string into a line of chords and the corresponding line of lyrics.
+        Turn a combined line of lyrics and chords into a line of chords and the corresponding
+        line of lyrics.
+
         e.g.  in_line = Be the [A7sus4]reason that I [Bm]live
               output =        A7sus4        Bm,
                        Be the reason that I live
-        The lyrics line will be padded if necessary using # characters to ensure lyrics line up with chords.
+        The lyrics line will be padded with #, if necessary, to ensure lyrics line up with chords.
+
         Pre-condition: in_line has valid syntax.
+
+        Arguments:
+        in_line -- the line of combined lyrics and chords.
+
+        Return values:
+        chord_line, lyric_line -- both strings
         """
 
         chord_line, lyric_line, char_buffer = "", "", ""
@@ -193,7 +251,7 @@ class Chords():
                 # Read in entire chord tag
                 char_buffer = ""
 
-                while (in_line[i] != "]"):
+                while in_line[i] != "]":
                     char_buffer += in_line[i]
                     i += 1
 
@@ -206,7 +264,7 @@ class Chords():
 
                 # Read in lyric characters to go below chord, pad with # if necessary
                 j = 0
-                while (j < len(char_buffer[1:-1])):
+                while j < len(char_buffer[1:-1]):
                     # No problem with i being out of bounds due to lazy 'and' evaluation
                     if (i < len(in_line) and in_line[i] != "["):
                         lyric_line += in_line[i]
@@ -223,8 +281,17 @@ class Chords():
 
         return chord_line, lyric_line
 
+    @classmethod
+    def transpose_section(cls, in_str, root_key, transpose_amount):
+        """
+        Transpose and return a string containing lyrics and chord tags.
 
-    def transpose_section(in_str, root_key, transpose_amount):
+        Arguments:
+        in_str -- the string of lyrics with chord tags
+        root_key -- the key that the chords are written in
+        transpose_amount -- the number of semitones to transpose the chords by
+
+        """
         out_str = ""
         i = 0
         while i < len(in_str):
@@ -234,7 +301,7 @@ class Chords():
             else:
                 # Read in entire chord tag
                 char_buffer = ""
-                while (in_str[i] != "]"):
+                while in_str[i] != "]":
                     char_buffer += in_str[i]
                     i += 1
                 # Include closing ]

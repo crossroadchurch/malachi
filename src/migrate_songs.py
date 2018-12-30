@@ -1,16 +1,27 @@
-import sqlite3, json
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103 # Snake-case naming convention
+
+"""
+Migrate an OpenLP songs database from Paul to Malachi.
+The database to be migrated should be located at
+at ./data/songs.sqlite and will be overwritten by
+running this script, so a backup should be made beforehand.
+"""
+
+import sqlite3
+import json
 import xml.etree.ElementTree as ET
 
 # Pre-condition: songs.sqlite is an OpenLP songs database used in Paul
-db = sqlite3.connect('./data/songs.sqlite')
-cursor = db.cursor()
+songs_db = sqlite3.connect('./data/songs.sqlite')
+cursor = songs_db.cursor()
 
 # REMOVE TOPICS
 print("Removing topics...")
 cursor.execute('''DROP TABLE songs_topics''')
 cursor.execute('''DROP INDEX ix_topics_name''')
 cursor.execute('''DROP TABLE topics''')
-db.commit()
+songs_db.commit()
 print("...done")
 
 
@@ -18,7 +29,7 @@ print("...done")
 print("Removing metadata and media files...")
 cursor.execute('''DROP TABLE metadata''')
 cursor.execute('''DROP TABLE media_files''')
-db.commit()
+songs_db.commit()
 print("...done")
 
 
@@ -47,7 +58,7 @@ for song in songs:
         WHERE id = {id}
         '''.format(bn=book_dict[song[1]], id=song[0]))
 cursor.execute('''DROP TABLE song_books''')
-db.commit()
+songs_db.commit()
 print("...done")
 
 # REMOVE AUTHORS AFTER INCLUDING DATA IN SONGS TABLE
@@ -74,7 +85,7 @@ for song in songs:
 cursor.execute('''DROP INDEX ix_authors_display_name''')
 cursor.execute('''DROP TABLE authors_songs''')
 cursor.execute('''DROP TABLE authors''')
-db.commit()
+songs_db.commit()
 print("...done")
 
 # Merge alternate_title with title
@@ -92,7 +103,7 @@ for song in songs:
         SET title = \"{t_s}\"
         WHERE id = {id}
     '''.format(t_s=title_str, id=song[0]))
-db.commit()
+songs_db.commit()
 print("...done")
 
 # Create lyrics_chords - for now just copy chords if it exists, else use lyrics
@@ -108,7 +119,7 @@ cursor.execute('''
 ''')
 songs = cursor.fetchall()
 for song in songs:
-    if song[1] == None:
+    if song[1] is None:
         l_c_str = song[2]
     else:
         l_c_str = song[1]
@@ -128,8 +139,8 @@ for song in songs:
         UPDATE songs
         SET lyrics_chords = ?
         WHERE id = ?
-    ''',(json.dumps(l_c_data), song[0]))
-db.commit()
+    ''', (json.dumps(l_c_data), song[0]))
+songs_db.commit()
 print("...done")
 
 # Remove unnecessary columns from songs table
@@ -162,7 +173,7 @@ cursor.execute('''
         FROM temp_songs
 ''')
 cursor.execute('''DROP TABLE temp_songs''')
-db.commit()
+songs_db.commit()
 print("...done")
 
 # Create tracking table for song usage
@@ -174,9 +185,9 @@ cursor.execute('''
         tracked_date` TEXT
     )
 ''')
-db.commit()
+songs_db.commit()
 print("...done")
 
-db.execute("VACUUM")
-db.close()
+songs_db.execute("VACUUM")
+songs_db.close()
 print("Migration complete!")

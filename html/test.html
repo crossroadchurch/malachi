@@ -75,6 +75,7 @@
                 console.log(json_data);
                 switch(json_data.action){
                     case "update.app-init":
+                    case "update.service-overview-update":
                         service_ul.innerHTML = "";
                         for(let item in json_data.params.items){
                             let li = document.createElement("li");

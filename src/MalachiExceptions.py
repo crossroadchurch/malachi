@@ -1,72 +1,100 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103 # Snake-case naming convention
+
+"""
+Provide custom Exception classes for Malachi.
+"""
+
 # Presentations
 class InvalidPresentationUrlError(Exception):
+    """Indicate that a specified Presentation URL does not exist"""
     def __init__(self, url):
         self.msg = "Could not find a presentation at the url {url}".format(url=url)
         super(InvalidPresentationUrlError, self).__init__(self.msg)
 
 # Bible
 class InvalidVersionError(Exception):
+    """Indicate that a specified version of the Bible is not supported in Malachi"""
     def __init__(self, version):
         self.msg = "%s is not a recognised Bible version" % version
         super(InvalidVersionError, self).__init__(self.msg)
 
 class InvalidVerseIdError(Exception):
-    def __init__(self, id, version):
-        self.msg = "Could not find a verse with id {id} in the {vs} version of the Bible".format(id=id, vs=version)
+    """Indicate that a specified verse id does not exist in a version of the Bible"""
+    def __init__(self, verse_id, version):
+        self.msg = "Could not find a verse with id {id} in the {vs} version of the Bible"\
+            .format(id=verse_id, vs=version)
         super(InvalidVerseIdError, self).__init__(self.msg)
 
 class MalformedReferenceError(Exception):
+    """Indicate that a Bible reference does not have the correct syntax"""
     def __init__(self, ref):
         self.msg = "%s is not a valid form for a Bible reference" % ref
         super(MalformedReferenceError, self).__init__(self.msg)
 
 # Service
 class InvalidServiceUrlError(Exception):
+    """Indicate that a specified Service URL does not exist"""
     def __init__(self, url):
         self.msg = "Could not find a service file at the url {url}".format(url=url)
         super(InvalidServiceUrlError, self).__init__(self.msg)
 
 class MalformedServiceFileError(Exception):
-    def __init__(self, url, details):
-        self.msg = "The service file {url} is not correctly formatted: {details}".format(url=url,details=details)
+    """Indicate that a Service JSON file does not have the correct syntax"""
+    def __init__(self, service_url, details):
+        self.msg = "The service file {url} is not correctly formatted: {details}".\
+            format(url=service_url, details=details)
         super(MalformedServiceFileError, self).__init__(self.msg)
 
-# Song
-class InvalidSongIdError(Exception):
-    def __init__(self, id):
-        self.msg = "Could not find a song that has id {id}".format(id=id)
-        super(InvalidSongIdError, self).__init__(self.msg)
-
-class InvalidSongFieldError(Exception):
-    def __init__(self, data):
-        self.msg = "Invalid field data provided: {data}".format(data=data)
-        super(InvalidSongFieldError, self).__init__(self.msg)
-
-# Service
 class UnspecifiedServiceUrl(Exception):
+    """Indicate that no save location has been specified when trying to save a Service"""
     def __init__(self):
         self.msg = "No file location was specified for saving the Service."
         super(UnspecifiedServiceUrl, self).__init__(self.msg)
 
+# Song
+class InvalidSongIdError(Exception):
+    """Indicate that a specified song id does not exist in the songs database"""
+    def __init__(self, song_id):
+        self.msg = "Could not find a song that has id {id}".format(id=song_id)
+        super(InvalidSongIdError, self).__init__(self.msg)
+
+class InvalidSongFieldError(Exception):
+    """Indicate that invalid data has been provided when editing a field of a Song"""
+    def __init__(self, data):
+        self.msg = "Invalid field data provided: {data}".format(data=data)
+        super(InvalidSongFieldError, self).__init__(self.msg)
+
 # Lighting
 class QLCConnectionError(Exception):
+    """Indicate that a connection to QLC could not be made"""
     def __init__(self):
         self.msg = "A connection with QLC is not currently active."
         super(QLCConnectionError, self).__init__(self.msg)
 
 class LightingBlockedError(Exception):
+    """Indicate that the lighting system is currently blocked"""
     def __init__(self):
         self.msg = "The action could not be performed as another lighting action is in progress."
         super(LightingBlockedError, self).__init__(self.msg)
 
 # Styles
 class MissingStyleParameterError(Exception):
+    """Indicate that a required style parameter is missing from the current style"""
     def __init__(self, data):
         self.msg = "The current style is missing a parameter: {data}".format(data=data)
         super(MissingStyleParameterError, self).__init__(self.msg)
 
 # Videos
 class InvalidVideoUrlError(Exception):
+    """Indicate that a specified Video URL does not exist"""
     def __init__(self, url):
         self.msg = "Could not find a video at the url {url}".format(url=url)
         super(InvalidVideoUrlError, self).__init__(self.msg)
+
+# Malachi
+class MissingDataFilesError(Exception):
+    """Indicate that a specified data file(s) does not exist"""
+    def __init__(self, files):
+        self.msg = "The following essential data files were not found: {files}".format(files=files)
+        super(MissingDataFilesError, self).__init__(self.msg)

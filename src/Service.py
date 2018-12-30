@@ -1,10 +1,25 @@
-import os, json, requests
-from .BiblePassage import BiblePassage
-from .Song import Song
-from .Presentation import Presentation
-from .MalachiExceptions import InvalidPresentationUrlError, InvalidServiceUrlError, InvalidSongIdError, MalformedServiceFileError, UnspecifiedServiceUrl
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103 # Snake-case naming convention
+# pylint: disable=R0912 # Too many branches
+# pylint: disable=R1702 # Too many nested blocks
+# pylint: disable=R1705 # Unnecessary "else" after "return".  Disabled for code readability
+
+"""Represent a complete service plan in Malachi"""
+
+import os
+import json
+from BiblePassage import BiblePassage
+from Song import Song
+from Presentation import Presentation
+from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, \
+    UnspecifiedServiceUrl, MissingStyleParameterError
 
 class Service():
+    """
+    Represent a complete service plan in Malachi, with methods to
+    navigate in the service plan, inform clients of changes to the
+    service plan, and load/save the service plan.
+    """
 
     def __init__(self):
         self.items = []
@@ -14,11 +29,28 @@ class Service():
         self.modified = False
 
     def add_item(self, item):
+        """
+        Add an item to the end of the service plan.
+
+        Arguments:
+        item -- the item (Song, BiblePassage, Presentation, Video) to be added.
+        """
         self.items.append(item)
         self.modified = True
 
     def remove_item_at(self, index):
-        if index >=0 and len(self.items)>0 and index < len(self.items):
+        """
+        Remove item at the specified index from the service plan.
+
+        Arguments:
+        index -- the index of the item to be removed.
+
+        Return value:
+        True -- item has been removed
+        False -- item could not be removed, either due to an empty service plan or
+            an invalid index being specified
+        """
+        if index >= 0 and self.items and index < len(self.items):
             del self.items[index]
             self.modified = True
             return True
@@ -26,10 +58,22 @@ class Service():
             return False
 
     def move_item(self, from_index, to_index):
-        if from_index == to_index or len(self.items)==0:
+        """
+        Move an item to a different position in the service plan.
+
+        Arguments:
+        from_index -- the index of the item to move
+        to_index -- the index to move the item to
+
+        Return value:
+        0 -- No need to move items as from_index == to_index
+        1 -- Item successfully moved
+        -1 -- Invalid index specified (either from_index or to_index)
+        """
+        if from_index == to_index or not self.items:
             return 0 # No need to move items
         else:
-            if 0 <= from_index and from_index < len(self.items) and 0 <= to_index and to_index <= len(self.items):
+            if 0 <= from_index < len(self.items) and 0 <= to_index <= len(self.items):
                 if from_index < to_index:
                     self.items.insert(to_index, self.items[from_index])
                     del self.items[from_index]
@@ -42,36 +86,75 @@ class Service():
                 return -1 # Invalid index specified
 
     def get_current_item_type(self):
+        """Return the type of the currently selected item"""
         if self.item_index >= 0:
             return type(self.items[self.item_index]).__name__
+        else:
+            return None
 
     def set_item_index(self, index):
-        if index >= 0 and index < len(self.items):
+        """
+        Set which item is currently selected in the service plan.
+
+        Keyword:
+        index -- the index of the item to select
+
+        Return value:
+        True -- the specified index was selected
+        False -- the specified index was invalid and could not be selected
+        """
+        if 0 <= index < len(self.items):
             self.item_index = index
-            self.slide_index = 0 # Select the first slide of this item (should this be -1 instead?)
+            self.slide_index = 0 # Select the first slide of this item
             return True
         else:
             return False
 
     def next_item(self):
+        """
+        Advance to the next item in the service plan.
+
+        Return value:
+        True -- successfully advanced to next item in the service plan
+        False -- could not advance to next item (service plan empty or at last item already)
+        """
         if (self.item_index + 1) < len(self.items):
             self.item_index += 1
-            self.slide_index = 0 # Or should this be -1?
+            self.slide_index = 0
             return True
         else:
             return False
-    
+
     def previous_item(self):
+        """
+        Advance to the previous item in the service plan.
+
+        Return value:
+        True -- successfully advanced to previous item in the service plan
+        False -- could not advance to previous item (service plan empty or at first item already)
+        """
         if self.item_index > 0:
             self.item_index -= 1
-            self.slide_index = 0 # Or should this be -1?
+            self.slide_index = 0
             return True
         else:
             return False
 
     def set_slide_index(self, index):
+        """
+        Set the current slide index in the current service item.
+
+        Arguments:
+        index -- the slide index to change to.
+
+        Return value:
+        1 -- successfully changed current slide index
+        0 -- could not change to specified slide index as index is out of bounds
+        -1 -- could not change to specified slide index as no item is selected in the service plan
+        """
+
         if self.item_index >= 0:
-            if index >= 0 and index < len(self.items[self.item_index].slides):
+            if 0 <= index < len(self.items[self.item_index].slides):
                 self.slide_index = index
                 return 1
             else:
@@ -80,6 +163,14 @@ class Service():
             return -1
 
     def next_slide(self):
+        """
+        Advance to the next slide in the current service item.
+
+        Return value:
+        1 -- successfully advanced to next slide
+        0 -- could not advance to next slide as at last slide already
+        -1 -- could not advance to next slide as no item is selected in the service plan
+        """
         if self.item_index >= 0:
             if (self.slide_index + 1) < len(self.items[self.item_index].slides):
                 self.slide_index += 1
@@ -90,6 +181,14 @@ class Service():
             return -1
 
     def previous_slide(self):
+        """
+        Advance to the previous slide in the current service item.
+
+        Return value:
+        1 -- successfully advanced to previous slide
+        0 -- could not advance to previous slide as at first slide already
+        -1 -- could not advance to previous slide as no item is selected in the service plan
+        """
         if self.item_index >= 0:
             if self.slide_index > 0:
                 self.slide_index -= 1
@@ -100,28 +199,58 @@ class Service():
             return -1
 
     def to_JSON_simple(self):
-        return json.dumps({"items": [x.get_title() for x in self.items], 
+        """
+        Return a JSON object containing the titles of all items in the current service plan,
+        as well as the current item_index and slide_index.
+        """
+        return json.dumps({"items": [x.get_title() for x in self.items],
                            "item_index": self.item_index,
                            "slide_index": self.slide_index}, indent=2)
 
     def to_JSON_full(self):
+        """
+        Return a JSON object containing the JSON representation of all items in the current
+        service plan, as well as the current item_index and slide_index.
+        """
         return json.dumps({"items": [json.loads(x.to_JSON(0)) for x in self.items],
                            "item_index": self.item_index,
                            "slide_index": self.slide_index}, indent=2)
 
     def to_JSON_titles_and_current(self, capo):
-        if self.item_index > -1 and len(self.items) > 0:
-            return json.dumps({"items": [x.get_title() for x in self.items],
-                            "current_item": json.loads(self.items[self.item_index].to_JSON(capo)),
-                            "item_index": self.item_index,
-                            "slide_index": self.slide_index}, indent=2)
-        else:
-            return json.dumps({"items": [x.get_title() for x in self.items],
-                            "current_item": {},
-                            "item_index": self.item_index,
-                            "slide_index": self.slide_index}, indent=2)
+        """
+        Return a JSON object containing the titles of all items in the current service plan,
+        the JSON representation of the currently selected item ({} if no item selected),
+        as well as the current item_index and slide_index.
 
-    def load_service(self, fname, cur_style):
+        Arguments:
+        capo -- the capo being used by the client requesting this information
+        """
+        if self.item_index > -1 and self.items:
+            return json.dumps({
+                "items": [x.get_title() for x in self.items],
+                "current_item": json.loads(self.items[self.item_index].to_JSON(capo)),
+                "item_index": self.item_index,
+                "slide_index": self.slide_index}, indent=2)
+        else:
+            return json.dumps({
+                "items": [x.get_title() for x in self.items],
+                "current_item": {},
+                "item_index": self.item_index,
+                "slide_index": self.slide_index}, indent=2)
+
+    def load_service(self, fname, cur_style, bible_versions):
+        """
+        Load a saved service plan, paginating items according to the specified style.
+
+        Arguments:
+        fname -- the filename of the saved service within the ./services directory.
+        cur_style -- the style to use when paginating service items.
+
+        Possible exceptions:
+        MalformedServiceFileError -- raised if the saved service does not have the correct structure
+        InvalidServiceURLError -- raised if fname does not exist in the ./services directory
+        MissingStyleParameterError - raised if one or more style parameters have not been specified.
+        """
         # Precondition: fname is a JSON file in the folder ./services
         if os.path.isfile("./services/" + fname):
             with open("./services/" + fname) as f:
@@ -135,27 +264,43 @@ class Service():
                 if "type" in item:
                     if item["type"] == "bible":
                         if "version" in item and "start_id" in item and "end_id" in item:
-                            self.add_item(BiblePassage(item["version"], item["start_id"], item["end_id"], cur_style))
+                            try:
+                                self.add_item(BiblePassage(item["version"], \
+                                    item["start_id"], item["end_id"], cur_style, bible_versions))
+                            except MissingStyleParameterError as style_e:
+                                raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                         else:
-                            raise MalformedServiceFileError("./services/" + fname, "Missing key for Bible passage")
+                            raise MalformedServiceFileError("./services/" + fname, \
+                                "Missing key for Bible passage")
                     elif item["type"] == "song":
                         if "song_id" in item:
-                            self.add_item(Song(item["song_id"], cur_style))
+                            try:
+                                self.add_item(Song(item["song_id"], cur_style))
+                            except MissingStyleParameterError as style_e:
+                                raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                         else:
-                            raise MalformedServiceFileError("./services/" + fname, "Missing key: 'song_id'")
+                            raise MalformedServiceFileError("./services/" + fname, \
+                                "Missing key: 'song_id'")
                     elif item["type"] == "presentation":
                         if "url" in item:
                             self.add_item(Presentation(item["url"]))
                         else:
-                            raise MalformedServiceFileError("./services/" + fname, "Missing key: 'url'")
+                            raise MalformedServiceFileError("./services/" + fname, \
+                                "Missing key: 'url'")
                 else:
                     raise MalformedServiceFileError("./services/" + fname, "Missing key: 'type'")
         else:
             raise InvalidServiceUrlError("./services/" + fname)
-        
+
 
     def save(self):
-        if self.file_name == None:
+        """
+        Save the current service plan.
+
+        Possible exceptions:
+        UnspecifiedServiceUrl - raised if a save file has not previously been specified.
+        """
+        if self.file_name is None:
             raise UnspecifiedServiceUrl()
         else:
             with open("./services/" + self.file_name, 'w') as json_file:
@@ -163,11 +308,18 @@ class Service():
             self.modified = False
 
     def save_as(self, fname):
+        """
+        Save the current service plan to the specified file.
+
+        Arguments:
+        fname -- the name of the save file within the ./services directory.
+        """
         self.file_name = fname
         self.save()
 
     @classmethod
     def get_all_services(cls):
+        """Return a list of all saved services within the ./services directory."""
         fnames = [f for f in os.listdir('./services') if f.endswith('.json')]
         return fnames
 

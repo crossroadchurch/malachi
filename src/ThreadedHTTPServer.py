@@ -1,13 +1,18 @@
-import sys, signal, os
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103 # Snake-case naming convention
+
+"""Provide a threaded HTTP server with support for custom routes."""
+
+import os
 import http.server
+from http import HTTPStatus
 import socketserver
 import threading
 import urllib.parse
-from http import HTTPStatus
-
 
 class RoutedRequestHandler(http.server.SimpleHTTPRequestHandler):
-    
+    """Provide a HTTP request handler with support for custom routes"""
+
     # Overriding method from http.server.SimpleHTTPRequestHandler to allow for custom routes
     def send_head(self):
         path = self.translate_path(self.path)
@@ -54,7 +59,9 @@ class RoutedRequestHandler(http.server.SimpleHTTPRequestHandler):
             raise
 
 
-class ThreadedHTTPServer(object):
+class ThreadedHTTPServer():
+    """Provide a HTTP server in a separate thread to the main thread"""
+
     def __init__(self, host, port):
         handler = RoutedRequestHandler
         self.server = socketserver.ThreadingTCPServer((host, port), handler)
@@ -62,9 +69,11 @@ class ThreadedHTTPServer(object):
         self.server_thread.daemon = True
 
     def start(self):
+        "Start the threaded server"
         self.server_thread.start()
         print("Server started successfully")
 
     def stop(self):
+        "Stop the threaded server"
         self.server.server_close()
         print("Server stopped successfully")
