@@ -11,6 +11,7 @@ import json
 from BiblePassage import BiblePassage
 from Song import Song
 from Presentation import Presentation
+from Video import Video
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, \
     UnspecifiedServiceUrl, MissingStyleParameterError
 
@@ -75,7 +76,7 @@ class Service():
         else:
             if 0 <= from_index < len(self.items) and 0 <= to_index <= len(self.items):
                 if from_index < to_index:
-                    self.items.insert(to_index, self.items[from_index])
+                    self.items.insert(to_index + 1, self.items[from_index])
                     del self.items[from_index]
                 else:
                     self.items.insert(to_index, self.items[from_index])
@@ -218,9 +219,9 @@ class Service():
 
     def to_JSON_titles_and_current(self, capo):
         """
-        Return a JSON object containing the titles of all items in the current service plan,
-        the JSON representation of the currently selected item ({} if no item selected),
-        as well as the current item_index and slide_index.
+        Return a JSON object containing the titles and types of all items in the current
+        service plan, the JSON representation of the currently selected item ({} if no
+        item selected), as well as the current item_index and slide_index.
 
         Arguments:
         capo -- the capo being used by the client requesting this information
@@ -228,12 +229,14 @@ class Service():
         if self.item_index > -1 and self.items:
             return json.dumps({
                 "items": [x.get_title() for x in self.items],
+                "types": [json.loads(x.to_JSON(0))["type"] for x in self.items],
                 "current_item": json.loads(self.items[self.item_index].to_JSON(capo)),
                 "item_index": self.item_index,
                 "slide_index": self.slide_index}, indent=2)
         else:
             return json.dumps({
                 "items": [x.get_title() for x in self.items],
+                "types": [json.loads(x.to_JSON(0))["type"] for x in self.items],
                 "current_item": {},
                 "item_index": self.item_index,
                 "slide_index": self.slide_index}, indent=2)
@@ -259,7 +262,6 @@ class Service():
                 raise MalformedServiceFileError("./services/" + fname, "Missing key: 'items'")
             self.items = []
             self.file_name = fname
-            self.modified = False
             for item in json_data["items"]:
                 if "type" in item:
                     if item["type"] == "bible":
@@ -287,8 +289,15 @@ class Service():
                         else:
                             raise MalformedServiceFileError("./services/" + fname, \
                                 "Missing key: 'url'")
+                    elif item["type"] == "video":
+                        if "url" in item:
+                            self.add_item(Video(item["url"]))
+                        else:
+                            raise MalformedServiceFileError("./services/" + fname, \
+                                "Missing key: 'url'")
                 else:
                     raise MalformedServiceFileError("./services/" + fname, "Missing key: 'type'")
+            self.modified = False
         else:
             raise InvalidServiceUrlError("./services/" + fname)
 

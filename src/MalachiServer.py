@@ -55,7 +55,7 @@ class MalachiServer():
             self.APP_SOCKETS = set()
             self.MEDIA_SOCKETS = set()
             self.CAPOS = dict()
-            self.screen_state = "on"
+            self.screen_state = "off"
             self.s = Service()
             self.ph = PresentationHandler()
             self.load_light_presets()
@@ -129,15 +129,18 @@ class MalachiServer():
 
     async def leader_init(self, websocket):
         """Send initialisation message to new leader client"""
+        service_data = json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
+        service_data['screen_state'] = self.screen_state
         await websocket.send(json.dumps({
             "action" : "update.leader-init",
-            "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
+            "params" : service_data
             }))
 
     async def display_init(self, websocket):
         """Send initialisation message to new display client"""
         service_data = json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
         service_data['style'] = self.style_list[self.current_style]
+        service_data['screen_state'] = self.screen_state
         await websocket.send(json.dumps({
             "action" : "update.display-init",
             "params" : service_data
@@ -147,9 +150,10 @@ class MalachiServer():
         """Send initialisation message to new app client"""
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.style_list[self.current_style]
-        service_data['style-list'] = self.style_list
-        service_data['current-style'] = self.current_style
-        service_data['light-preset-list'] = self.light_preset_list
+        service_data['style_list'] = self.style_list
+        service_data['current_style'] = self.current_style
+        service_data['light_preset_list'] = self.light_preset_list
+        service_data['screen_state'] = self.screen_state
         await websocket.send(json.dumps({
             "action" : "update.app-init",
             "params" : service_data

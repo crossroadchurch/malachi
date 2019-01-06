@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Malachi App</title>
+  <link rel="stylesheet" href="/html/app.css" />
+  <link rel="stylesheet" href="/html/jquery-ui.min.css" />
+  <link rel="stylesheet" href="/html/jquery.mobile-1.4.5.min.css" />
+  <link rel="icon" href="/html/favicon.png" type="image/png" />
+  <script type="text/javascript" src="/html/jquery-1.12.4.min.js"></script>
+  <script type="text/javascript" src="/html/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="/html/jquery.mobile-1.4.5.min.js"></script>
+  <script type="text/javascript" src="/html/app.js"></script>
+</head>
+<body>
+  <div id="main_area">
+    <div id="controller_area">
+      <div id="controller_menubar">
+      </div>
+      <div id="screen_and_controls">
+        <div id="screen_view">
+        </div>
+        <div id="slide_controls">
+        </div>
+      </div>
+      <div id="lighting_controls">
+      </div>
+    </div>
+    <div id="item_area">
+      <div class="ui-content">
+        <div class="ui-grid-a">
+          <div class="ui-block-a">
+            <h3>Current item</h3>
+          </div>
+          <div class="ui-block-b">
+            <label for="flip_screen_state" class="ui-hidden-accessible">Screen state:</label>
+            <input type="checkbox" data-role="flipswitch" data-on-text="Screen ON" data-off-text="Screen OFF" data-wrapper-class="custom-size-flipswitch" name="flip_screen_state" id="flip_screen_state">
+          </div>
+        </div>
+        <ul id="current_item_title" data-role="listview" data-inset="true">
+          <li>
+            <img class="ui-li-icon" src="/html/icons/icons8-musical-notes-48.png" />Item title
+          </li>
+        </ul>
+        <ul id="current_item_list" data-role="listview" data-inset="true"></ul>
+      </div>
+    </div>
+    <div id="elements_area" class="ui-content">
+      <ul>
+        <li><a href="#service_element"><img class="element_icon" src="/html/icons/icons8-numbered-list-48.png" alt="Service" /></a></li>
+        <li><a href="#song_element"><img class="element_icon" src="/html/icons/icons8-musical-notes-48.png" alt="Songs" /></a></li>
+        <li><a href="#bible_element"><img class="element_icon" src="/html/icons/icons8-literature-48.png" alt="Bibles" /></a></li>
+        <li><a href="#presentation_element"><img class="element_icon" src="/html/icons/icons8-presentation-48.png" alt="Presentations" /></a></li>
+        <li><a href="#video_element"><img class="element_icon" src="/html/icons/icons8-tv-show-48.png" alt="Videos" /></a></li>
+      </ul>
+
+      <div id="service_element">
+        <div id="service_menu">
+          <button id="new_service_btn" class="ui-btn ui-icon-delete ui-corner-all ui-btn-inline ui-corner-all" onclick="javascript:new_service(false);">New</button>
+          <button id="load_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="load_service_preload();">Load</button>
+          <button id="save_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="save_service('none');">Save</button>
+          <button id="save_service_as_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="$('#popup_save_service_as').popup('open');">Save as</button>
+        </div>
+        <h3>Service plan</h3>
+        <ul id="service_list" data-role="listview" data-inset="true"></ul>
+      </div>
+
+      <div id="song_element" class="ui-content">
+        <input type="search" id="song_search" value="" placeholder="Lyric or title search" oninput="song_search()">
+        <ul id="song_list" data-role="listview" data-inset="true"></ul>
+      </div>
+
+      <div id="bible_element" class="ui-content">
+        <input type="search" id="bible_search" value="" placeholder="">
+        <div class="ui-grid-b">
+          <div class="ui-block-a">
+            <select name="select_b_version" id="select_b_version" data-mini="true">
+            </select>
+          </div>
+          <div class="ui-block-b">
+            <div data-role="controlgroup" data-mini="true" data-type="horizontal">
+              <input type="radio" name="b_search_type" id="b_search_type_ref" value="on" checked="checked"></input>
+              <label for="b_search_type_ref">Ref</label>
+              <input type="radio" name="b_search_type" id="b_search_type_text" value="off"></input>
+              <label for="b_search_type_text">Text</label>
+            </div>
+          </div>
+          <div class="ui-block-c">
+            <div data-role="controlgroup" data-mini="true">
+              <button id="bible_search_btn" class="ui-btn ui-corner-all" onclick="bible_search()">Search</button>
+            </div>
+          </div>
+        </div>
+        <div class="ui-grid-a">
+          <div class="ui-block-a">
+            <div data-role="controlgroup" data-type="horizontal" data-mini="true">
+              <button id="select_all_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="select_all_verses()">Select all</button>
+              <button id="select_none_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="select_none_verses()">Select none</button>
+            </div>
+          </div>
+          <div class="ui-block-b">
+            <div data-role="controlgroup" data-mini="true">
+              <button id="add_passage_btn" class="ui-btn ui-corner-all" onclick="add_verses()">Add selected to service</button>
+            </div>
+          </div>
+        </div>
+        <fieldset id="passage_list" data-role="controlgroup">
+        </fieldset>
+      </div>
+      
+      <div id="presentation_element" class="ui-content">
+        <h3>Available presentations</h3>
+        <ul id="presentation_list" data-role="listview" data-inset="true"></ul>
+      </div>
+
+      <div id="video_element" class="ui-content">
+          <h3>Available videos</h3>
+          <ul id="video_list" data-role="listview" data-inset="true">
+          </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP: Prompt to save before stating new service -->
+  <div data-role="popup" data-dismissible="false" data-overlay-theme="b" id="popup_new_service">
+    <div data-role="header">
+      <h1>Save service?</h1>
+    </div>
+    <div role="main" class="ui-content">
+      <p>The current service has been modified.<br />Save these changes before starting a new service?</p>
+      <a onclick= "javascript:save_service('new');" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Save</a>
+      <a onclick="javascript:new_service(true);" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Discard</a>
+      <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
+    </div>
+  </div>
+
+  <!-- POPUP: Prompt to save before loading service -->
+  <div data-role="popup" data-dismissible="false" data-overlay-theme="b" id="popup_save_before_load_service">
+    <div data-role="header">
+      <h1>Save service?</h1>
+    </div>
+    <div role="main" class="ui-content">
+      <p>The current service has been modified.<br />Save these changes before loading a new service?</p>
+      <a onclick= "save_service('load');" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Save</a>
+      <a onclick="load_service(true);" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Discard</a>
+      <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
+    </div>
+  </div>
+
+  <!-- POPUP: Service item options -->
+  <div data-role="popup" id="popup_service_item_options" data-position-to="origin">
+    <div class="ui-content">
+      <a onclick="delete_item();" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Remove</a>
+      <a onclick="goto_item();" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Display</a>
+    </div>
+  </div>
+
+  <!-- POPUP: Save service as dialog -->
+  <div data-role="popup" data-dismissible="false" data-overlay-theme="b" id="popup_save_service_as">
+    <div data-role="header">
+      <h1>Save service as...</h1>
+    </div>
+    <div role="main" class="ui-content">
+      <p>Choose filename to save service as:</p>
+      <div class="ui-field-contain">
+        <label for="f_name" class="ui-hidden-accessible">Service file name:</label>
+        <input id="f_name" name="f_name" type="text" value="" placeholder="service.json">
+      </div>
+      <a onclick="save_service_as($(this).parent().find('#f_name'));" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Save</a>
+      <a onclick="$(this).parent().find('#f_name').val('');" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
+    </div>
+  </div>
+
+  <!-- POPUP: Load service dialog -->
+  <div data-role="popup" data-dismissible="false" data-overlay-theme="b" id="popup_load_service">
+    <div data-role="header">
+      <h1>Load service</h1>
+    </div>
+    <div role="main" class="ui-content">
+      <p>Choose service to load:</p>
+      <fieldset id="load_files_radio" data-mini="true" data-role="controlgroup"></fieldset>
+      <a onclick="load_service(false);" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Load</a>
+      <a onclick="" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
+  </div>
+
+</body>
+</html>

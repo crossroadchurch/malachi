@@ -1,0 +1,41 @@
+@font-face {
+    font-family: 'Raleway';
+    font-style: normal;
+    font-weight: 700;
+    src: local('Raleway-Bold'), url(/fonts/Raleway-Bold.ttf) format('truetype');
+}
+  
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #222222;
+}
+
+#main_area {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#loop_video {
+    position: fixed;
+    bottom: 0;
+    height: auto !important;
+    width: 100%;
+}
+
+#slide_area {
+    position: fixed;
+    top: 0;
+    color: white;
+    width: 80vw;
+    margin-left: 10vw;
+    margin-top: 10vh;
+    font-family: 'Raleway';
+    font-size: 10vh;
+    text-shadow: rgb(0,0,0) 0.5vh 0.5vh 0px;
+}
+
+#slide_area p {
+    margin: 0;
+}

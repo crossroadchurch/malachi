@@ -307,6 +307,11 @@ $(document).ready(function(){
           verse_order = "";
           part_counts = [];
         }
+        if (json_data.params.screen_state == "on"){
+          $("body").css("border-top", "6px solid #4CAF50");
+        } else {
+          $("body").css("border-top", "6px solid red");
+        }
         update_menu();
         update_music();
         break;

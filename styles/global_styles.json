@@ -14,9 +14,9 @@
       "name": "full-widescreen",
       "params": {
         "aspect-ratio": 1.777,
-        "font-size-vh": 20,
+        "font-size-vh": 10,
         "div-width-vw": 80,
-        "max-lines": 3,
+        "max-lines": 6,
         "font-file": "./fonts/Raleway-Bold.ttf"
       }
     },

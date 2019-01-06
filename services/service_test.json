@@ -1,18 +1,1 @@
-{
-    "items": [
-        {
-            "type": "bible",
-            "version": "NIV",
-            "start_id": 26046,
-            "end_id": 26048
-        },
-        {
-            "type": "song",
-            "song_id": 1
-        },
-        {
-            "type": "song",
-            "song_id": 297
-        }
-    ]
-}
+{"items": [{"type": "bible", "version": "NIV", "start_id": 26046, "end_id": 26048}, {"type": "song", "song_id": 1}, {"type": "song", "song_id": 297}, {"type": "video", "url": "./videos/whitman.mp4"}, {"type": "bible", "version": "NIV", "start_id": "26122", "end_id": "26126"}, {"type": "bible", "version": "NIV", "start_id": "29208", "end_id": "29209"}, {"type": "bible", "version": "NIV", "start_id": "29211", "end_id": "29211"}, {"type": "bible", "version": "NIV", "start_id": "29213", "end_id": "29214"}]}
