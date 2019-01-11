@@ -242,6 +242,8 @@ class MalachiServer():
                 "command.pause-video": [self.pause_video, []],
                 "command.stop-video": [self.stop_video, []],
                 "command.seek-video": [self.seek_video, ["seconds"]],
+                "command.transpose-up": [self.transpose_up, []],
+                "command.transpose-down": [self.transpose_down, []],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -1068,6 +1070,38 @@ class MalachiServer():
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.seek-video", status, details)
+
+    async def transpose_up(self, websocket, params):
+        """Transpose the current song up by one semitone and update appropriate clients."""
+        status, details = "ok", ""
+        if self.s.get_current_item_type() == "Song":
+            idx = self.s.item_index
+            new_transpose = (self.s.items[idx].transpose_by + 1) % 12
+            Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
+            # Refresh song in service
+            self.s.items[idx].get_nonslide_data()
+            self.s.items[idx].paginate_from_style(self.style_list[self.current_style])
+            # Update all clients
+            await self.clients_item_index_update()
+        else:
+            status, details = "invalid-item", "Current service item is not a song"
+        await self.server_response(websocket, "response.transpose-up", status, details)
+
+    async def transpose_down(self, websocket, params):
+        """Transpose the current song down by one semitone and update appropriate clients."""
+        status, details = "ok", ""
+        if self.s.get_current_item_type() == "Song":
+            idx = self.s.item_index
+            new_transpose = (self.s.items[idx].transpose_by - 1) % 12
+            Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
+            # Refresh song in service
+            self.s.items[idx].get_nonslide_data()
+            self.s.items[idx].paginate_from_style(self.style_list[self.current_style])
+            # Update all clients
+            await self.clients_item_index_update()
+        else:
+            status, details = "invalid-item", "Current service item is not a song"
+        await self.server_response(websocket, "response.transpose-down", status, details)
 
     # Server response function
     async def server_response(self, websocket, action, status, details):

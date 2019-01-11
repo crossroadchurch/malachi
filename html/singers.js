@@ -1,12 +1,12 @@
-let websocket;
-let played_key = "";
-let slide_type = "";
-let current_title = "";
-let service_items = [];
-let current_slides = [];
-let part_counts = [];
-let slide_index = -1;
-let item_index = -1;
+var websocket;
+var played_key = "";
+var slide_type = "";
+var current_title = "";
+var service_items = [];
+var current_slides = [];
+var part_counts = [];
+var slide_index = -1;
+var item_index = -1;
 
 function update_music() {
   $("#playedkey").html(played_key);
@@ -38,7 +38,7 @@ function update_music() {
     for (line in current_slide_lines){
       current_text = current_text + "<p>";
       current_line_segments = current_slide_lines[line].split(/\[[\w\+#\/"='' ]*\]/);
-      for (let segment=0; segment < current_line_segments.length; segment++){
+      for (var segment=0; segment < current_line_segments.length; segment++){
         cur_seg = current_line_segments[segment];
         current_text = current_text + cur_seg;
       }
@@ -55,7 +55,7 @@ function update_music() {
     for (line in next_slide_lines){
       next_text = next_text + "<p>";
       next_line_segments = next_slide_lines[line].split(/\[[\w\+#\/"='' ]*\]/);
-      for (let segment=0; segment < next_line_segments.length; segment++){
+      for (var segment=0; segment < next_line_segments.length; segment++){
         next_seg = next_line_segments[segment];
         next_text = next_text + next_seg;
       }

@@ -1,11 +1,11 @@
-let capo = 0;
-let verse_order = "";
-let played_key = "";
-let slide_type = "";
-let current_slides = [];
-let part_counts = [];
-let slide_index = -1;
-let websocket;
+var capo = 0;
+var verse_order = "";
+var played_key = "";
+var slide_type = "";
+var current_slides = [];
+var part_counts = [];
+var slide_index = -1;
+var websocket;
 
 function update_music() {
   $("#playedkey").html(played_key);

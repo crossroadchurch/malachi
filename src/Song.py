@@ -21,7 +21,7 @@ class Song():
     """Represent a Song object in Malachi."""
 
     STR_FIELDS = ['song_book_name', 'title', 'author', 'song_key',
-                  'verse_order', 'copyright', 'song_number', 'search_title', 'search_lyrics']
+                  'verse_order', 'copyright', 'song_number', 'search_title']
     INT_FIELDS = ['transpose_by']
 
     def __init__(self, song_id, cur_style):
@@ -213,16 +213,13 @@ class Song():
         self.parts = dict([x["part"], x["data"]] for x in json.loads(result[0]))
         self.verse_order = result[1]
 
+        # Create verse order if it is missing
         if self.verse_order is None:
-            # Song with no verse order
-            slide_temp = list(self.parts)
-        else:
-            if self.verse_order.strip() == "":
-                # Song with no verse order
-                slide_temp = list(self.parts)
-            else:
-                slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
+            self.verse_order = ' '.join([x for x in self.parts])
+        elif self.verse_order.strip() == "":
+            self.verse_order = ' '.join([x for x in self.parts])
 
+        slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
         self.slides = []
         self.part_slide_count = []
 
@@ -249,7 +246,10 @@ class Song():
                     for i in range(len(line_words)):
                         line_part_chorded = ' '.join(line_words[line_start:i+1])
                         line_part = re.sub(r'\[[\w\+#\/]*\]', '', line_part_chorded)
-                        size = font.getsize(line_part)
+                        if line_part:
+                            size = font.getsize(line_part)
+                        else: # Zero length line
+                            size = [0, 0]
                         if size[0] > div_width_px:
                             line_count += 1
                             line_start = i
@@ -352,7 +352,7 @@ class Song():
         song_key -- must be a valid key
         transpose_by -- must be an integer
         lyrics_chords -- must be a list of sections, each of the form:
-            e.g. {"part": "v1", "data": "Lyrics with optional [A]chords and [br] mandatory breaks"}
+            e.g. {"part": "v1", "lines": [line_1, ..., line_N]}
             If chords are used then song_key cannot be blank
 
         Possible exceptions:
@@ -392,27 +392,99 @@ class Song():
                     fields["transpose_by"] = int(fields["transpose_by"]) % 12
         if "lyrics_chords" in fields:
             search_lyrics = ""
+            lyrics_chords = []
+            if "song_key" in fields:
+                song_key = fields["song_key"]
+            elif saved_song_key:
+                song_key = saved_song_key
+
             uses_chords = False
             for section in fields["lyrics_chords"]:
-                # e.g. section = { "part": "c1", "data": "some [C] lyrics" }
-                if "part" in section and "data" in section:
-                    # Add data to search_lyrics, less anything in []
-                    search_lyrics = search_lyrics + re.sub(
-                        r'\[.*?\]', '', section["data"].lower().replace('\n', ' ')) + " "
-                    # Detect whether chords have been used
-                    if uses_chords is False:
-                        chord_br_tags = re.findall(r'\[.*?\]', section["data"])
-                        if chord_br_tags.count("[br]") < len(chord_br_tags):
-                            # Some of the tags are chords
+                section_data = ""
+                # e.g. section = { "part": "c1", "lines": [line_1, ..., line_N] }
+                if "part" in section and "lines" in section:
+                    prev_line = ""
+                    # Do all chord checking here
+                    for line in section["lines"]:
+                        if line[-1] == "@" and uses_chords is False:
                             uses_chords = True
                             # Check there is a key, either in saved record or fields["song_key"]
                             # If fields["song_key"] exists then it has already been validated
                             if "song_key" not in fields and saved_song_key not in Chords.key_list:
                                 raise InvalidSongFieldError(
                                     "No key specified for a song with chords")
+
+                    # Now process section and combine chords and lyrics
+                    for line in section["lines"]:
+                        # Case 1: Line is chords
+                        if line[-1] == "@":
+                            if len(prev_line) >= 1 and prev_line[-1] == "@":
+                                # Previous line is chords
+                                section_data += Chords.combine_chords_and_lyrics(\
+                                    prev_line[:-1], "", song_key) + "\n"
+                                prev_line = line
+                            elif not prev_line:
+                                # Previous line already processed
+                                prev_line = line
+                            else:
+                                # Previous line is lyrics
+                                section_data += prev_line + "\n"
+                                prev_line = line
+
+                        # Case 2: Line is [br]
+                        elif line.strip() == "[br]":
+                            if len(prev_line) >= 1 and prev_line[-1] == "@":
+                                # Previous line is chords
+                                section_data += Chords.combine_chords_and_lyrics(\
+                                    prev_line[:-1], "", song_key) + "\n[br]\n"
+                                prev_line = ""
+                            elif not prev_line:
+                                # Previous line already processed
+                                section_data += "[br]\n"
+                                prev_line = ""
+                            else:
+                                # Previous line is lyrics
+                                section_data += prev_line + "\n[br]\n"
+                                prev_line = ""
+
+                        # Case 3: Line is lyrics
+                        else:
+                            if len(prev_line) >= 1 and prev_line[-1] == "@":
+                                # Previous line is chords
+                                section_data += Chords.combine_chords_and_lyrics(\
+                                    prev_line[:-1], line, song_key) + "\n"
+                                prev_line = ""
+                            elif not prev_line:
+                                # Previous line already processed
+                                section_data += line + "\n"
+                                prev_line = ""
+                            else:
+                                # Previous line is lyrics
+                                section_data += prev_line + "\n" + line + "\n"
+                                prev_line = ""
+
+                    # Deal with final line, if necessary
+                    if len(prev_line) >= 1 and prev_line[-1] == "@":
+                        # Final line is chords
+                        section_data += Chords.combine_chords_and_lyrics(\
+                            prev_line[:-1], "", song_key) + "\n"
+                    elif prev_line:
+                        # Final line is unprocesssed lyrics
+                        section_data += prev_line + "\n"
+
+                    # Remove final \n from section_data and add section to lyrics_chords
+                    cur_section = {}
+                    cur_section["part"] = section["part"]
+                    cur_section["data"] = section_data[:-1]
+                    lyrics_chords.append(cur_section)
+
+                    # Add lyrics to search_lyrics
+                    search_lyrics = search_lyrics + re.sub(
+                        r'\[.*?\]', '', cur_section["data"].lower().replace('\n', ' ')) + " "
                 else:
                     raise InvalidSongFieldError("lyrics_chords is not correctly formatted")
-            fields["search_lyrics"] = search_lyrics
+            search_lyrics = re.sub(r'[^a-zA-Z0-9\s]', '', search_lyrics)
+            fields["search_lyrics"] = ' '.join(search_lyrics.lower().split()) # Remove extra spaces
         # Create update query for all valid fields in param["fields"] and update song
         update_str = "UPDATE songs SET "
         for field in fields:
@@ -428,12 +500,13 @@ class Song():
             update_str = update_str + " WHERE id=" + str(song_id)
             cursor.execute(update_str)
             song_db.commit()
+        # Update lyrics_chords and search_lyrics
         if "lyrics_chords" in fields:
             cursor.execute('''
                 UPDATE songs
-                SET lyrics_chords = ?
+                SET lyrics_chords = ?, search_lyrics = ?
                 WHERE id = ?
-            ''', (json.dumps(fields["lyrics_chords"]), song_id))
+            ''', (json.dumps(lyrics_chords), fields["search_lyrics"], song_id))
             song_db.commit()
         song_db.close()
 

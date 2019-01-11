@@ -1,5 +1,5 @@
-let websocket;
-let current_item;
+var websocket;
+var current_item;
 
 function display_current_slide(slide_index){
     current_slide = current_item.slides[slide_index];
@@ -8,7 +8,7 @@ function display_current_slide(slide_index){
         slide_text = "<p>";
         for (line in slide_lines){
             line_segments = slide_lines[line].split(/\[[\w\+#\/"='' ]*\]/);
-            for (let segment=0; segment < line_segments.length; segment++){
+            for (var segment=0; segment < line_segments.length; segment++){
             slide_text += line_segments[segment];
             }
             slide_text += "<br />";

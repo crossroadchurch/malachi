@@ -14,36 +14,18 @@
 </head>
 <body>
   <div id="main_area">
-    <div id="controller_area">
-      <div id="controller_menubar">
-      </div>
-      <div id="screen_and_controls">
-        <div id="screen_view">
-          <iframe src="./screen" style="position:absolute; top:0; left:0; width:100%; height: 100%; border:0"></iframe>
-        </div>
-        <div id="slide_controls">
-        </div>
-      </div>
-      <div id="lighting_controls">
-      </div>
-    </div>
     <div id="item_area">
-      <div class="ui-content">
-        <div class="ui-grid-a">
-          <div class="ui-block-a">
-            <h3>Current item</h3>
-          </div>
-          <div class="ui-block-b">
-            <label for="flip_screen_state" class="ui-hidden-accessible">Screen state:</label>
-            <input type="checkbox" data-role="flipswitch" data-on-text="Screen ON" data-off-text="Screen OFF" data-wrapper-class="custom-size-flipswitch" name="flip_screen_state" id="flip_screen_state">
-          </div>
+      <div id="screen_view">
+        <iframe id="screen_iframe" src="./screen"></iframe>
+      </div>
+      <div id="current_item">
+        <div style="padding-left:1em; padding-right:1em;">
+          <input type="checkbox" data-role="flipswitch" data-on-text="Screen ON" data-off-text="Screen OFF" data-wrapper-class="custom-size-flipswitch" name="flip_screen_state" id="flip_screen_state">
+          <img id="current_item_icon" src="/html/icons/icons8-musical-notes-48.png" /><span id="current_item_name">Item title</span>
         </div>
-        <ul id="current_item_title" data-role="listview" data-inset="true">
-          <li>
-            <img class="ui-li-icon" src="/html/icons/icons8-musical-notes-48.png" />Item title
-          </li>
-        </ul>
-        <ul id="current_item_list" data-role="listview" data-inset="true"></ul>
+        <div style="padding: 0px 10px 10px 10px">
+          <ul id="current_item_list" data-role="listview" data-inset="true"></ul>
+        </div>
       </div>
     </div>
     <div id="elements_area" class="ui-content">
@@ -53,6 +35,8 @@
         <li><a href="#bible_element"><img class="element_icon" src="/html/icons/icons8-literature-48.png" alt="Bibles" /></a></li>
         <li><a href="#presentation_element"><img class="element_icon" src="/html/icons/icons8-presentation-48.png" alt="Presentations" /></a></li>
         <li><a href="#video_element"><img class="element_icon" src="/html/icons/icons8-tv-show-48.png" alt="Videos" /></a></li>
+        <li><a href="#lights_element"><img class="element_icon" src="/html/icons/icons8-illumination-48.png" alt="Lights" /></a></li>
+        <li><a href="#styles_element"><img class="element_icon" src="/html/icons/icons8-services-48.png" alt="Styles" /></a></li>
       </ul>
 
       <div id="service_element">
@@ -67,7 +51,14 @@
       </div>
 
       <div id="song_element" class="ui-content">
-        <input type="search" id="song_search" value="" placeholder="Lyric or title search" oninput="song_search()">
+        <div>
+          <div id="song_search_div">
+            <input type="search" id="song_search" value="" placeholder="Lyric or title search" oninput="song_search()">
+          </div>
+          <div id="new_song_btn_div">
+            <button id="new_song_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="create_song()">Create song</button>
+          </div>
+        </div>
         <ul id="song_list" data-role="listview" data-inset="true"></ul>
       </div>
 
@@ -115,9 +106,17 @@
       </div>
 
       <div id="video_element" class="ui-content">
-          <h3>Available videos</h3>
-          <ul id="video_list" data-role="listview" data-inset="true">
-          </ul>
+        <h3>Available videos</h3>
+        <ul id="video_list" data-role="listview" data-inset="true">
+        </ul>
+      </div>
+
+      <div id="lights_element" class="ui-content">
+        <h3>Lights control - coming soon!</h3>
+      </div>
+
+      <div id="styles_element" class="ui-content">
+        <h3>Style editor - coming soon!</h3>
       </div>
     </div>
   </div>
@@ -184,5 +183,83 @@
       <a onclick="" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
   </div>
 
+  <!-- POPUP: Song item options -->
+  <div data-role="popup" id="popup_song_item_options" data-position-to="origin">
+    <div class="ui-content">
+      <a onclick="edit_song();" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Edit</a>
+      <a onclick="add_song();" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Add to Service</a>
+    </div>
+  </div>
+
+  <!-- POPUP: Edit song dialog -->
+  <div data-role="popup" data-dismissible="false" data-overlay-theme="b" id="popup_edit_song">
+    <div data-role="header" id="edit_song_mode_header">
+      <h1>Edit song</h1>
+    </div>
+    <div data-role="header" id="create_song_mode_header">
+      <h1>Create song</h1>
+    </div>
+    <div role="main" class="ui-content">
+      <div class="ui-grid-a">
+        <div class="ui-block-a"> <!-- LEFT COLUMN -->
+          <label for="e_title">Song name:</label>
+          <input type="text" name="e_title" id="e_title" data-clear-btn="true">
+          <label for="e_author">Author:</label>
+          <input type="text" name="e_author" id="e_author" data-clear-btn="true">
+          <label for="e_copyright">Copyright:</label>
+          <input type="text" name="e_copyright" id="e_copyright" data-clear-btn="true">
+          <div class="ui-grid-a">
+            <div class="ui-block-a">
+              <label for="e_book">Song book:</label>
+              <input type="text" name="e_book" id="e_book" data-clear-btn="true">
+            </div>
+            <div class="ui-block-b">
+              <label for="e_number">Song number:</label>
+              <input type="text" name="e_number" id="e_number" data-clear-btn="true">
+            </div>
+          </div>
+          <label for="e_order">Verse order:</label>
+          <input type="text" name="e_order" id="e_order" data-clear-btn="true">
+          <div class="ui-grid-a">
+            <div class="ui-block-a">
+              <label for="e_key">Key:</label>
+              <select name="e_key" id="e_key">
+                <option value="C">C</option>
+                <option value="Db">Db</option>
+                <option value="D">D</option>
+                <option value="Eb">Eb</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="F#">F#</option>
+                <option value="G">G</option>
+                <option value="Ab">Ab</option>
+                <option value="A">A</option>
+                <option value="Bb">Bb</option>
+                <option value="B">B</option>
+              </select>
+            </div>
+            <div class="ui-block-b">
+              <label for="e_transpose">Transpose by:</label>
+              <input type="range" name="e_transpose" id="e_transpose" min="-11" max="11">
+            </div>
+          </div>
+        </div>
+        <div class="ui-block-b"> <!-- RIGHT COLUMN -->
+          <label for="e_lyrics">Lyrics:</label>
+          <textarea cols="40" rows="10" name="e_lyrics" id="e_lyrics" data-autogrow="false"></textarea>
+        </div>
+      </div>
+      <div id="edit_song_popup_buttons">
+        <a onclick="save_song();" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline">Save</a>
+        <a onclick="reset_edit_song_form();" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP: Create song error -->
+  <div data-role="popup" data-dismissible="false" data-overlay-theme="b" id="popup_error_edit_song">
+    <p>Can't create song without title</p>
+    <a onclick="" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
+  </div>
 </body>
 </html>

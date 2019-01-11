@@ -1,14 +1,14 @@
-let capo = 0;
-let menustring = "";
-let verse_order = "";
-let played_key = "";
-let slide_type = "";
-let service_items = [];
-let current_slides = [];
-let part_counts = [];
-let slide_index = -1;
-let item_index = -1;
-let websocket;
+var capo = 0;
+var menustring = "";
+var verse_order = "";
+var played_key = "";
+var slide_type = "";
+var service_items = [];
+var current_slides = [];
+var part_counts = [];
+var slide_index = -1;
+var item_index = -1;
+var websocket;
 
 function update_music() {
   $("#playedkey").html(played_key);
@@ -253,8 +253,17 @@ function update_menu(){
 function display_on() {
   websocket.send(JSON.stringify({"action": "command.set-display-state", "params": {"state": "on"}}));
 }
+
 function display_off() {
   websocket.send(JSON.stringify({"action": "command.set-display-state", "params": {"state": "off"}}));
+}
+
+function transpose_up(){
+  websocket.send(JSON.stringify({"action": "command.transpose-up", "params": {}}));
+}
+
+function transpose_down(){
+  websocket.send(JSON.stringify({"action": "command.transpose-down", "params": {}}));
 }
 
 function update_capo(){
@@ -348,6 +357,8 @@ $(document).ready(function(){
       case "response.previous-slide":
       case "response.goto-slide":
       case "response.goto-item":
+      case "response.transpose-up":
+      case "response.transpose-down":
         console.log("Server response: [" + json_data.action + "], Status: [" + json_data.params.status + "], Details: [" + json_data.params.details + "]");
         break;
       default:
