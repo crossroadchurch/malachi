@@ -16,12 +16,21 @@
   <div id="main_area">
     <div id="item_area">
       <div id="screen_view">
-        <iframe id="screen_iframe" src="./screen"></iframe>
+        <iframe id="screen_iframe" src="./screen?muted=true"></iframe>
       </div>
       <div id="current_item">
         <div style="padding-left:1em; padding-right:1em;">
           <input type="checkbox" data-role="flipswitch" data-on-text="Screen ON" data-off-text="Screen OFF" data-wrapper-class="custom-size-flipswitch" name="flip_screen_state" id="flip_screen_state">
           <img id="current_item_icon" src="/html/icons/icons8-musical-notes-48.png" /><span id="current_item_name">Item title</span>
+        </div>
+        <div id="video_controls" style="padding-left:1em; padding-right:1em;">
+          <button id="play_btn" onclick="play_video();" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play video-ctrl-btn">&nbsp;</button>
+          <button id="pause_btn" onclick="pause_video();" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-pause video-ctrl-btn">&nbsp;</button>
+          <button id="stop_btn" onclick="stop_video();" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-stop video-ctrl-btn">&nbsp;</button>
+          <div id="time_seek_area">
+            <label for="time_seek" class="ui-hidden-accessible">Time:</label>
+            <input type="range" data-highlight="true" name="time_seek" id="time_seek" min="0" max="100">
+          </div>
         </div>
         <div style="padding: 0px 10px 10px 10px">
           <ul id="current_item_list" data-role="listview" data-inset="true"></ul>
@@ -41,7 +50,7 @@
 
       <div id="service_element">
         <div id="service_menu">
-          <button id="new_service_btn" class="ui-btn ui-icon-delete ui-corner-all ui-btn-inline ui-corner-all" onclick="javascript:new_service(false);">New</button>
+          <button id="new_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="javascript:new_service(false);">New</button>
           <button id="load_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="load_service_preload();">Load</button>
           <button id="save_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="save_service('none');">Save</button>
           <button id="save_service_as_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="$('#popup_save_service_as').popup('open');">Save as</button>

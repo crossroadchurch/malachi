@@ -10,8 +10,11 @@
 </head>
 <body>
   <div id="main_area">
-    <video autoplay loop id="loop_video">
-      <source src="./loops/Psalm 139.mov">
+    <video id="video_item" style="display:none;z-index:-1;">
+      <source src="" id="video_item_src">
+    </video>
+    <video autoplay loop id="loop_video" style="z-index:-2;">
+      <source src="" id="loop_video_src">
     </video>
     <div id="slide_area">
     </div>

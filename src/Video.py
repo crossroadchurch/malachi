@@ -25,6 +25,8 @@ class Video():
         self.duration = math.floor(frames/self.fps)
         mins, secs = divmod(self.duration, 60)
         self.slides = ["Video: " + self.title + "\nDuration: {}:{:02}".format(mins, secs)]
+        self.video_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.video_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     def get_title(self):
         """Return the title of the Video"""
@@ -41,10 +43,13 @@ class Video():
         to a client.
         """
         return json.dumps({
-            "type":"video",
-            "title":self.title,
-            "slides":self.slides,
-            "duration": self.duration}, indent=2)
+            "type": "video",
+            "title": self.title,
+            "url": self.url,
+            "slides": self.slides,
+            "duration": self.duration,
+            "video_height": self.video_height,
+            "video_width": self.video_width}, indent=2)
     # pylint: enable=W0613
 
     def __str__(self):

@@ -7,7 +7,10 @@
         "font-size-vh": 10,
         "div-width-vw": 90,
         "max-lines": 6,
-        "font-file": "./fonts/Raleway-Bold.ttf"
+        "font-file": "./fonts/Raleway-Bold.ttf",
+        "loop-video": "./loops/Psalm 139.mov",
+        "loop-width": 1280,
+        "loop-height": 720
       }
     },
     {
@@ -15,9 +18,12 @@
       "params": {
         "aspect-ratio": 1.777,
         "font-size-vh": 10,
-        "div-width-vw": 80,
+        "div-width-vw": 90,
         "max-lines": 6,
-        "font-file": "./fonts/Raleway-Bold.ttf"
+        "font-file": "./fonts/Raleway-Bold.ttf",
+        "loop-video": "./loops/Psalm 139.mov",
+        "loop-width": 1280,
+        "loop-height": 720
       }
     },
     {
@@ -35,5 +41,5 @@
       "params": {}
     }
   ],
-  "default_index": 0
+  "default_index": 1
 }

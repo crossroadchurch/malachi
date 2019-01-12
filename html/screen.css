@@ -8,7 +8,7 @@
 body {
     margin: 0;
     overflow: hidden;
-    background-color: #222222;
+    background-color: #000000;
 }
 
 #main_area {
@@ -18,10 +18,13 @@ body {
 }
 
 #loop_video {
-    position: fixed;
-    bottom: 0;
-    height: auto !important;
-    width: 100%;
+    position: absolute;
+    top: 0;
+}
+
+#video_item {
+    position: absolute;
+    top: 0;
 }
 
 #slide_area {
@@ -34,6 +37,7 @@ body {
     font-family: 'Raleway';
     font-size: 10vh;
     text-shadow: rgb(0,0,0) 0.5vh 0.5vh 0px;
+    text-align: center
 }
 
 #slide_area p {

@@ -8,6 +8,9 @@ let action_after_save;
 let screen_state;
 let icon_dict = {};
 let aspect_ratio;
+let video_timer = 0;
+let video_interval;
+let update_slider = true;
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
 icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
 icon_dict["presentation"] = "/html/icons/icons8-presentation-48.png";
@@ -158,6 +161,25 @@ function edit_song(){
     websocket.send(JSON.stringify({"action": "request.full-song", "params": {"song-id": clicked_song_id}}));
 }
 
+function video_tick(){
+    video_timer += 1;
+    if (update_slider == true){
+        $('#time_seek').val(video_timer).slider('refresh');
+    }
+}
+
+function play_video(){
+    websocket.send(JSON.stringify({"action": "command.play-video", "params": {}}));
+}
+
+function pause_video(){
+    websocket.send(JSON.stringify({"action": "command.pause-video", "params": {}}));
+}
+
+function stop_video(){
+    websocket.send(JSON.stringify({"action": "command.stop-video", "params": {}}));
+}
+
 function create_song(){
     // Empty all fields on popup
     $('#e_title').val("");
@@ -285,6 +307,13 @@ function display_current_item(current_item, slide_index){
         }
     }
 
+    if (current_item.type == "video"){
+        $('#video_controls').css('display', 'block');
+        $('#time_seek').prop("max", current_item.duration).slider('refresh');
+    } else {
+        $('#video_controls').css('display', 'none');
+    }
+
     let item_list = "";
     for (let slide in current_item.slides){
         if (current_item.type == "song"){
@@ -341,6 +370,14 @@ $(document).ready(function(){
             "params": {"from-index": service_sort_start, "to-index": ui.item.index()}
         }));
     });
+    // $('#time_seek').on("slidestart", function(event, ui){
+    //     update_slider = false;
+    // });
+    // $('#time_seek').on("slidestop", function(event, ui){
+    //     update_slider = true;
+    //     console.log($('#time_seek').val());
+    //     websocket.send(JSON.stringify({"action": "command.seek-video", "params": {"seconds": $('#time_seek').val()}}));
+    // });
 
     websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
     websocket.onmessage = function (event) {
@@ -562,6 +599,22 @@ $(document).ready(function(){
                 $('#passage_list').controlgroup('refresh');
                 break;
 
+            case "trigger.play-video":
+                video_interval = setInterval(video_tick, 1000);
+                break;
+            case "trigger.pause-video":
+                clearInterval(video_interval);
+                break;
+            case "trigger.stop-video":
+                clearInterval(video_interval)
+                video_timer = 0;
+                $('#time_seek').val(video_timer).slider('refresh');
+                break;
+            case "trigger.seek-video":
+                video_timer = json_data.params.seconds;
+                $('#time_seek').val(video_timer).slider('refresh');
+                break;
+
             case "response.add-song-item":
             case "response.move-item":
             case "response.next-item":
@@ -574,6 +627,9 @@ $(document).ready(function(){
             case "response.set-display-state":
             case "response.add-video":
             case "response.add-presentation":
+            case "response.play-video":
+            case "response.pause-video":
+            case "response.stop-video":
             case "response.edit-song": // Error handling required...
             case "response.create-song": // Error handling required...
             case "response.add-bible-item": // Error handling required?

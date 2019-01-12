@@ -85,10 +85,34 @@ a.i-item {
     padding-bottom: 3px;
 }
 
-.ui-icon-c1:after {
-    background-image: url("/html/icons/icons8-c1-48.png");
+.ui-icon-play:after {
+    background-image: url("/html/icons/icons8-play-48.png");
     background-position: 3px 3px;
-    background-size: 70%;
+}
+
+.ui-icon-pause:after {
+    background-image: url("/html/icons/icons8-pause-48.png");
+    background-position: 3px 3px;
+}
+
+.ui-icon-stop:after {
+    background-image: url("/html/icons/icons8-stop-48.png");
+    background-position: 3px 3px;
+}
+
+.video-ctrl-btn::after {
+    background-color: rgba(0,0,0,0) !important;
+    border-radius: 0 !important;
+    -webkit-border-radius: 0 !important;
+    left: 33% !important;
+}
+
+#time_seek {
+    display: none;
+}
+
+#time_seek_area .ui-slider-track {
+    margin-left: 15px;
 }
 
 /* Custom indentations are needed because the length of custom labels differs from
