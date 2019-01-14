@@ -2,14 +2,14 @@
   font-family: 'Raleway';
   font-style: normal;
   font-weight: 700;
-  src: local('Raleway-Bold'), url(/files/fonts/Raleway-Bold.ttf) format('truetype');
+  src: local('Raleway-Bold'), url(/html/fonts/Raleway-Bold.ttf) format('truetype');
 }
 
 @font-face {
   font-family: 'Ubuntu Condensed';
   font-style: normal;
   font-weight: 700;
-  src: local('Ubuntu Condensed'), url(/files/fonts/Ubuntu-C.ttf) format('truetype');
+  src: local('Ubuntu Condensed'), url(/html/fonts/Ubuntu-C.ttf) format('truetype');
 }
 
 body {

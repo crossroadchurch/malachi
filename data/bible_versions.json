@@ -1,6 +1,12 @@
 {
     "versions": [
         "NIV",
-        "KJV"
+        "NKJV",
+        "ESV",
+        "NLT",
+        "AMP",
+        "CEV",
+        "KJV",
+        "MSG"
     ]
 }

@@ -242,7 +242,7 @@ function save_song(){
 
         let fields = {
             "author": $('#e_author').val(),
-            "transpose_by": $('#e_transpose').val(),
+            "transpose_by": $('#e_transpose').val() % 12,
             "lyrics_chords": parts,
             "verse_order": $('#e_order').val().toLowerCase(),
             "song_book_name": $('#e_book').val(),
@@ -348,6 +348,17 @@ function indicate_current_slide(slide_index){
     $("#current_item_list li a.i-item").css('background-color', '');
     if (slide_index != -1){
         $("#current_item_list li:nth-child(" + (slide_index+1) + ") a.i-item").css('background-color', SELECTED_COLOR);
+        item_top = $("#current_item_list li:nth-child(" + (slide_index+1) + ")").offset().top;
+        item_height = $("#current_item_list li:nth-child(" + (slide_index+1) + ")").outerHeight();
+        viewable_top = $("#current_item").offset().top;
+        list_top = $("#current_item_list").offset().top;
+        scroll_top = $('#current_item').scrollTop();
+        window_height = $(window).height();
+        if (item_top < viewable_top) {
+            $("#current_item").scrollTop(item_top - list_top);
+        } else if ((item_top+item_height)>window_height){
+            $("#current_item").scrollTop(8 + scroll_top + item_top + item_height - window_height);
+        }
     }
 }
 
@@ -370,6 +381,8 @@ $(document).ready(function(){
             "params": {"from-index": service_sort_start, "to-index": ui.item.index()}
         }));
     });
+    
+    $('#time_seek').parent().find('a').css('display','none')
     // $('#time_seek').on("slidestart", function(event, ui){
     //     update_slider = false;
     // });
@@ -382,6 +395,7 @@ $(document).ready(function(){
     websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
     websocket.onmessage = function (event) {
         json_data = JSON.parse(event.data);
+        console.log(json_data);
         switch(json_data.action){
             case "update.app-init":
                 screen_state = json_data.params.screen_state;
@@ -396,13 +410,17 @@ $(document).ready(function(){
                 aspect_padding = (70/aspect_ratio) + "%"
                 $('#screen_view').css('padding-bottom', aspect_padding);
                 video_height = 0.7 * parseInt($('#item_area').css('width'), 10) / aspect_ratio;
-                $('#current_item').css('height', window.innerHeight - video_height - 16);
-
+                header_height = $('#item_header').height();
+                $('#current_item').css('height', window.innerHeight - video_height - header_height - 16);
 
                 // Populate service plan list
                 service_list = "";
                 for (let item in json_data.params.items){
-                    service_list += "<li><a class='s-item' data-id=" + item + " href='#'>";
+                    if (json_data.params.items[item].type == "song"){
+                        service_list += "<li><a class='s-item' data-id=" + item + " data-songid=" + json_data.params.items[item]["song-id"] + " href='#'>";
+                    } else {
+                        service_list += "<li><a class='s-item' data-id=" + item + " href='#'>";
+                    }
                     service_list += "<img class='ui-li-icon' src='" + icon_dict[json_data.params.items[item].type] + "' />";
                     service_list += json_data.params.items[item].title + "</a>";
                     service_list += "<a class='popup-trigger' href='#popup_service_item_options' data-id=" + item + " data-rel='popup'></li>";
@@ -410,6 +428,12 @@ $(document).ready(function(){
                 $("#service_list").html(service_list);
                 $("#service_list").listview('refresh');
                 $("#service_list a.popup-trigger").on('click', function(event, ui){
+                    if ($(this).parent().children().first().data('songid') !== undefined){
+                        $('#btn_popup_edit_song').css('display', 'inline-block');
+                        clicked_song_id = parseInt($(this).parent().children().first().data('songid'));
+                    } else {
+                        $('#btn_popup_edit_song').css('display', 'none');
+                    }
                     clicked_service_item = $(this).data('id');
                 });
                 $("#service_list a.s-item").on('dblclick', function(event, ui){
@@ -436,8 +460,13 @@ $(document).ready(function(){
                 // Populate service plan list
                 service_list = "";
                 for (let idx in json_data.params.items){
-                    service_list += "<li><a class='s-item' href='#' data-id=" + idx + ">";
-                    service_list += "<img class='ui-li-icon' src='" + icon_dict[json_data.params.types[idx]] + "' />";
+                    if (json_data.params.types[idx].substr(0,4) == "song"){
+                        service_list += "<li><a class='s-item' href='#' data-id=" + idx + " data-songid=" + json_data.params.types[idx].substr(5) +">";
+                        service_list += "<img class='ui-li-icon' src='" + icon_dict["song"] + "' />";
+                    } else {
+                        service_list += "<li><a class='s-item' href='#' data-id=" + idx + ">";
+                        service_list += "<img class='ui-li-icon' src='" + icon_dict[json_data.params.types[idx]] + "' />";
+                    }
                     service_list += json_data.params.items[idx] + "</a>";
                     service_list += "<a class='popup-trigger' href='#popup_service_item_options' data-id=" + idx + " data-rel='popup'></li>";
                 }

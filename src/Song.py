@@ -124,6 +124,7 @@ class Song():
             c_slides = self.slides
         return json.dumps({
             "type":"song",
+            "song-id":self.song_id,
             "title":self.title,
             "slides":c_slides,
             "played-key": p_key,

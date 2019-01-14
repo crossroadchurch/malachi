@@ -226,17 +226,24 @@ class Service():
         Arguments:
         capo -- the capo being used by the client requesting this information
         """
+        all_items = [json.loads(x.to_JSON(0)) for x in self.items]
+        type_list = []
+        for item in all_items:
+            if item["type"] == "song":
+                type_list.append("song-" + str(item["song-id"]))
+            else:
+                type_list.append(item["type"])
         if self.item_index > -1 and self.items:
             return json.dumps({
                 "items": [x.get_title() for x in self.items],
-                "types": [json.loads(x.to_JSON(0))["type"] for x in self.items],
+                "types": type_list,
                 "current_item": json.loads(self.items[self.item_index].to_JSON(capo)),
                 "item_index": self.item_index,
                 "slide_index": self.slide_index}, indent=2)
         else:
             return json.dumps({
                 "items": [x.get_title() for x in self.items],
-                "types": [json.loads(x.to_JSON(0))["type"] for x in self.items],
+                "types": type_list,
                 "current_item": {},
                 "item_index": self.item_index,
                 "slide_index": self.slide_index}, indent=2)

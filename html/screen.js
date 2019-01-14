@@ -97,6 +97,9 @@ $(document).ready(function(){
                     loop_width = 0;
                     loop_ar = 0;
                 }
+                div_width = json_data.params.style.params["div-width-vw"];
+                $('#slide_area').css("width", div_width + "vw");
+                $('#slide_area').css("margin-left", ((100-div_width)/2) + "vw");
                 if (json_data.params.screen_state == "on"){
                     $('#slide_area').css("display", "block");
                 } else {
