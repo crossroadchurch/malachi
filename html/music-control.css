@@ -154,7 +154,7 @@ span {
   white-space: pre;
 }
 
-#playedkey, #capoarea, #verseorder, #keyandcapo {
+#playedkey, #capoarea, #verseorder, #keyandcapo, #transposearea {
   display: inline;
 }
 
@@ -167,6 +167,12 @@ span {
 #caposelect {
   font-size: 1.25rem;
   width: 6rem;
+}
+
+#transposeselect {
+  font-size: 1.25rem;
+  width: 3rem;
+  margin-left: 5px;
 }
 
 #controlarea {

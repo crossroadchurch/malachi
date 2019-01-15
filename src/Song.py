@@ -109,6 +109,7 @@ class Song():
         """
         # Need to return song transposed by -capo, plus the new key - if the song has chords!
         if self.resultant_key != "":
+            o_key = self.resultant_key
             if capo == 0:
                 p_key = self.resultant_key
                 c_slides = self.slides
@@ -120,7 +121,7 @@ class Song():
                 for slide in self.slides:
                     c_slides.append(Chords.transpose_section(slide, self.resultant_key, -int(capo)))
         else:
-            p_key = ""
+            p_key, o_key = "", ""
             c_slides = self.slides
         return json.dumps({
             "type":"song",
@@ -128,6 +129,7 @@ class Song():
             "title":self.title,
             "slides":c_slides,
             "played-key": p_key,
+            "non-capo-key": o_key,
             "verse-order": self.verse_order,
             "part-counts": self.part_slide_count}, indent=2)
 

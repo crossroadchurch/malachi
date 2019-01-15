@@ -22,7 +22,22 @@
         <button id="display-menu" data-jq-dropdown="#jq-dropdown-2" class="menu-button">
           <span class="icon-box"></span>
         </button>
-        <div id="playedkey"></div>
+        <div id="transposearea">
+          <select id="transposeselect">
+            <option value="C">C</option>
+            <option value="Db">Db</option>
+            <option value="D">D</option>
+            <option value="Eb">Eb</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="F#">F#</option>
+            <option value="G">G</option>
+            <option value="Ab">Ab</option>
+            <option value="A">A</option>
+            <option value="Bb">Bb</option>
+            <option value="B">B</option>
+          </select>
+        </div>
         <div id="capoarea">
           <select id="caposelect">
             <option selected="selected" value="0">Capo 0</option>
@@ -39,6 +54,7 @@
             <option value="11">Capo 11</option>
           </select>
         </div>
+        <div id="playedkey"></div>
       </div>
       <div id="verseorder"></div>
     </div>
@@ -64,12 +80,6 @@
         </li>
         <li class='menu-display-item'>
           <a onclick='display_on()'>Display ON</a>
-        </li>
-        <li class='menu-display-item'>
-          <a onclick='transpose_up()'>Transpose UP</a>
-        </li>
-        <li class='menu-display-item'>
-          <a onclick='transpose_down()'>Transpose DOWN</a>
         </li>
       </ul>
     </div>
