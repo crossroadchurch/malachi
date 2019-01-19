@@ -77,6 +77,14 @@ function resize_loop(){
     }
 }
 
+function update_from_style(style){
+    div_width = style["div-width-vw"];
+    $('#slide_area').css("width", div_width + "vw");
+    $('#slide_area').css("margin-left", ((100-div_width)/2) + "vw");
+    $('#slide_area').css("margin-top", style["margin-top-vh"] + "vh");
+    $('#slide_area').css("font-size", style["font-size-vh"] + "vh");
+}
+
 $(document).ready(function(){
     websocket = new WebSocket("ws://" + window.location.hostname + ":9001/display");
     websocket.onmessage = function (event) {
@@ -84,22 +92,21 @@ $(document).ready(function(){
         console.log(json_data);
         switch(json_data.action){
             case "update.display-init":
-                if ("loop-video" in json_data.params.style.params){
-                    $('#loop_video_src').attr('src', json_data.params.style.params["loop-video"]);
+                if (json_data.params["video_loop"] !== ""){
+                    $('#loop_video_src').attr('src', json_data.params["video_loop"]);
                     $('#loop_video').load();
-                    loop_height = json_data.params.style.params["loop-height"];
-                    loop_width = json_data.params.style.params["loop-width"];
+                    loop_height = json_data.params["loop-height"];
+                    loop_width = json_data.params["loop-width"];
                     loop_ar = loop_width / loop_height;
                     resize_loop();
                 } else {
                     $('#loop_video_src').attr('src', '');
+                    $('#loop_video').load();
                     loop_height = 0;
                     loop_width = 0;
                     loop_ar = 0;
                 }
-                div_width = json_data.params.style.params["div-width-vw"];
-                $('#slide_area').css("width", div_width + "vw");
-                $('#slide_area').css("margin-left", ((100-div_width)/2) + "vw");
+                update_from_style(json_data.params.style);
                 if (json_data.params.screen_state == "on"){
                     $('#slide_area').css("display", "block");
                 } else {
@@ -109,6 +116,10 @@ $(document).ready(function(){
                 if (json_data.params.item_index != -1){
                     display_current_slide(json_data.params.slide_index);
                 }
+                break;
+
+            case "update.style-update":
+                update_from_style(json_data.params.style);
                 break;
 
             case "update.service-overview-update":
@@ -128,6 +139,23 @@ $(document).ready(function(){
                     $('#slide_area').css("display", "block");
                 } else {
                     $('#slide_area').css("display", "none");
+                }
+                break;
+
+            case "update.video-loop":
+                if (json_data.params.url !== ""){
+                    $('#loop_video_src').attr('src', json_data.params.url);
+                    $('#loop_video').load();
+                    loop_height = json_data.params["loop-height"];
+                    loop_width = json_data.params["loop-width"];
+                    loop_ar = loop_width / loop_height;
+                    resize_loop();
+                } else {
+                    $('#loop_video_src').attr('src', '');
+                    $('#loop_video').load();
+                    loop_height = 0;
+                    loop_width = 0;
+                    loop_ar = 0;
                 }
                 break;
 

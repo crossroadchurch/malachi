@@ -143,3 +143,15 @@ a.i-item {
     height: 400px;
     font-family: 'Courier New', Courier, monospace;
 }
+
+.inputless-slider input {
+    display: none !important;
+}
+
+.inputless-slider .ui-slider-track {
+    margin-left: 15px;
+}
+
+.toast {
+    text-shadow: none;
+}

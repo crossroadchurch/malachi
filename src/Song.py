@@ -177,16 +177,16 @@ class Song():
         # Test for existance of necessary formatting keys within params
         missing_params = []
         for param in ["aspect-ratio", "font-size-vh", "div-width-vw", "max-lines", "font-file"]:
-            if param not in style["params"]:
+            if param not in style:
                 missing_params.append(param)
         if missing_params:
             raise MissingStyleParameterError(', '.join(missing_params))
         self.paginate(
-            style["params"]["aspect-ratio"],
-            style["params"]["font-size-vh"],
-            style["params"]["div-width-vw"],
-            style["params"]["max-lines"],
-            style["params"]["font-file"])
+            style["aspect-ratio"],
+            style["font-size-vh"],
+            style["div-width-vw"],
+            style["max-lines"],
+            style["font-file"])
 
     def paginate(self, aspect_ratio, font_size_vh, div_width_vw, max_lines, font_file):
         """Paginate the current Song based on the specified style options.
@@ -199,9 +199,9 @@ class Song():
         font_file -- the URL of the font being used, relative to the root of Malachi.
         """
         window_height = 800 # Arbitrary value chosen
-        window_width = window_height * aspect_ratio
-        font_size_px = window_height * font_size_vh / 100
-        div_width_px = window_width * div_width_vw / 100
+        window_width = window_height * float(aspect_ratio)
+        font_size_px = window_height * int(font_size_vh) / 100
+        div_width_px = window_width * int(div_width_vw) / 100
         font = ImageFont.truetype(font_file, math.ceil(font_size_px))
 
         # Need to track chords along with words, but not include chords in width calculations
@@ -258,12 +258,12 @@ class Song():
                             line_start = i
                             # Line is longer than an entire slide, so break over two slides
                             # This is a very unlikely case...!
-                            if line_count == max_lines:
+                            if line_count == int(max_lines):
                                 self.slides.append(' '.join(line_words[slide_start:i]))
                                 section_length += 1
                                 slide_start, line_count = i, 0
                     line_count += 1
-                    if (cur_slide_lines + line_count) <= max_lines:
+                    if (cur_slide_lines + line_count) <= int(max_lines):
                         # Add current line to current slide
                         if cur_slide_text == "":
                             cur_slide_text = ' '.join(line_words[slide_start:])

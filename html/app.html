@@ -6,10 +6,12 @@
   <link rel="stylesheet" href="/html/app.css" />
   <link rel="stylesheet" href="/html/jquery-ui.min.css" />
   <link rel="stylesheet" href="/html/jquery.mobile-1.4.5.min.css" />
+  <link rel="stylesheet" href="/html/toastr.min.css" />
   <link rel="icon" href="/html/favicon.png" type="image/png" />
   <script type="text/javascript" src="/html/jquery-1.12.4.min.js"></script>
   <script type="text/javascript" src="/html/jquery-ui.min.js"></script>
   <script type="text/javascript" src="/html/jquery.mobile-1.4.5.min.js"></script>
+  <script type="text/javascript" src="/html/toastr.min.js"></script>
   <script type="text/javascript" src="/html/app.js"></script>
 </head>
 <body>
@@ -116,8 +118,7 @@
 
       <div id="video_element" class="ui-content">
         <h3>Available videos</h3>
-        <ul id="video_list" data-role="listview" data-inset="true">
-        </ul>
+        <ul id="video_list" data-role="listview" data-inset="true"></ul>
       </div>
 
       <div id="lights_element" class="ui-content">
@@ -125,7 +126,28 @@
       </div>
 
       <div id="styles_element" class="ui-content">
-        <h3>Style editor - coming soon!</h3>
+        <h3>Loops</h3>
+        <ul id="loop_list" data-role="listview" data-inset="true"></ul>
+        <button id="cancel_loop_btn" class="ui-btn ui-corner-all" onclick="clear_loop()">Clear loop</button>
+        <h3>Styling</h3>
+        <div>
+          <div class="inputless-slider">
+            <label for="s_width">Song area width (% of screen):</label>
+            <input type="range" name="s_width" id="s_width" min="50" max="100" data-highlight="true" data-show-value="true">
+          </div>
+          <div class="inputless-slider">
+            <label for="s_font_size">Font size (% of screen height):</label>
+            <input type="range" name="s_font_size" id="s_font_size" min="5" max="20" data-highlight="true" data-show-value="true">
+          </div>
+          <div class="inputless-slider">
+            <label for="s_lines">Max lines per slide:</label>
+            <input type="range" name="s_lines" id="s_lines" min="1" max="10" data-highlight="true" data-show-value="true">
+          </div>
+          <div class="inputless-slider">
+              <label for="s_margin">Top margin (% of screen height):</label>
+              <input type="range" name="s_margin" id="s_margin" min="0" max="25" data-highlight="true" data-show-value="true">
+            </div>
+        </div>
       </div>
     </div>
   </div>

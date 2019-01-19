@@ -16,6 +16,7 @@ from json.decoder import JSONDecodeError
 import os
 import pathlib
 import threading
+import cv2
 from Service import Service
 from BiblePassage import BiblePassage
 from Song import Song
@@ -39,15 +40,18 @@ class MalachiServer():
 
     LIGHT_PRESET_FILE = "./lights/light_presets.json"
     SONGS_DATABASE = "./data/songs.sqlite"
-    GLOBAL_STYLES_FILE = "./styles/global_styles.json"
+    GLOBAL_STYLE_FILE = "./data/global_style.json"
     BIBLE_VERSIONS_FILES = "./data/bible_versions.json"
 
     def __init__(self):
         try:
             self.light_preset_list, self.light_channel_list = [], []
             self.bible_versions = [] # Loaded within check_data_files()
-            self.style_list, self.current_style = [], []
+            self.screen_style = []
+            self.video_loop = ""
+            self.loop_width, self.loop_height = 0, 0
             self.check_data_files()
+            Video.generate_video_thumbnails()
             self.SOCKETS = set()
             self.LIGHT_STATE_SOCKETS = set()
             self.DISPLAY_STATE_SOCKETS = set()
@@ -60,7 +64,7 @@ class MalachiServer():
             self.ph = PresentationHandler()
             self.load_light_presets()
             self.lh = LightHandler(self.light_channel_list)
-            self.load_styles()
+            self.load_style()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
 
@@ -139,8 +143,11 @@ class MalachiServer():
     async def display_init(self, websocket):
         """Send initialisation message to new display client"""
         service_data = json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
-        service_data['style'] = self.style_list[self.current_style]
+        service_data['style'] = self.screen_style
         service_data['screen_state'] = self.screen_state
+        service_data['video_loop'] = self.video_loop
+        service_data['loop_width'] = self.loop_width
+        service_data['loop_height'] = self.loop_height
         await websocket.send(json.dumps({
             "action" : "update.display-init",
             "params" : service_data
@@ -149,11 +156,12 @@ class MalachiServer():
     async def app_init(self, websocket):
         """Send initialisation message to new app client"""
         service_data = json.loads(self.s.to_JSON_full())
-        service_data['style'] = self.style_list[self.current_style]
-        service_data['style_list'] = self.style_list
-        service_data['current_style'] = self.current_style
+        service_data['style'] = self.screen_style
         service_data['light_preset_list'] = self.light_preset_list
         service_data['screen_state'] = self.screen_state
+        service_data['video_loop'] = self.video_loop
+        service_data['loop_width'] = self.loop_width
+        service_data['loop_height'] = self.loop_height
         await websocket.send(json.dumps({
             "action" : "update.app-init",
             "params" : service_data
@@ -224,11 +232,9 @@ class MalachiServer():
                 "command.load-service": [self.load_service, ["filename", "force"]],
                 "command.save-service": [self.save_service, []],
                 "command.save-service-as": [self.save_service_as, ["filename"]],
-                "command.set-current-style": [self.set_current_style, ["index"]],
-                "command.rename-style": [self.rename_style, ["index", "name"]],
-                "command.delete-style": [self.delete_style, ["index"]],
-                "command.add-style": [self.add_style, ["style"]],
-                "command.edit-style": [self.edit_style, ["index", "style"]],
+                "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
+                "command.set-loop": [self.set_loop, ["url"]],
+                "command.clear-loop": [self.clear_loop, []],
                 "command.set-light-channel": [self.set_light_channel, ["channel", "value"]],
                 "command.set-light-channels": [self.set_light_channels, ["channels"]],
                 "command.get-light-channels": [self.get_light_channels, []],
@@ -255,8 +261,8 @@ class MalachiServer():
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
                 "request.all-presentations": [self.request_all_presentations, []],
                 "request.all-videos": [self.request_all_videos, []],
+                "request.all-loops": [self.request_all_loops, []],
                 "request.all-services": [self.request_all_services, []],
-                "request.all-styles": [self.request_all_styles, []],
                 "request.all-presets": [self.request_all_presets, []]
             }
             async for message in websocket:
@@ -522,7 +528,7 @@ class MalachiServer():
         except InvalidSongFieldError as e:
             status, details = "invalid-field", e.msg
         finally:
-            await self.server_response(websocket, "respose.create-song", status, details)
+            await self.server_response(websocket, "response.create-song", status, details)
 
     async def edit_song(self, websocket, params):
         """
@@ -542,7 +548,7 @@ class MalachiServer():
                     if self.s.items[i].song_id == int(params["song-id"]):
                         # Refresh instance of edited Song in service
                         self.s.items[i].get_nonslide_data()
-                        self.s.items[i].paginate_from_style(self.style_list[self.current_style])
+                        self.s.items[i].paginate_from_style(self.screen_style)
             # Update all clients
             await self.clients_item_index_update()
         except InvalidSongIdError as e:
@@ -724,7 +730,7 @@ class MalachiServer():
                 params["version"],
                 params["start-verse"],
                 params["end-verse"],
-                self.style_list[self.current_style],
+                self.screen_style,
                 self.bible_versions))
         except InvalidVersionError as e:
             status, details = "invalid-version", e.msg
@@ -743,7 +749,7 @@ class MalachiServer():
         """
         status, details = "ok", ""
         try:
-            self.s.add_item(Song(params["song-id"], self.style_list[self.current_style]))
+            self.s.add_item(Song(params["song-id"], self.screen_style))
         except InvalidSongIdError as e:
             status, details = "invalid-song", e.msg
         finally:
@@ -832,8 +838,7 @@ class MalachiServer():
         status, details = "ok", ""
         if not self.s.modified or params["force"]:
             try:
-                self.s.load_service(params["filename"], self.style_list[self.current_style], \
-                    self.bible_versions)
+                self.s.load_service(params["filename"], self.screen_style, self.bible_versions)
             except InvalidServiceUrlError as e:
                 self.s = Service()
                 status, details = "invalid-url", e.msg
@@ -869,145 +874,80 @@ class MalachiServer():
         self.s.save_as(params["filename"])
         await self.server_response(websocket, "response.save-service", "ok", "")
 
-    async def set_current_style(self, websocket, params):
+    async def edit_style_param(self, websocket, params):
         """
-        Set the current display style and send update to appropriate clients.
+        Edit a parameter of the screen style and send update to appropriate clients.
 
         Arguments:
-        params["index"] -- the new style index with self.style_list.
+        params["param"] -- the parameter to be edited.
+        params["value"] -- the new value for the parameter.
         """
         status, details = "ok", ""
-        index = int(params["index"])
-        try:
-            if 0 <= index < len(self.style_list):
-                self.current_style = index
-                for i in range(len(self.s.items)):
-                    if isinstance(self.s.items[i], (BiblePassage, Song)):
-                        self.s.items[i].paginate_from_style(self.style_list[self.current_style])
-                for socket in self.STYLE_STATE_SOCKETS:
-                    await socket[0].send(json.dumps({
-                        "action" : "update.style-update",
-                        "params" : {
-                            "style": self.style_list[self.current_style]
-                            }
-                        }))
-                await self.clients_item_index_update()
-            else:
-                status, details = "invalid-index", "Index out of bounds error"
-        except MissingStyleParameterError as e:
-            status, details = "invalid-style", e.msg
-        finally:
-            await self.server_response(websocket, "response.set-current-style", status, details)
+        if params["param"] in self.screen_style:
+            self.screen_style[params["param"]] = params["value"]
+            # Repaginate in new style
+            for i in range(len(self.s.items)):
+                if isinstance(self.s.items[i], Song):
+                    self.s.items[i].get_nonslide_data()
+                    self.s.items[i].paginate_from_style(self.screen_style)
+                elif isinstance(self.s.items[i], BiblePassage):
+                    self.s.items[i].paginate_from_style(self.screen_style)
+            await self.clients_service_items_update()
+            self.save_style()
+            for socket in self.STYLE_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action": "update.style-update",
+                    "params": {
+                        "style": self.screen_style
+                    }
+                }))
+        else:
+            status, details = "invalid-param", "Invalid style parameter: " + params["param"]
+        await self.server_response(websocket, "response.edit-style-param", status, details)
 
-    async def rename_style(self, websocket, params):
+    async def set_loop(self, websocket, params):
         """
-        Rename a display style and send update to appropriate clients.
+        Set the current video loop background and send update to appropriate clients.
 
         Arguments:
-        params["index"] -- the index of the style to rename within self.style_list.
-        params["name"] -- the new name of the style.
+        params["url"] -- the new video loop background.
         """
         status, details = "ok", ""
-        index = int(params["index"])
-        if 0 <= index < len(self.style_list):
-            self.style_list[index]["name"] = params["name"]
-            self.save_styles()
-            for socket in self.APP_SOCKETS:
+        url = params["url"]
+        if os.path.isfile(url) and \
+            (url.endswith('.mpg') or url.endswith('mp4') or url.endswith('mov')):
+            self.video_loop = url
+            vid = cv2.VideoCapture(url)
+            self.loop_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
+            self.loop_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            for socket in self.MEDIA_SOCKETS:
                 await socket[0].send(json.dumps({
-                    "action" : "update.style-list-update",
-                    "params" : {
-                        "styles": self.style_list,
-                        "index": self.current_style
-                        }
-                    }))
+                    "action": "update.video-loop",
+                    "params":  {
+                        "url": self.video_loop,
+                        "loop-width": self.loop_width,
+                        "loop-height": self.loop_height
+                    }
+                }))
         else:
-            status, details = "invalid-index", "Index out of bounds error"
-        await self.server_response(websocket, "response.rename-style", status, details)
+            status, details = "invalid-url", "Specified url doesn't exist or is not a video"
+        await self.server_response(websocket, "response.set-loop", status, details)
 
-    async def add_style(self, websocket, params):
-        """
-        Add a new style to self.style_list and send update to appropriate clients.
-
-        Arguments:
-        params["style"]["name"] -- the name of the new style.
-        params["style"]["params"] -- a dict containing the style parameters.
-        """
-        status, details = "ok", MalachiServer.key_check(params["style"], ["name", "params"])
-        if details != "":
-            status = "invalid-json"
-            details = "Missing style key(s): " + details
-        else:
-            self.style_list.append(params["style"])
-            self.save_styles()
-            for socket in self.APP_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.style-list-update",
-                    "params" : {
-                        "styles": self.style_list,
-                        "index": self.current_style
-                        }
-                    }))
-        await self.server_response(websocket, "response.rename-style", status, details)
-
-    async def delete_style(self, websocket, params):
-        """
-        Delete a style from the style list and send update to appropriate clients.
-        The currently active style cannot be deleted.
-
-        Arguments:
-        params["index"] -- the index of the style to be deleted.
-        """
+    async def clear_loop(self, websocket, params):
+        """ Clear the current video loop background and send update to appropriate clients. """
         status, details = "ok", ""
-        index = int(params["index"])
-        if 0 <= index < len(self.style_list) and index != self.current_style:
-            self.style_list.pop(index) # Delete style from list
-            if self.current_style > index:
-                self.current_style = self.current_style - 1
-            self.save_styles()
-            for socket in self.APP_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.style-list-update",
-                    "params" : {
-                        "styles": self.style_list,
-                        "index": self.current_style
-                        }
-                    }))
-        else:
-            if index == self.current_style:
-                status, details = "invalid-index", "Can't delete currently selected style"
-            else:
-                status, details = "invalid-index", "Index out of bounds"
-        await self.server_response(websocket, "response.delete-style", status, details)
-
-    async def edit_style(self, websocket, params):
-        """
-        Edit an existing style and send update to appropriate clients.
-
-        Arguments:
-        params["index"] -- the index of the style to edit.
-        params["style"]["name"] -- the new name for this style.
-        params["style"]["params"] -- a dict containing the new style parameters.
-        """
-        status, details = "ok", MalachiServer.key_check(params["style"], ["name", "params"])
-        if details != "":
-            status = "invalid-json"
-            details = "Missing style key(s): " + details
-        else:
-            index = int(params["index"])
-            if 0 <= index < len(self.style_list):
-                self.style_list[index] = params["style"]
-                self.save_styles()
-                for socket in self.APP_SOCKETS:
-                    await socket[0].send(json.dumps({
-                        "action" : "update.style-list-update",
-                        "params" : {
-                            "styles": self.style_list,
-                            "index": self.current_style
-                            }
-                        }))
-            else:
-                status, details = "invalid-index", "Index out of bounds"
-        await self.server_response(websocket, "response.rename-style", status, details)
+        self.video_loop = ""
+        self.loop_width, self.loop_height = 0, 0
+        for socket in self.MEDIA_SOCKETS:
+            await socket[0].send(json.dumps({
+                "action": "update.video-loop",
+                "params":  {
+                    "url": self.video_loop,
+                    "loop-width": self.loop_width,
+                    "loop-height": self.loop_height
+                }
+            }))
+        await self.server_response(websocket, "response.clear-loop", status, details)
 
     async def play_video(self, websocket, params):
         """Send a message to appropriate clients triggering playback of the current Video."""
@@ -1081,7 +1021,7 @@ class MalachiServer():
             Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
-            self.s.items[idx].paginate_from_style(self.style_list[self.current_style])
+            self.s.items[idx].paginate_from_style(self.screen_style)
             # Update all clients
             await self.clients_item_index_update()
         else:
@@ -1097,7 +1037,7 @@ class MalachiServer():
             Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
-            self.s.items[idx].paginate_from_style(self.style_list[self.current_style])
+            self.s.items[idx].paginate_from_style(self.screen_style)
             # Update all clients
             await self.clients_item_index_update()
         else:
@@ -1119,7 +1059,7 @@ class MalachiServer():
             Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
-            self.s.items[idx].paginate_from_style(self.style_list[self.current_style])
+            self.s.items[idx].paginate_from_style(self.screen_style)
             # Update all clients
             await self.clients_item_index_update()
         else:
@@ -1252,8 +1192,7 @@ class MalachiServer():
         """
         status, data = "ok", {}
         try:
-            data = json.loads(Song(params["song-id"], \
-                self.style_list[self.current_style]).to_JSON_full_data())
+            data = json.loads(Song(params["song-id"], self.screen_style).to_JSON_full_data())
         except InvalidSongIdError:
             status = "invalid-id"
         finally:
@@ -1338,6 +1277,17 @@ class MalachiServer():
             }
         }))
 
+    async def request_all_loops(self, websocket, params):
+        """Return a list of all video URKS in the ./loops directory to websocket."""
+        urls = ['./loops/' + f for f in os.listdir('./loops')
+                if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
+        await websocket.send(json.dumps({
+            "action": "result.all-loops",
+            "params": {
+                "urls": urls
+            }
+        }))
+
     async def request_all_services(self, websocket, params):
         """Return a list of all services in the ./services directory to websocket."""
         fnames = Service.get_all_services()
@@ -1345,15 +1295,6 @@ class MalachiServer():
             "action": "result.all-services",
             "params": {
                 "filenames": fnames
-            }
-        }))
-
-    async def request_all_styles(self, websocket, params):
-        """Return a list of all display styles to websocket."""
-        await websocket.send(json.dumps({
-            "action": "result.all-styles",
-            "params": {
-                "styles": self.style_list
             }
         }))
 
@@ -1436,19 +1377,17 @@ class MalachiServer():
         else:
             return -1
 
-    def load_styles(self):
-        """Load style information from ./styles/global_styles.json"""
-        with open(MalachiServer.GLOBAL_STYLES_FILE) as f:
+    def load_style(self):
+        """Load style information from ./data/global_style.json"""
+        with open(MalachiServer.GLOBAL_STYLE_FILE) as f:
             json_data = json.load(f)
-        self.style_list = json_data["styles"]
-        self.current_style = json_data["default_index"]
+        self.screen_style = json_data["style"]
 
-    def save_styles(self):
-        """Save style information to ./styles/global_styles.json"""
+    def save_style(self):
+        """Save style information to ./data/global_style.json"""
         json_data = {}
-        json_data["styles"] = self.style_list
-        json_data["default_index"] = self.current_style
-        with open(MalachiServer.GLOBAL_STYLES_FILE, "w") as f:
+        json_data["style"] = self.screen_style
+        with open(MalachiServer.GLOBAL_STYLE_FILE, "w") as f:
             f.write(json.dumps(json_data, indent=2))
 
     def load_light_presets(self):
@@ -1470,7 +1409,7 @@ class MalachiServer():
         """
         Check that all essential data files exist.
         Those files deemed to be essential are the songs database, the JSON settings files
-        for Bible versions, lighting presets and global styles, and Bible databases referenced
+        for Bible versions, lighting presets and global style, and Bible databases referenced
         in the Bible versions JSON file.
 
         Possible exceptions:
@@ -1478,7 +1417,7 @@ class MalachiServer():
         """
         missing_files = []
         for f in [MalachiServer.BIBLE_VERSIONS_FILES, MalachiServer.SONGS_DATABASE,
-                  MalachiServer.LIGHT_PRESET_FILE, MalachiServer.GLOBAL_STYLES_FILE]:
+                  MalachiServer.LIGHT_PRESET_FILE, MalachiServer.GLOBAL_STYLE_FILE]:
             if not os.path.isfile(f):
                 missing_files.append(f)
         if missing_files:

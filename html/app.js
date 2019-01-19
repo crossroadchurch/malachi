@@ -16,6 +16,39 @@ icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
 icon_dict["presentation"] = "/html/icons/icons8-presentation-48.png";
 icon_dict["video"] = "/html/icons/icons8-tv-show-48.png";
 
+toastr_info_options = {
+    "closeButton": false,
+    "newestOnTop": true,
+    "progressBar": false,
+    "positionClass": "toast-bottom-center",
+    "preventDuplicates": false,
+    "showDuration": "300",
+    "hideDuration": "300",
+    "timeOut": "1500",
+    "extendedTimeOut": "300",
+    "showEasing": "swing",
+    "hideEasing": "linear",
+    "showMethod": "fadeIn",
+    "hideMethod": "fadeOut"
+};
+
+toastr_error_options = {
+    "closeButton": true,
+    "newestOnTop": true,
+    "progressBar": false,
+    "positionClass": "toast-bottom-full-width",
+    "preventDuplicates": false,
+    "progressBar": true,
+    "showDuration": "300",
+    "hideDuration": "300",
+    "timeOut": "0",
+    "extendedTimeOut": "0",
+    "showEasing": "swing",
+    "hideEasing": "linear",
+    "showMethod": "fadeIn",
+    "hideMethod": "fadeOut"
+};
+
 function change_screen_state_flip(){
     str_state = ($('#flip_screen_state').prop("checked") === true) ? "on" : "off";
     websocket.send(JSON.stringify({"action": "command.set-display-state", "params": {"state": str_state}}));
@@ -277,11 +310,21 @@ function save_song(){
 }
 
 function add_video(elt){
-    websocket.send(JSON.stringify({"action": "command.add-video", "params": {"url": $(elt).children().first().html()}}));
+    elt_text = $(elt).children().first().html();
+    websocket.send(JSON.stringify({"action": "command.add-video", "params": {"url": elt_text.substr(elt_text.indexOf(">") + 1)}}));
 }
 
 function add_presentation(elt){
     websocket.send(JSON.stringify({"action": "command.add-presentation", "params": {"url": $(elt).children().first().html()}}));
+}
+
+function set_loop(elt){
+    elt_text = $(elt).children().first().html();
+    websocket.send(JSON.stringify({"action": "command.set-loop", "params": {"url": "./loops/" + elt_text.substr(elt_text.indexOf(">") + 1)}}));
+}
+
+function clear_loop(){
+    websocket.send(JSON.stringify({"action": "command.clear-loop", "params": {}}));
 }
 
 function toggle_display_state(){
@@ -369,6 +412,23 @@ function indicate_current_item(item_index){
     }
 }
 
+function update_style_sliders(style){
+    $('#s_width').val(style['div-width-vw']).slider('refresh');
+    $('#s_font_size').val(style['font-size-vh']).slider('refresh');
+    $('#s_lines').val(style['max-lines']).slider('refresh');
+    $('#s_margin').val(style['margin-top-vh']).slider('refresh');
+}
+
+function json_toast_response(json_data, success_message, error_message){
+    if (json_data.params.status === "ok"){
+        toastr.options = toastr_info_options;
+        toastr.success(success_message);
+    } else {
+        toastr.options = toastr_error_options;
+        toastr.error(json_data.params.details, error_message + " (" + json_data.params.status + ")");
+    }
+}
+
 $(document).ready(function(){
     $("#elements_area").tabs();
     $("#service_list").sortable();
@@ -382,7 +442,7 @@ $(document).ready(function(){
         }));
     });
     
-    $('#time_seek').parent().find('a').css('display','none')
+    $('#time_seek').parent().find('a').css('display','none');
     // $('#time_seek').on("slidestart", function(event, ui){
     //     update_slider = false;
     // });
@@ -391,6 +451,46 @@ $(document).ready(function(){
     //     console.log($('#time_seek').val());
     //     websocket.send(JSON.stringify({"action": "command.seek-video", "params": {"seconds": $('#time_seek').val()}}));
     // });
+
+    $('#s_width').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "div-width-vw",
+                "value": $('#s_width').val()
+            }
+        }));
+    });
+
+    $('#s_font_size').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "font-size-vh",
+                "value": $('#s_font_size').val()
+            }
+        }));
+    });
+
+    $('#s_lines').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "max-lines",
+                "value": $('#s_lines').val()
+            }
+        }));
+    });
+
+    $('#s_margin').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "margin-top-vh",
+                "value": $('#s_margin').val()
+            }
+        }));
+    });
 
     websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
     websocket.onmessage = function (event) {
@@ -406,12 +506,15 @@ $(document).ready(function(){
                 
                 // Size screen_view div and current_item div based on style
                 // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
-                aspect_ratio = json_data.params.style.params["aspect-ratio"];
+                aspect_ratio = json_data.params.style["aspect-ratio"];
                 aspect_padding = (70/aspect_ratio) + "%"
                 $('#screen_view').css('padding-bottom', aspect_padding);
                 video_height = 0.7 * parseInt($('#item_area').css('width'), 10) / aspect_ratio;
                 header_height = $('#item_header').height();
                 $('#current_item').css('height', window.innerHeight - video_height - header_height - 16);
+
+                // Display style parameters in style tab
+                update_style_sliders(json_data.params.style);
 
                 // Populate service plan list
                 service_list = "";
@@ -444,13 +547,15 @@ $(document).ready(function(){
                 indicate_current_item(json_data.params.item_index);
 
                 // Populate current item title and list
-                // TODO: Deal with case of item_index = -1
-                current_item = json_data.params.items[json_data.params.item_index];
-                display_current_item(current_item, json_data.params.slide_index);
+                if (json_data.params.item_index != -1){
+                    current_item = json_data.params.items[json_data.params.item_index];
+                    display_current_item(current_item, json_data.params.slide_index);
+                }
 
-                // Populate Presentation and Video lists
+                // Populate Presentation, Video and Loop lists
                 websocket.send(JSON.stringify({"action": "request.all-presentations", "params": {}}));
                 websocket.send(JSON.stringify({"action": "request.all-videos", "params": {}}));
+                websocket.send(JSON.stringify({"action": "request.all-loops", "params": {}}));
 
                 // Populate Bible version list
                 websocket.send(JSON.stringify({"action": "request.bible-versions", "params": {}}));
@@ -503,6 +608,10 @@ $(document).ready(function(){
                 $('#flip_screen_state').on('change', change_screen_state_flip);
                 break;
 
+            case "update.style-update":
+                update_style_sliders(json_data.params.style);
+                break;
+
             case "result.all-presentations":
                 let pres_list = "";
                 for (let url in json_data.params.urls){
@@ -516,11 +625,26 @@ $(document).ready(function(){
             case "result.all-videos":
                 let vid_list = "";
                 for (let url in json_data.params.urls){
-                    vid_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url] + "</a>";
+                    vid_list += "<li data-icon='plus'><a href='#' style='min-height:auto !important;'>";
+                    vid_list += "<img src='" + json_data.params.urls[url] + ".jpg' />";
+                    vid_list += "" + json_data.params.urls[url] + "</a>";
                     vid_list += "<a onclick='add_video($(this).parent());' href='javascript:void(0);'></li>";
                 }
                 $("#video_list").html(vid_list);
                 $("#video_list").listview('refresh');
+                break;
+
+            case "result.all-loops":
+                let loop_list = "";
+                for (let url in json_data.params.urls){
+                    short_url = json_data.params.urls[url].substr(8);
+                    loop_list += "<li><a href='#' style='min-height:auto !important;'>";
+                    loop_list += "<img src='" + json_data.params.urls[url] + ".jpg' />";
+                    loop_list += "" + short_url + "</a>";
+                    loop_list += "<a onclick='set_loop($(this).parent());' href='javascript:void(0);'></li>";
+                }
+                $("#loop_list").html(loop_list);
+                $("#loop_list").listview('refresh');
                 break;
 
             case "result.song-details":
@@ -541,7 +665,7 @@ $(document).ready(function(){
                     $('#e_lyrics').val(lyrics);
                     $('#e_order').val(full_song["verse-order"].toUpperCase());
                     $('#e_key').val(full_song["song-key"]).change();
-                    $('#e_transpose').val(full_song["transpose-by"]);
+                    $('#e_transpose').val(full_song["transpose-by"]).slider('refresh');
                     // Ensure that we are in edit song mode, rather than create song mode
                     $('#edit_song_mode_header').css('display', 'block');
                     $('#create_song_mode_header').css('display', 'none')
@@ -591,6 +715,8 @@ $(document).ready(function(){
                     } else if (action_after_save == 'load'){
                         action_after_save = 'none';
                         load_service(true);
+                    } else {
+                        json_toast_response(json_data, "Service saved", "Problem saving service");
                     }
                 }
                 break;
@@ -644,7 +770,39 @@ $(document).ready(function(){
                 $('#time_seek').val(video_timer).slider('refresh');
                 break;
 
+            case "response.add-video":
+                json_toast_response(json_data, "Video added to service", "Problem adding video");
+                break;
+
             case "response.add-song-item":
+                json_toast_response(json_data, "Song added to service", "Problem adding song");
+                break;
+
+            case "response.edit-song":
+                json_toast_response(json_data, "Song edited", "Problem editing song");
+                break;
+
+            case "response.create-song":
+                json_toast_response(json_data, "Song added", "Could not add song");
+                break;
+
+            case "response.add-presentation":
+                json_toast_response(json_data, "Presentation added to service", "Problem adding presentation");
+                break;
+
+            case "response.set-loop":
+                json_toast_response(json_data, "Video loop set", "Problem setting video loop");
+                break;
+
+            case "response.clear-loop":
+                json_toast_response(json_data, "Video loop cancelled", "Problem cancelling video loop");
+                break;
+
+            case "response.add-bible-item":
+                json_toast_response(json_data, "Bible passage added to service", "Problem adding Bible passage");
+                break;
+
+            case "update.video-loop":
             case "response.move-item":
             case "response.next-item":
             case "response.previous-item":
@@ -654,14 +812,10 @@ $(document).ready(function(){
             case "response.goto-slide":
             case "response.remove-item":
             case "response.set-display-state":
-            case "response.add-video":
-            case "response.add-presentation":
             case "response.play-video":
             case "response.pause-video":
             case "response.stop-video":
-            case "response.edit-song": // Error handling required...
-            case "response.create-song": // Error handling required...
-            case "response.add-bible-item": // Error handling required?
+            case "response.edit-style-param":
                 break;  // No action required;
             default:
                 console.error("Unsupported event", json_data);
