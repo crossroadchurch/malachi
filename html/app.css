@@ -155,3 +155,8 @@ a.i-item {
 .toast {
     text-shadow: none;
 }
+
+.i-item sup {
+    padding-right: 0.5em;
+    font-size: 0.75em;
+}

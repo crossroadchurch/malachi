@@ -146,8 +146,8 @@ class MalachiServer():
         service_data['style'] = self.screen_style
         service_data['screen_state'] = self.screen_state
         service_data['video_loop'] = self.video_loop
-        service_data['loop_width'] = self.loop_width
-        service_data['loop_height'] = self.loop_height
+        service_data['loop-width'] = self.loop_width
+        service_data['loop-height'] = self.loop_height
         await websocket.send(json.dumps({
             "action" : "update.display-init",
             "params" : service_data
@@ -160,8 +160,8 @@ class MalachiServer():
         service_data['light_preset_list'] = self.light_preset_list
         service_data['screen_state'] = self.screen_state
         service_data['video_loop'] = self.video_loop
-        service_data['loop_width'] = self.loop_width
-        service_data['loop_height'] = self.loop_height
+        service_data['loop-width'] = self.loop_width
+        service_data['loop-height'] = self.loop_height
         await websocket.send(json.dumps({
             "action" : "update.app-init",
             "params" : service_data

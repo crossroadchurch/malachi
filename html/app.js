@@ -499,7 +499,11 @@ $(document).ready(function(){
         switch(json_data.action){
             case "update.app-init":
                 screen_state = json_data.params.screen_state;
-                bool_screen_state = (screen_state === "on") ? true : false;
+                if (screen_state === "on"){
+                    bool_screen_state = true;
+                } else {
+                    bool_screen_state = false;
+                }
                 $('#flip_screen_state').off();
                 $('#flip_screen_state').prop('checked', bool_screen_state).flipswitch('refresh');
                 $('#flip_screen_state').on('change', change_screen_state_flip);
@@ -602,7 +606,11 @@ $(document).ready(function(){
 
             case "update.display-state":
                 screen_state = json_data.params.state;
-                bool_screen_state = (screen_state === "on") ? true : false;
+                if (screen_state === "on"){
+                    bool_screen_state = true;
+                } else {
+                    bool_screen_state = false;
+                }
                 $('#flip_screen_state').off();
                 $('#flip_screen_state').prop('checked', bool_screen_state).flipswitch('refresh');
                 $('#flip_screen_state').on('change', change_screen_state_flip);

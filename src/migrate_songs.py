@@ -13,7 +13,7 @@ import json
 import xml.etree.ElementTree as ET
 
 # Pre-condition: songs.sqlite is an OpenLP songs database used in Paul
-songs_db = sqlite3.connect('./data/songs.sqlite')
+songs_db = sqlite3.connect('../data/songs.sqlite')
 cursor = songs_db.cursor()
 
 # REMOVE TOPICS
@@ -182,7 +182,7 @@ cursor.execute('''
     CREATE TABLE tracking (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         song_id INTEGER,
-        tracked_date` TEXT
+        tracked_date TEXT
     )
 ''')
 songs_db.commit()

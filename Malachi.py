@@ -30,9 +30,6 @@ if __name__ == "__main__":
 
     try:
         MALACHI_SERVER = MalachiServer()
-        MALACHI_SERVER.s.load_service('service_test.json',\
-            MALACHI_SERVER.screen_style, MALACHI_SERVER.bible_versions)
-        MALACHI_SERVER.s.set_item_index(0)
 
         # Start websocket server
         asyncio.get_event_loop().run_until_complete(

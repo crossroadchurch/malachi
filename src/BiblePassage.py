@@ -46,14 +46,18 @@ class BiblePassage():
         bible_db = sqlite3.connect('./data/' + self.version + '.sqlite')
         cursor = bible_db.cursor()
         cursor.execute('''
-            SELECT v.text, v.id FROM Verse AS v
+            SELECT v.text, v.id, v.chapter, v.verse FROM Verse AS v
             WHERE v.id>={s_id} AND v.id<={e_id}
         '''.format(s_id=self.start_id, e_id=self.end_id))
         verses = cursor.fetchall()
         self.slides = []
         self.parts = []
         for verse in verses:
-            self.parts.append({"part":verse[1], "data":verse[0]})
+            self.parts.append({
+                "part": verse[1],
+                "data": verse[0],
+                "short_ref": str(verse[3])
+            })
         bible_db.close()
         try:
             self.paginate_from_style(cur_style)
@@ -214,21 +218,30 @@ class BiblePassage():
         div_width_px = window_width * int(div_width_vw) / 100
         font = ImageFont.truetype(font_file, math.ceil(font_size_px))
         self.slides = []
-        for verse in self.parts:
-            verse_words = verse["data"].split(" ")
-            line_count, line_start, slide_start = 0, 0, 0
-            for i in range(len(verse_words)):
-                line_part = ' '.join(verse_words[line_start:i+1])
-                size = font.getsize(line_part)
-                if size[0] > div_width_px:
-                    line_count += 1
-                    line_start = i
-                    if line_count == int(max_lines):
-                        self.slides.append(' '.join(verse_words[slide_start:i]))
-                        slide_start, line_count = i, 0
-            # Add on remaining bit of verse
-            if slide_start < (len(verse_words)):
-                self.slides.append(' '.join(verse_words[slide_start:len(verse_words)]))
+        parts_refs_tags = ["<sup>" + v["short_ref"] + "</sup>" + v["data"] for v in self.parts]
+        parts_refs_simple = [v["short_ref"] + v["data"] for v in self.parts]
+        passage_tags = ' '.join(parts_refs_tags)
+        passage_tags_simple = ' '.join(parts_refs_simple)
+        # for verse in self.parts:
+        # verse_with_ref_tags = "<sup>" + verse["short_ref"] + "</sup>" + verse["data"]
+        # verse_with_ref_simple = verse["short_ref"] + verse["data"]
+        # verse_words = verse_with_ref_simple.split(" ")
+        verse_words = passage_tags_simple.split(" ")
+        # verse_words_tags = verse_with_ref_tags.split(" ")
+        verse_words_tags = passage_tags.split(" ")
+        line_count, line_start, slide_start = 0, 0, 0
+        for i in range(len(verse_words)):
+            line_part = ' '.join(verse_words[line_start:i+1])
+            size = font.getsize(line_part)
+            if size[0] > div_width_px:
+                line_count += 1
+                line_start = i
+                if line_count == int(max_lines):
+                    self.slides.append(' '.join(verse_words_tags[slide_start:i]))
+                    slide_start, line_count = i, 0
+        # Add on remaining bit of verse
+        if slide_start < (len(verse_words)):
+            self.slides.append(' '.join(verse_words_tags[slide_start:len(verse_words)]))
 
 
     @classmethod

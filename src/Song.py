@@ -488,21 +488,24 @@ class Song():
                     raise InvalidSongFieldError("lyrics_chords is not correctly formatted")
             search_lyrics = re.sub(r'[^a-zA-Z0-9\s]', '', search_lyrics)
             fields["search_lyrics"] = ' '.join(search_lyrics.lower().split()) # Remove extra spaces
+
         # Create update query for all valid fields in param["fields"] and update song
         update_str = "UPDATE songs SET "
+        query_params = []
         for field in fields:
-            if field in Song.STR_FIELDS:
-                update_str = update_str + field + "=\'" + str(fields[field]) + "\', "
-            if field in Song.INT_FIELDS:
-                update_str = update_str + field + "=" + str(fields[field]) + ", "
+            if field in Song.STR_FIELDS + Song.INT_FIELDS:
+                update_str = update_str + field + " = ?, "
+                query_params.append(fields[field])
         song_db = sqlite3.connect('./data/songs.sqlite')
         cursor = song_db.cursor()
         if len(update_str) > 17:
             if update_str[-2] == ",":
                 update_str = update_str[:-2] # Remove trailing comma, if it exists
-            update_str = update_str + " WHERE id=" + str(song_id)
-            cursor.execute(update_str)
+            update_str = update_str + " WHERE id = ?"
+            query_params.append(song_id)
+            cursor.execute(update_str, tuple(query_params))
             song_db.commit()
+
         # Update lyrics_chords and search_lyrics
         if "lyrics_chords" in fields:
             cursor.execute('''

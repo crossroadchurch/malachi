@@ -21,11 +21,11 @@
         <iframe id="screen_iframe" src="./screen?muted=true"></iframe>
       </div>
       <div id="item_header" style="padding-left:1em; padding-right:1em;">
-        <input type="checkbox" id="screen_switch" data-role="flipswitch" data-on-text="Screen ON" data-off-text="Screen OFF" data-wrapper-class="custom-size-flipswitch" name="flip_screen_state" id="flip_screen_state">
-        <img id="current_item_icon" src="/html/icons/icons8-musical-notes-48.png" /><span id="current_item_name">Item title</span>
+        <input type="checkbox" data-role="flipswitch" data-on-text="Screen ON" data-off-text="Screen OFF" data-wrapper-class="custom-size-flipswitch" name="flip_screen_state" id="flip_screen_state">
+        <img id="current_item_icon" src="/html/icons/icons8-musical-notes-48.png" /><span id="current_item_name">No current item</span>
       </div>
       <div id="current_item">
-        <div id="video_controls" style="padding-left:1em; padding-right:1em;">
+        <div id="video_controls" style="padding-left:1em; padding-right:1em; display:none;">
           <button id="play_btn" onclick="play_video();" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play video-ctrl-btn">&nbsp;</button>
           <button id="pause_btn" onclick="pause_video();" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-pause video-ctrl-btn">&nbsp;</button>
           <button id="stop_btn" onclick="stop_video();" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-stop video-ctrl-btn">&nbsp;</button>
