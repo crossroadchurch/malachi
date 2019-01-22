@@ -16,9 +16,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "sr
 from src.MalachiServer import MalachiServer
 from src.MalachiExceptions import MissingDataFilesError
 from src.ThreadedHTTPServer import ThreadedHTTPServer
+from src._version import __version__
 # pylint: enable=C0413
 
 if __name__ == "__main__":
+    print("Welcome to Malachi v{v}".format(v=__version__))
     # Start web server
     HTTP_SERVER = ThreadedHTTPServer('0.0.0.0', 8000)
     HTTP_SERVER.start()

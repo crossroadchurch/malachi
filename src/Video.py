@@ -27,6 +27,18 @@ class Video():
         self.slides = ["Video: " + self.title + "\nDuration: {}:{:02}".format(mins, secs)]
         self.video_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.video_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        # Generate thumbnail if needed
+        if not os.path.isfile(url + ".jpg"):
+            cv2_vid = cv2.VideoCapture(url)
+            scale_factor = 128 / self.video_width
+            if self.duration > 10:
+                cv2_vid.set(cv2.CAP_PROP_POS_FRAMES, 10*self.fps)
+            else:
+                cv2_vid.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            status, frame = cv2_vid.read()
+            if status:
+                thumbnail = cv2.resize(frame, (0, 0), fx=scale_factor, fy=scale_factor)
+                cv2.imwrite(url + ".jpg", thumbnail)
 
     def get_title(self):
         """Return the title of the Video"""
@@ -62,6 +74,7 @@ class Video():
     @classmethod
     def get_all_videos(cls):
         """Return a list of all video URLs in the ./videos directory."""
+        Video.generate_video_thumbnails()
         urls = ['./videos/' + f for f in os.listdir('./videos')
                 if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
         return urls
@@ -71,20 +84,11 @@ class Video():
         """Ensure that all videos and loops have a corresponding thumbnail."""
         loops = ['./loops/' + f for f in os.listdir('./loops')
                  if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
-        videos = Video.get_all_videos()
+        videos = ['./videos/' + f for f in os.listdir('./videos')
+                  if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
         for url in loops + videos:
             if not os.path.isfile(url + ".jpg"):
-                vid = Video(url)
-                cv2_vid = cv2.VideoCapture(url)
-                scale_factor = 128 / vid.video_width
-                if vid.duration > 10:
-                    cv2_vid.set(cv2.CAP_PROP_POS_FRAMES, 10*vid.fps)
-                else:
-                    cv2_vid.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                status, frame = cv2_vid.read()
-                if status:
-                    thumbnail = cv2.resize(frame, (0, 0), fx=scale_factor, fy=scale_factor)
-                    cv2.imwrite(url + ".jpg", thumbnail)
+                Video(url)
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

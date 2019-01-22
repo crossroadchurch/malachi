@@ -6,8 +6,8 @@ var loop_ar = 0;
 
 function display_current_slide(slide_index){
     current_slide = current_item.slides[slide_index];
+    stop_running_video();
     if (current_item.type == "song"){
-        stop_running_video();
         slide_lines = current_slide.split(/\n/);
         slide_text = "<p>";
         for (line in slide_lines){
@@ -19,7 +19,6 @@ function display_current_slide(slide_index){
         }
         slide_text += "</p>";
     } else if (current_item.type == "presentation"){
-        stop_running_video();
         slide_text = "";
     } else if (current_item.type == "video"){
         slide_text = "";
@@ -28,7 +27,6 @@ function display_current_slide(slide_index){
         $('#video_item_src').attr('src', current_item.url);
         $('#video_item').load();
     } else {
-        stop_running_video();
         slide_text = "<p>" + current_slide + "</p>";
     }
     $('#slide_area').html(slide_text);

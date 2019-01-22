@@ -4,6 +4,7 @@
 # pylint: disable=W0613 # Unused argument, due to having many params={}
 # pylint: disable=R0904 # Too many public methods
 # pylint: disable=R0902 # Too many instance attributes
+# pylint: disable=R0914 # Too many local variables
 # pylint: disable=R1705 # Unnecessary "else" after "return".  Disabled for code readability
 
 """
@@ -14,6 +15,7 @@ of appropriate state changes
 import json
 from json.decoder import JSONDecodeError
 import os
+import re
 import pathlib
 import threading
 import cv2
@@ -25,7 +27,8 @@ from PresentationHandler import PresentationHandler
 from LightHandler import LightHandler
 from Video import Video
 from Tracker import Tracker
-from MalachiExceptions import InvalidVersionError, InvalidVerseIdError, MalformedReferenceError
+from MalachiExceptions import InvalidVersionError, InvalidVerseIdError
+from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError
 from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
 from MalachiExceptions import InvalidVideoUrlError, UnspecifiedServiceUrl
@@ -222,6 +225,7 @@ class MalachiServer():
                 "command.goto-item": [self.goto_item, ["index"]],
                 "command.add-bible-item": [self.add_bible_item, \
                     ["version", "start-verse", "end-verse"]],
+                "command.change-bible-version": [self.change_bible_version, ["version"]],
                 "command.add-song-item": [self.add_song_item, ["song-id"]],
                 "command.add-presentation": [self.add_presentation, ["url"]],
                 "command.add-video": [self.add_video, ["url"]],
@@ -720,6 +724,7 @@ class MalachiServer():
         """
         Add a BiblePassage to the service plan.
 
+        Arguments:
         params["version"] -- the version of the Bible to use.
         params["start-verse"] -- the verse id at the start of the (inclusive) range.
         params["end-verse"] -- the verse id at the end of the (inclusive) range.
@@ -739,6 +744,62 @@ class MalachiServer():
         finally:
             await self.server_response(websocket, "response.add-bible-item", status, details)
             await self.clients_service_items_update()
+
+    async def change_bible_version(self, websocket, params):
+        '''
+        Change the Bible version of the current item.
+
+        Arguments:
+        params["version"] -- the new Bible version.
+        '''
+        status, details = "ok", ""
+        try:
+            if self.s.get_current_item_type() == "BiblePassage":
+                old_version = self.s.items[self.s.item_index].version
+                old_start = self.s.items[self.s.item_index].start_id
+                old_end = self.s.items[self.s.item_index].end_id
+                new_version = params["version"]
+                new_start = BiblePassage.translate_verse_id(\
+                    old_start, old_version, new_version, self.bible_versions)
+                new_end = BiblePassage.translate_verse_id(\
+                    old_end, old_version, new_version, self.bible_versions)
+                new_passage = BiblePassage(
+                    new_version, new_start, new_end,
+                    self.screen_style, self.bible_versions)
+                # Use slide_index to determine which verse is currently being displayed
+                if self.s.slide_index > -1:
+                    verse_count = 0
+                    slides = self.s.items[self.s.item_index].slides
+                    # Count number of verses before the current slide
+                    for i in range(self.s.slide_index):
+                        verse_count += len(re.findall("<sup>", slides[i]))
+                    # Add 1 if there is (at least) a verse starting on the current slide
+                    if re.findall("<sup>", slides[self.s.slide_index]):
+                        verse_count += 1
+                    # Find the slide in new_passage that contains the start of this verse
+                    new_slide_index, new_verse_count = -1, 0
+                    while new_verse_count < verse_count and \
+                        new_slide_index < len(new_passage.slides):
+                        new_slide_index += 1
+                        new_verse_count += \
+                            len(re.findall("<sup>", new_passage.slides[new_slide_index]))
+                    self.s.slide_index = new_slide_index
+                # Replace item in service with new passage
+                del self.s.items[self.s.item_index]
+                self.s.items.insert(self.s.item_index, new_passage)
+                await self.clients_service_items_update()
+            else:
+                status, details = "invalid-item", "Current item not a Bible passage"
+        except InvalidVersionError as e:
+            status, details = "invalid-version", e.msg
+        except InvalidVerseIdError as e:
+            status, details = "invalid-verse", e.msg
+        except MissingStyleParameterError as e:
+            status, details = "invalid-style", e.msg
+        except MatchingVerseIdError as e:
+            status, details = "no-matching-verse", e.msg
+        finally:
+            await self.server_response(websocket, "response.change-bible-version", status, details)
 
     async def add_song_item(self, websocket, params):
         """

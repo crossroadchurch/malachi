@@ -339,6 +339,11 @@ function display_current_item(current_item, slide_index){
     $("#current_item_icon").attr('src', icon_dict[current_item.type]);
     $("#current_item_name").html(current_item.title);
 
+    // Reset video seek track
+    clearInterval(video_interval);
+    video_timer = 0;
+    $('#time_seek').val(video_timer).slider('refresh');
+
     if (current_item.type == "song"){
         min_verse_order = current_item["verse-order"].split(" ");
         part_counts = current_item["part-counts"];
@@ -348,6 +353,16 @@ function display_current_item(current_item, slide_index){
                 max_verse_order.push(min_verse_order[i].toUpperCase());
             }
         }
+    }
+
+    if (current_item.type == "bible"){
+        cur_title = current_item.title;
+        v_start = cur_title.indexOf("(") + 1;
+        v_end = cur_title.indexOf(")");
+        $('#version_changer').parent().css('display', 'inline-block');
+        $('#version_changer').val(cur_title.substr(v_start, v_end - v_start)).selectmenu('refresh');
+    } else {
+        $('#version_changer').parent().css('display', 'none');
     }
 
     if (current_item.type == "video"){
@@ -388,9 +403,9 @@ function display_current_item(current_item, slide_index){
 }
 
 function indicate_current_slide(slide_index){
-    $("#current_item_list li a.i-item").css('background-color', '');
+    $("#current_item_list li a.i-item").removeClass('selected');
     if (slide_index != -1){
-        $("#current_item_list li:nth-child(" + (slide_index+1) + ") a.i-item").css('background-color', SELECTED_COLOR);
+        $("#current_item_list li:nth-child(" + (slide_index+1) + ") a.i-item").addClass('selected');
         item_top = $("#current_item_list li:nth-child(" + (slide_index+1) + ")").offset().top;
         item_height = $("#current_item_list li:nth-child(" + (slide_index+1) + ")").outerHeight();
         viewable_top = $("#current_item").offset().top;
@@ -429,6 +444,22 @@ function json_toast_response(json_data, success_message, error_message){
     }
 }
 
+function setup_service_list_handlers(){
+    $("#service_list a.popup-trigger").on('click', function(event, ui){
+        if ($(this).parent().children().first().data('songid') !== undefined){
+            $('#btn_popup_edit_song').css('display', 'inline-block');
+            clicked_song_id = parseInt($(this).parent().children().first().data('songid'));
+        } else {
+            $('#btn_popup_edit_song').css('display', 'none');
+        }
+        clicked_service_item = $(this).data('id');
+    });
+    $("#service_list a.s-item").on('dblclick', function(event, ui){
+        clicked_service_item = $(this).data('id');
+        goto_item();
+    });
+}
+
 $(document).ready(function(){
     $("#elements_area").tabs();
     $("#service_list").sortable();
@@ -439,6 +470,13 @@ $(document).ready(function(){
         websocket.send(JSON.stringify({
             "action": "command.move-item",
             "params": {"from-index": service_sort_start, "to-index": ui.item.index()}
+        }));
+    });
+
+    $('#version_changer').on('change', function(){
+        websocket.send(JSON.stringify({
+            "action": "command.change-bible-version",
+            "params": {"version": $('#version_changer').val()}
         }));
     });
     
@@ -534,26 +572,17 @@ $(document).ready(function(){
                 }
                 $("#service_list").html(service_list);
                 $("#service_list").listview('refresh');
-                $("#service_list a.popup-trigger").on('click', function(event, ui){
-                    if ($(this).parent().children().first().data('songid') !== undefined){
-                        $('#btn_popup_edit_song').css('display', 'inline-block');
-                        clicked_song_id = parseInt($(this).parent().children().first().data('songid'));
-                    } else {
-                        $('#btn_popup_edit_song').css('display', 'none');
-                    }
-                    clicked_service_item = $(this).data('id');
-                });
-                $("#service_list a.s-item").on('dblclick', function(event, ui){
-                    clicked_service_item = $(this).data('id');
-                    goto_item();
-                });
-                
+
+                setup_service_list_handlers();
                 indicate_current_item(json_data.params.item_index);
 
                 // Populate current item title and list
                 if (json_data.params.item_index != -1){
                     current_item = json_data.params.items[json_data.params.item_index];
                     display_current_item(current_item, json_data.params.slide_index);
+                } else {
+                    $('#version_changer').parent().css('display', 'none');
+                    $('#video_controls').css('display', 'none');
                 }
 
                 // Populate Presentation, Video and Loop lists
@@ -581,14 +610,8 @@ $(document).ready(function(){
                 }
                 $("#service_list").html(service_list);
                 $("#service_list").listview('refresh');
-                $("#service_list a.popup-trigger").on('click', function(event, ui){
-                    clicked_service_item = $(this).data('id');
-                });
-                $("#service_list a.s-item").on('dblclick', function(event, ui){
-                    clicked_service_item = $(this).data('id');
-                    goto_item();
-                });
 
+                setup_service_list_handlers();
                 indicate_current_item(json_data.params.item_index);
 
                 // Populate current item list
@@ -658,7 +681,6 @@ $(document).ready(function(){
             case "result.song-details":
                 if (json_data.params.status == "ok"){
                     let full_song = json_data.params["song-data"];
-                    console.log(full_song);
                     $('#e_title').val(full_song["title"]);
                     $('#e_author').val(full_song["author"]);
                     $('#e_book').val(full_song["song-book-name"]);
@@ -714,6 +736,9 @@ $(document).ready(function(){
 
             case "response.save-service":
                 if (json_data.params.status == "unspecified-service"){
+                    cur_date = new Date();
+                    date_str = cur_date.toISOString().replace("T", " ").replace(/:/g, "-");
+                    $('#f_name').val(date_str.substr(0, date_str.length-5) + ".json");
                     $('#popup_save_service_as').popup('open');
                 } else {
                     // Save has been successful
@@ -746,8 +771,16 @@ $(document).ready(function(){
                 $('#select_b_version').html('');
                 for (let v in json_data.params.versions){
                     $('#select_b_version').append('<option value="' + json_data.params.versions[v] + '">' + json_data.params.versions[v] + '</option>');
+                    $('#version_changer').append('<option value="' + json_data.params.versions[v] + '">' + json_data.params.versions[v] + '</option>');
                 }
                 $('#select_b_version').val(json_data.params.versions[0]).change()
+                if ($('#current_item_icon')[0].src.indexOf(icon_dict["bible"]) > -1){
+                    // Current item is a Bible passage so update version changer
+                    cur_title = $('#current_item_name')[0].innerHTML;
+                    v_start = cur_title.indexOf("(") + 1;
+                    v_end = cur_title.indexOf(")");
+                    $('#version_changer').val(cur_title.substr(v_start, v_end - v_start)).selectmenu('refresh');
+                }
                 break;
 
             case "result.bible-verses":
@@ -810,6 +843,10 @@ $(document).ready(function(){
                 json_toast_response(json_data, "Bible passage added to service", "Problem adding Bible passage");
                 break;
 
+            case "response.change-bible-version":
+                json_toast_response(json_data, "Bible version changed", "Problem changing Bible version");
+                break;
+
             case "update.video-loop":
             case "response.move-item":
             case "response.next-item":
@@ -829,6 +866,13 @@ $(document).ready(function(){
                 console.error("Unsupported event", json_data);
         }
     }
+
+    $('#select_b_version').on('change', function(event, ui){
+        if ($('#passage_list input').length > 0 && $('#bible_search').val().trim() != ""){
+            // A search has already been performed, so repeat the search with the new version
+            bible_search();
+        }
+    })
 });
 
 $(window).resize(function(){
@@ -860,6 +904,29 @@ $(document).on('keypress', function(e){
             case 84: // T
             case 116: // t
                 toggle_display_state();
+                break;
+            case 49: // 1 - Service element
+                $("#elements_area").tabs("option", "active", 0);
+                break;
+            case 50: // 2 - Song element
+                $("#elements_area").tabs("option", "active", 1);
+                $("#song_search").focus();
+                break;
+            case 51: // 3 - Bible element
+                $("#elements_area").tabs("option", "active", 2);
+                $("#bible_search").focus();
+                break;
+            case 52: // 4 - Presentation element
+                $("#elements_area").tabs("option", "active", 3);
+                break;
+            case 53: // 5 - Video element
+                $("#elements_area").tabs("option", "active", 4);
+                break;
+            case 54: // 6 - Lighting control
+                $("#elements_area").tabs("option", "active", 5);
+                break;
+            case 55: // 7 - Styling control
+                $("#elements_area").tabs("option", "active", 6);
                 break;
         }
     }

@@ -17,7 +17,7 @@ import re
 import math
 from PIL import ImageFont
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError,\
-    MalformedReferenceError, MissingStyleParameterError
+    MalformedReferenceError, MissingStyleParameterError, MatchingVerseIdError
 
 
 class BiblePassage():
@@ -222,15 +222,15 @@ class BiblePassage():
         parts_refs_simple = [v["short_ref"] + v["data"] for v in self.parts]
         passage_tags = ' '.join(parts_refs_tags)
         passage_tags_simple = ' '.join(parts_refs_simple)
-        # for verse in self.parts:
-        # verse_with_ref_tags = "<sup>" + verse["short_ref"] + "</sup>" + verse["data"]
-        # verse_with_ref_simple = verse["short_ref"] + verse["data"]
-        # verse_words = verse_with_ref_simple.split(" ")
         verse_words = passage_tags_simple.split(" ")
-        # verse_words_tags = verse_with_ref_tags.split(" ")
         verse_words_tags = passage_tags.split(" ")
         line_count, line_start, slide_start = 0, 0, 0
         for i in range(len(verse_words)):
+            if int(max_lines) > 2 and line_count == (int(max_lines)-1) and \
+                verse_words_tags[i].find("<sup>") != -1:
+                # New verse forms part (not all) of last line of slide, break to new slide instead
+                self.slides.append(' '.join(verse_words_tags[slide_start:i]))
+                slide_start, line_count, line_start = i, 0, i
             line_part = ' '.join(verse_words[line_start:i+1])
             size = font.getsize(line_part)
             if size[0] > div_width_px:
@@ -239,7 +239,7 @@ class BiblePassage():
                 if line_count == int(max_lines):
                     self.slides.append(' '.join(verse_words_tags[slide_start:i]))
                     slide_start, line_count = i, 0
-        # Add on remaining bit of verse
+        # Add on remaining bit of passage
         if slide_start < (len(verse_words)):
             self.slides.append(' '.join(verse_words_tags[slide_start:len(verse_words)]))
 
@@ -477,6 +477,50 @@ class BiblePassage():
             return json.dumps(verses, indent=2)
         else:
             raise InvalidVersionError(version)
+
+    @classmethod
+    def translate_verse_id(cls, src_id, src_version, dest_version, bible_versions):
+        """
+        Find a verse in a different version of the Bible and return its id.
+
+        Arguments:
+        src_id -- the verse id in the source version
+        src_version -- the Bible version to use for src_id
+        dest_version -- the Bible version to use for the returned id
+        bible_versions -- a list of the available Bible versions
+
+        Possible exceptions:
+        InvalidVersionError -- raised if either of the versions are not available.
+        InvalidVerseIdError -- raised if src_id is not a valid id in src_version.
+        MatchingVerseIdError -- raised if a corresponding verse cannot be found in dest_version.
+        """
+        if src_version not in bible_versions:
+            raise InvalidVersionError(src_version)
+        if dest_version not in bible_versions:
+            raise InvalidVersionError(dest_version)
+        bible_db = sqlite3.connect('./data/' + src_version + '.sqlite')
+        cursor = bible_db.cursor()
+        cursor.execute('''
+            SELECT v.id, v.book_id, v.chapter, v.verse
+            FROM verse AS v
+            WHERE v.id = {id}
+        '''.format(id=src_id))
+        old_verse = cursor.fetchone()
+        if not old_verse:
+            raise InvalidVerseIdError(src_id, src_version)
+        bible_db.close()
+        bible_db = sqlite3.connect('./data/' + dest_version + '.sqlite')
+        cursor = bible_db.cursor()
+        cursor.execute('''
+            SELECT v.id
+            FROM verse AS v
+            WHERE v.book_id = {bk} AND v.chapter = {ch} AND v.verse = {vs}
+        '''.format(bk=old_verse[1], ch=old_verse[2], vs=old_verse[3]))
+        new_result = cursor.fetchone()
+        if not new_result:
+            raise MatchingVerseIdError(src_id, src_version, dest_version)
+        bible_db.close()
+        return new_result[0]
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

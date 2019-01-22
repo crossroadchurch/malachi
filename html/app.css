@@ -118,18 +118,18 @@ a.i-item {
 /* Custom indentations are needed because the length of custom labels differs from
    the length of the standard labels */
 .custom-size-flipswitch.ui-flipswitch .ui-btn.ui-flipswitch-on {
-    text-indent: -5.9em;
+    text-indent: -6.4em;
 }
 .custom-size-flipswitch.ui-flipswitch .ui-flipswitch-off {
-    text-indent: 0.5em;
+    text-indent: 1em;
 }
 /* Custom widths are needed because the length of custom labels differs from
    the length of the standard labels */
 .custom-size-flipswitch.ui-flipswitch {
-    width: 9em;
+    width: 10em;
 }
 .custom-size-flipswitch.ui-flipswitch.ui-flipswitch-active {
-    padding-left: 7em;
+    padding-left: 8em;
     width: 2em;
 }
 @media (min-width: 28em) {
@@ -159,4 +159,12 @@ a.i-item {
 .i-item sup {
     padding-right: 0.5em;
     font-size: 0.75em;
+}
+
+a.i-item.selected {
+    background-color: gold;
+}
+
+a.i-item.selected:hover {
+    background-color: gold;
 }

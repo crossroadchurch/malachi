@@ -26,6 +26,14 @@ class InvalidVerseIdError(Exception):
             .format(id=verse_id, vs=version)
         super(InvalidVerseIdError, self).__init__(self.msg)
 
+class MatchingVerseIdError(Exception):
+    """Indicate that a verse in one version of the Bible could not be found in another version."""
+    def __init__(self, verse_id, old_version, new_version):
+        self.msg = "Could not find a corresponding verse in the {nv} version of the Bible \
+            for the verse with id {id} in the {ov} version of the Bible"\
+            .format(id=verse_id, ov=old_version, nv=new_version)
+        super(MatchingVerseIdError, self).__init__(self.msg)
+
 class MalformedReferenceError(Exception):
     """Indicate that a Bible reference does not have the correct syntax"""
     def __init__(self, ref):
