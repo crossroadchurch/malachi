@@ -1,5 +1,6 @@
 let websocket;
-const MAX_LIST_ITEMS = 10;
+const MAX_LIST_ITEMS = 50;
+const MAX_VERSE_ITEMS = 2500;
 const SELECTED_COLOR = 'gold';
 let service_list;
 let service_sort_start;
@@ -11,6 +12,8 @@ let aspect_ratio;
 let video_timer = 0;
 let video_interval;
 let update_slider = true;
+let valid_keys = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
 icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
 icon_dict["presentation"] = "/html/icons/icons8-presentation-48.png";
@@ -115,13 +118,14 @@ function load_service(force){
 
 function save_service_as(elt){
     f_name = $(elt).val();
-    // TODO: Add extra input sanitization here...
-    if (f_name.endsWith(".json") == false){
-        f_name += ".json";
+    // Replace invalid characters to avoid errors and prevent file being saved in other directories
+    clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
+    if (clean_name.endsWith(".json") == false){
+        clean_name += ".json";
     }
     websocket.send(JSON.stringify({
         "action": "command.save-service-as", 
-        "params": {"filename": f_name}
+        "params": {"filename": clean_name}
     }));
     // Reset input for next time
     $(elt).val("");
@@ -161,24 +165,43 @@ function goto_slide(idx){
 }
 
 function song_search(){
-    websocket.send(JSON.stringify({"action": "query.song-by-text", "params": {"search-text": $('#song_search').val()}}));
+    song_val = $('#song_search').val().replace(/[^0-9a-z ]/gi, '').trim();
+    if (song_val !== ""){
+        websocket.send(JSON.stringify({
+            "action": "query.song-by-text", 
+            "params": {
+                "search-text": song_val
+            }
+        }));
+    } else {
+        $("#song_list").html('');
+    }
 }
 
 function bible_search(){
     if ($('input[name=b_search_type]:checked').attr('id') == "b_search_type_ref"){
-        websocket.send(JSON.stringify({
-            "action": "query.bible-by-ref",
-            "params": {
-                "version": $('#select_b_version').val(),
-                "search-ref": $('#bible_search').val()
-        }}));
+        if ($('#bible_search').val().trim() !== ""){
+            websocket.send(JSON.stringify({
+                "action": "query.bible-by-ref",
+                "params": {
+                    "version": $('#select_b_version').val(),
+                    "search-ref": $('#bible_search').val()
+            }}));
+        } else {
+            $('#passage_list div').html('');
+        }
     } else {
-        websocket.send(JSON.stringify({
-            "action": "query.bible-by-text",
-            "params": {
-                "version": $('#select_b_version').val(),
-                "search-text": $('#bible_search').val()
-        }}));
+        if ($('#bible_search').val().trim().length > 2){
+            websocket.send(JSON.stringify({
+                "action": "query.bible-by-text",
+                "params": {
+                    "version": $('#select_b_version').val(),
+                    "search-text": $('#bible_search').val()
+            }}));
+        } else {
+            toastr.options = toastr_info_options;
+            toastr.warning("Please enter at least three characters to search by text");
+        }
     }
 }
 
@@ -225,6 +248,7 @@ function create_song(){
     $('#e_order').val("");
     $('#e_key').val("").change();
     $('#e_transpose').val(0);
+    $('#e_transpose_div a').html('');
     // Switch into create song mode
     $('#edit_song_mode_header').css('display', 'none');
     $('#create_song_mode_header').css('display', 'block');
@@ -250,7 +274,6 @@ function save_song(){
         let current_part = "";
         let current_lines = [];
         let parts = []; // parts = [ {part: "v1", lines: [line1, ..., line_n]}, ...]
-        // TODO: Sanitize lyrics - quotations???
         for (i in lyric_lines){
             if (lyric_lines[i][0] == "<"){
                 // New part, do we need to close out previous one?
@@ -258,7 +281,7 @@ function save_song(){
                     part_obj = {part: current_part, lines: current_lines};
                     parts.push(part_obj);
                 }
-                // Start new part- TODO: Input sanitization needed...
+                // Start new part
                 current_part = lyric_lines[i].substr(1, lyric_lines[i].length-2).toLowerCase();
                 current_lines = [];
             } else {
@@ -460,6 +483,15 @@ function setup_service_list_handlers(){
     });
 }
 
+function update_transpose_slider(){
+    if ($('#e_key').prop('selectedIndex') > -1){
+        e_key = $('#e_key').prop('selectedIndex');
+        t_val = parseInt($('#e_transpose').val(), 10);
+        t_key = valid_keys[(e_key + t_val) % 12];
+        $('#e_transpose_div a').html(t_key);
+    }
+}
+
 $(document).ready(function(){
     $("#elements_area").tabs();
     $("#service_list").sortable();
@@ -473,22 +505,31 @@ $(document).ready(function(){
         }));
     });
 
+    $("#song_search_div .ui-input-clear").on('click', function(e){
+        song_search();
+    });
+
+    $("#bible_search_div .ui-input-clear").on('click', function(e){
+        bible_search();
+    });
+    $("#bible_search").on('keypress', function(e){
+        key_code = e.which ? e.which : e.keyCode;
+        if (key_code == 13){
+            bible_search();
+        }
+    });
+
     $('#version_changer').on('change', function(){
         websocket.send(JSON.stringify({
             "action": "command.change-bible-version",
             "params": {"version": $('#version_changer').val()}
         }));
     });
-    
+
+    $('#e_transpose').on('change', update_transpose_slider);
+    $('#e_key').on('change', update_transpose_slider);
+
     $('#time_seek').parent().find('a').css('display','none');
-    // $('#time_seek').on("slidestart", function(event, ui){
-    //     update_slider = false;
-    // });
-    // $('#time_seek').on("slidestop", function(event, ui){
-    //     update_slider = true;
-    //     console.log($('#time_seek').val());
-    //     websocket.send(JSON.stringify({"action": "command.seek-video", "params": {"seconds": $('#time_seek').val()}}));
-    // });
 
     $('#s_width').on("slidestop", function(event, ui){
         websocket.send(JSON.stringify({
@@ -615,7 +656,17 @@ $(document).ready(function(){
                 indicate_current_item(json_data.params.item_index);
 
                 // Populate current item list
-                display_current_item(json_data.params.current_item, json_data.params.slide_index);
+                if (json_data.params.item_index != -1){
+                    current_item = json_data.params.items[json_data.params.item_index];
+                    display_current_item(current_item, json_data.params.slide_index);
+                } else {
+                    $('#version_changer').parent().css('display', 'none');
+                    $('#video_controls').css('display', 'none');
+                    $("#current_item_icon").attr('src', icon_dict["song"]);
+                    $("#current_item_name").html('No current item');
+                    $("#current_item_list").html('');
+                    $("#current_item_list").listview('refresh');
+                }
                 break;
 
             case "update.slide-index-update":
@@ -695,7 +746,12 @@ $(document).ready(function(){
                     $('#e_lyrics').val(lyrics);
                     $('#e_order').val(full_song["verse-order"].toUpperCase());
                     $('#e_key').val(full_song["song-key"]).change();
-                    $('#e_transpose').val(full_song["transpose-by"]).slider('refresh');
+                    t_val = full_song["transpose-by"];
+                    $('#e_transpose').val((t_val+12) % 12).slider('refresh'); // +12 needed to ensure remainder is in [0, 12)
+                    if ($('#e_key').prop('selectedIndex') > -1){
+                        t_key = valid_keys[($('#e_key').prop('selectedIndex') + t_val) % 12];
+                        $('#e_transpose_div a').html(t_key);
+                    }
                     // Ensure that we are in edit song mode, rather than create song mode
                     $('#edit_song_mode_header').css('display', 'block');
                     $('#create_song_mode_header').css('display', 'none')
@@ -707,14 +763,17 @@ $(document).ready(function(){
             case "response.new-service":
                 if (json_data.params.status == "unsaved-service"){
                     $('#popup_new_service').popup('open');
+                } else {
+                    json_toast_response(json_data, "New service started", "Problem starting new service");
                 }
                 break;
 
             case "response.load-service":
                 if (json_data.params.status == "unsaved-service"){
                     $('#popup_save_before_load_service').popup('open');
+                } else {
+                    json_toast_response(json_data, "Service loaded successfully", "Problem loading service");
                 }
-                // TODO: Deal with other errors
                 break;
 
             case "result.song-titles":
@@ -742,27 +801,31 @@ $(document).ready(function(){
                     $('#popup_save_service_as').popup('open');
                 } else {
                     // Save has been successful
+                    json_toast_response(json_data, "Service saved", "Problem saving service");
                     if (action_after_save == 'new'){
                         action_after_save = 'none';
                         new_service(true);
                     } else if (action_after_save == 'load'){
                         action_after_save = 'none';
                         load_service(true);
-                    } else {
-                        json_toast_response(json_data, "Service saved", "Problem saving service");
                     }
                 }
                 break;
 
             case "result.all-services":
                 $('#load_files_radio div').html('');
-                for (let file in json_data.params.filenames){
-                    $('#load_files_radio div').append('<input type="radio" name="files" id="files-' + file + '">');
-                    $('#load_files_radio div').append('<label for="files-'+ file +'">' + json_data.params.filenames[file] + '</label>');
+                if (json_data.params.filenames.length != 0){
+                    for (let file in json_data.params.filenames){
+                        $('#load_files_radio div').append('<input type="radio" name="files" id="files-' + file + '">');
+                        $('#load_files_radio div').append('<label for="files-'+ file +'">' + json_data.params.filenames[file] + '</label>');
+                    }
+                    $('#load_files_radio input[type="radio"]').checkboxradio();
+                    $('#files-0').prop("checked", true).checkboxradio('refresh');  // Select item 0
+                    $('#popup_btn_load_service').removeClass('ui-state-disabled');
+                } else {
+                    $('#load_files_radio div').append('<p><em>No saved service plans</em></p>');
+                    $('#popup_btn_load_service').addClass('ui-state-disabled');
                 }
-                $('#load_files_radio input[type="radio"]').checkboxradio();
-                $('#files-0').prop("checked", true).checkboxradio('refresh');  // Select item 0
-                // TODO: Case of no files params.filenames
                 $('#load_files_radio').controlgroup('refresh');
                 $('#popup_load_service').popup('open');
                 break;
@@ -786,11 +849,15 @@ $(document).ready(function(){
             case "result.bible-verses":
                 $('#passage_list div').html('');
                 for (let v in json_data.params.verses){
+                    if (v == MAX_VERSE_ITEMS) {
+                        break;
+                    }
                     verse = json_data.params.verses[v];
                     bible_ref = verse[1] + " " + verse[2] + ":" + verse[3];
                     $('#passage_list div').append('<input type="checkbox" data-mini="true" checked="checked" name="v_list" id="v-' + verse[0] + '">');
                     $('#passage_list div').append('<label for="v-'+ verse[0] +'">' + bible_ref + ": " + verse[4] + '</label>');
                 }
+
                 $('#passage_list input[type="checkbox"]').checkboxradio();
                 $('#passage_list').controlgroup('refresh');
                 break;
@@ -847,6 +914,10 @@ $(document).ready(function(){
                 json_toast_response(json_data, "Bible version changed", "Problem changing Bible version");
                 break;
 
+            case "response.remove-item":
+                json_toast_response(json_data, "Item removed", "Problem removing item");
+                break;
+
             case "update.video-loop":
             case "response.move-item":
             case "response.next-item":
@@ -855,7 +926,6 @@ $(document).ready(function(){
             case "response.next-slide":
             case "response.previous-slide":
             case "response.goto-slide":
-            case "response.remove-item":
             case "response.set-display-state":
             case "response.play-video":
             case "response.pause-video":

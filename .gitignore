@@ -3,7 +3,7 @@
 !/thumbnails/.gitkeep
 /presentations/*
 !/presentations/.gitkeep
-/services.*
+/services/*
 !/services/.gitkeep
 /videos/*
 !/videos/.gitkeep

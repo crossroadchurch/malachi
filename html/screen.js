@@ -32,6 +32,11 @@ function display_current_slide(slide_index){
     $('#slide_area').html(slide_text);
 }
 
+function clear_current_slide(){
+    stop_running_video();
+    $('#slide_area').html('');
+}
+
 function stop_running_video(){
     document.getElementById('video_item').pause();
     $('#loop_video').css('display', 'block');
@@ -125,6 +130,8 @@ $(document).ready(function(){
                 current_item = json_data.params.current_item;
                 if (json_data.params.item_index != -1){
                     display_current_slide(json_data.params.slide_index);
+                } else {
+                    clear_current_slide();
                 }
                 break;
 

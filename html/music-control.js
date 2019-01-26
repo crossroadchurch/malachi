@@ -11,16 +11,34 @@ var slide_index = -1;
 var item_index = -1;
 var websocket;
 var valid_keys = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+var music_options_visible = false;
+
+function view_music_options(val){
+  music_options_visible = val;
+  if (music_options_visible){
+    $('#currentslide').css('display', 'none');
+    $('#nextslide').css('display', 'none');
+    $('#music-options').css('display', 'block');
+    $('#music-options-btn').css('background', '#4CAF50');
+  } else {
+    $('#currentslide').css('display', 'block');
+    $('#nextslide').css('display', 'block');
+    $('#music-options').css('display', 'none');
+    $('#music-options-btn').css('background', 'gray');
+  }
+}
 
 function update_music() {
   $("#playedkey").html(played_key);
   if (played_key === ""){
-    $('#transposearea').css('display', 'none');
-    $('#capoarea').css('display', 'none');
+    $('#music-options-btn').css('display', 'none');
+    view_music_options(false);
   } else {
-    $('#transposearea').css('display', 'inline-block');
-    $('#capoarea').css('display', 'inline-block');
-    $('#transposeselect').val(noncapo_key);
+    $('#music-options-btn').css('display', 'inline-block');
+    $('#key-buttons button').css('background', 'gray');
+    $('#key-buttons button:nth-child(' + (valid_keys.indexOf(noncapo_key) + 1) + ')').css('background', '#4CAF50');
+    $('#capo-buttons button').css('background', 'gray');
+    $('#capo-buttons button:nth-child(' + (capo + 1) + ')').css('background', '#4CAF50');
   }
   verse_control_list = "";
   verse_list = "";
@@ -268,18 +286,20 @@ function display_off() {
   websocket.send(JSON.stringify({"action": "command.set-display-state", "params": {"state": "off"}}));
 }
 
-function update_capo(){
-  capo = $("#caposelect").val();
+function change_capo(new_capo){
+  capo = new_capo;
   websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
+  view_music_options(false);
 }
 
-function update_key(){
+function change_key(new_key){
   if (played_key !== ""){
-    new_key = $('#transposeselect').val();
     transpose_amount = (valid_keys.indexOf(new_key) - valid_keys.indexOf(noncapo_key)) % 12;
     websocket.send(JSON.stringify({"action": "command.transpose-by", "params": {"amount": transpose_amount}}));
   }
+  view_music_options(false);
 }
+
 
 function next_slide(event){
   event.preventDefault();
@@ -384,8 +404,6 @@ $(document).ready(function(){
     }
   }
 
-  $("#caposelect").change(update_capo);
-  $("#transposeselect").change(update_key);
   $("#controller-next").on("click", next_slide);
   $("#controller-prev").on("click", previous_slide);
 });

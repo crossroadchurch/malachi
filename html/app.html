@@ -54,10 +54,12 @@
 
       <div id="service_element">
         <div id="service_menu">
-          <button id="new_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="javascript:new_service(false);">New</button>
-          <button id="load_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="load_service_preload();">Load</button>
-          <button id="save_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="save_service('none');">Save</button>
-          <button id="save_service_as_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="$('#popup_save_service_as').popup('open');">Save as</button>
+          <div data-role="controlgroup" data-mini="false" data-type="horizontal">
+            <button id="new_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="javascript:new_service(false);">New</button>
+            <button id="load_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="load_service_preload();">Load</button>
+            <button id="save_service_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="save_service('none');">Save</button>
+            <button id="save_service_as_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="$('#popup_save_service_as').popup('open');">Save as</button>
+          </div>
         </div>
         <h3>Service plan</h3>
         <ul id="service_list" data-role="listview" data-inset="true"></ul>
@@ -76,36 +78,29 @@
       </div>
 
       <div id="bible_element" class="ui-content">
-        <input type="search" id="bible_search" value="" placeholder="">
-        <div class="ui-grid-b">
-          <div class="ui-block-a">
-            <select name="select_b_version" id="select_b_version" data-mini="true">
-            </select>
+        <div>
+          <div id="bible_search_div" style="width:75%; float:left;">
+            <input type="search" id="bible_search" value="" placeholder="">
           </div>
-          <div class="ui-block-b">
+          <div style="width:20%; padding-left:5%; float:left;">
+            <button id="bible_search_btn" class="ui-btn ui-corner-all" onclick="bible_search()">Search</button>
+          </div>
+        </div>
+        <div>
+          <div style="width: 33.333%; float:left;">
             <div data-role="controlgroup" data-mini="true" data-type="horizontal">
               <input type="radio" name="b_search_type" id="b_search_type_ref" value="on" checked="checked"></input>
               <label for="b_search_type_ref">Ref</label>
               <input type="radio" name="b_search_type" id="b_search_type_text" value="off"></input>
               <label for="b_search_type_text">Text</label>
+              <select name="select_b_version" id="select_b_version"></select>
             </div>
           </div>
-          <div class="ui-block-c">
-            <div data-role="controlgroup" data-mini="true">
-              <button id="bible_search_btn" class="ui-btn ui-corner-all" onclick="bible_search()">Search</button>
-            </div>
-          </div>
-        </div>
-        <div class="ui-grid-a">
-          <div class="ui-block-a">
+          <div style="width: 66.666%; float:left;">
             <div data-role="controlgroup" data-type="horizontal" data-mini="true">
               <button id="select_all_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="select_all_verses()">Select all</button>
               <button id="select_none_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="select_none_verses()">Select none</button>
-            </div>
-          </div>
-          <div class="ui-block-b">
-            <div data-role="controlgroup" data-mini="true">
-              <button id="add_passage_btn" class="ui-btn ui-corner-all" onclick="add_verses()">Add selected to service</button>
+              <button id="add_passage_btn" class="ui-btn ui-corner-all" onclick="add_verses()">Add to service</button>
             </div>
           </div>
         </div>
@@ -213,7 +208,7 @@
     <div role="main" class="ui-content">
       <p>Choose service to load:</p>
       <fieldset id="load_files_radio" data-mini="true" data-role="controlgroup"></fieldset>
-      <a onclick="load_service(false);" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Load</a>
+      <a onclick="load_service(false);" href="#" id="popup_btn_load_service" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Load</a>
       <a onclick="" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
   </div>
 
@@ -235,7 +230,7 @@
     </div>
     <div role="main" class="ui-content">
       <div class="ui-grid-a">
-        <div class="ui-block-a"> <!-- LEFT COLUMN -->
+        <div class="ui-block-a edit-song-col-left"> <!-- LEFT COLUMN -->
           <label for="e_title">Song name:</label>
           <input type="text" name="e_title" id="e_title" data-clear-btn="true">
           <label for="e_author">Author:</label>
@@ -272,20 +267,24 @@
                 <option value="B">B</option>
               </select>
             </div>
-            <div class="ui-block-b">
+            <div id="e_transpose_div" class="ui-block-b">
               <label for="e_transpose">Transpose by:</label>
-              <input type="range" name="e_transpose" id="e_transpose" min="-11" max="11">
+              <input type="range" name="e_transpose" id="e_transpose" min="0" max="11">
             </div>
           </div>
+          <div id="edit_song_popup_buttons">
+            <a onclick="save_song();" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline">Save</a>
+            <a onclick="reset_edit_song_form();" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
+          </div>
         </div>
-        <div class="ui-block-b"> <!-- RIGHT COLUMN -->
+        <div class="ui-block-b edit-song-col-right"> <!-- RIGHT COLUMN -->
           <label for="e_lyrics">Lyrics:</label>
           <textarea cols="40" rows="10" name="e_lyrics" id="e_lyrics" data-autogrow="false"></textarea>
+          <p style="font-size: 0.9rem;">Use tags in angle brackets (e.g. <code>&lt;V1&gt;</code>) to indicate the start of sections.<br />
+            Insert a mandatory line break by placing <code>[br]</code> on a line by itself.<br />
+            Place chords on the line before their lyrics and finish chord lines with <code>@</code>.<br />
+            Use <code>#</code> to pad out lyrics so that they line up with their chords.</p>
         </div>
-      </div>
-      <div id="edit_song_popup_buttons">
-        <a onclick="save_song();" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline">Save</a>
-        <a onclick="reset_edit_song_form();" href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back">Cancel</a>
       </div>
     </div>
   </div>
