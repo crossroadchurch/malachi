@@ -1,6 +1,5 @@
 websockets
 websocket-client
-requests
 mss
 opencv-python
 Pillow

@@ -9,6 +9,7 @@ var current_slides = [];
 var part_counts = [];
 var slide_index = -1;
 var item_index = -1;
+var cur_song_id = -1;
 var websocket;
 var valid_keys = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 var music_options_visible = false;
@@ -288,6 +289,11 @@ function display_off() {
 
 function change_capo(new_capo){
   capo = new_capo;
+  if (capo != 0){
+    window.localStorage.setItem(cur_song_id.toString(), capo.toString());
+  } else {
+    window.localStorage.removeItem(cur_song_id.toString());
+  }
   websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
   view_music_options(false);
 }
@@ -299,7 +305,6 @@ function change_key(new_key){
   }
   view_music_options(false);
 }
-
 
 function next_slide(event){
   event.preventDefault();
@@ -319,11 +324,32 @@ function change_song(id){
   websocket.send(JSON.stringify({"action": "command.goto-item", "params": { "index": id }}));
 }
 
+function capo_check_update_music(){
+  if (cur_song_id != -1){
+    saved_capo = window.localStorage.getItem(cur_song_id.toString());
+    if (saved_capo == null) {
+      saved_capo = 0;
+    } else {
+      saved_capo = parseInt(saved_capo);
+    }
+    if (saved_capo != capo){
+      capo = saved_capo;
+      // $('#caposelect').val(capo);
+      websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
+    } else {
+      update_music();
+    }
+  } else {
+    update_music();
+  }
+}
+
 function start_websocket(){
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/leader");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
+    console.log(json_data);
     switch(json_data.action){
       case "update.leader-init":
       case "update.service-overview-update":
@@ -334,11 +360,13 @@ function start_websocket(){
           slide_type = json_data.params.current_item.type;
           current_slides = json_data.params.current_item.slides;
           if (slide_type == "song"){
+            cur_song_id = json_data.params.current_item["song-id"];
             noncapo_key = json_data.params.current_item["non-capo-key"];
             played_key = json_data.params.current_item["played-key"];
             verse_order = json_data.params.current_item["verse-order"];
             part_counts = json_data.params.current_item["part-counts"];
           } else {
+            cur_song_id = -1;
             verse_order = "";
             part_counts = [];
             noncapo_key = "";
@@ -346,6 +374,7 @@ function start_websocket(){
           }
         } else {
           slide_type = "none";
+          cur_song_id = -1;
           current_slides = [];
           verse_order = "";
           part_counts = [];
@@ -358,7 +387,7 @@ function start_websocket(){
           $("body").css("border-top", "6px solid red");
         }
         update_menu();
-        update_music();
+        capo_check_update_music();
         break;
       case "update.slide-index-update":
         slide_index = json_data.params.slide_index;
@@ -370,18 +399,20 @@ function start_websocket(){
         slide_type = json_data.params.current_item.type;
         current_slides = json_data.params.current_item.slides;
         if (slide_type == "song"){
+          cur_song_id = json_data.params.current_item["song-id"];
           noncapo_key = json_data.params.current_item["non-capo-key"];
           played_key = json_data.params.current_item["played-key"];
           verse_order = json_data.params.current_item["verse-order"];
           part_counts = json_data.params.current_item["part-counts"];
         } else {
+          cur_song_id = -1;
           verse_order = "";
           played_key = "";
           noncapo_key = "";
           part_counts = [];
         }
         update_menu();
-        update_music();
+        capo_check_update_music();
         break;
       case "update.display-state":
         if (json_data.params.state == "on"){

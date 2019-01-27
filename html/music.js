@@ -2,6 +2,7 @@ var capo = 0;
 var verse_order = "";
 var played_key = "";
 var slide_type = "";
+var cur_song_id = -1;
 var current_slides = [];
 var part_counts = [];
 var slide_index = -1;
@@ -13,6 +14,7 @@ function update_music() {
   verse_list = "";
 
   if (slide_type == "song"){
+    $('#capoarea').css('display', 'inline');
     verse_list = verse_order.split(" ");
     part_counts_sum = 0
     for (i=0; i < verse_list.length; i++){
@@ -28,6 +30,9 @@ function update_music() {
     verse_control_list = verse_control_list + "</ul>";
   } else if (slide_type != undefined) {
     verse_control_list = "<ul><li>" + current_title + "</li></ul>";
+    $('#capoarea').css('display', 'none');
+  } else {
+    $('#capoarea').css('display', 'none');
   }
   $("#verseorder").html(verse_control_list);
 
@@ -213,7 +218,32 @@ function update_music() {
 
 function update_capo(){
   capo = $("#caposelect").val();
+  if (capo != 0){
+    window.localStorage.setItem(cur_song_id.toString(), capo.toString());
+  } else {
+    window.localStorage.removeItem(cur_song_id.toString());
+  }
   websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
+}
+
+function capo_check_update_music(){
+  if (cur_song_id != -1){
+    saved_capo = window.localStorage.getItem(cur_song_id.toString());
+    if (saved_capo == null) {
+      saved_capo = 0;
+    } else {
+      saved_capo = parseInt(saved_capo);
+    }
+    if (saved_capo != capo){
+      capo = saved_capo;
+      $('#caposelect').val(capo);
+      websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
+    } else {
+      update_music();
+    }
+  } else {
+    update_music();
+  }
 }
 
 function start_websocket(){
@@ -230,20 +260,23 @@ function start_websocket(){
           current_slides = json_data.params.current_item.slides;
           current_title = json_data.params.current_item["title"];
           if (slide_type == "song"){
+            cur_song_id = json_data.params.current_item["song-id"];
             played_key = json_data.params.current_item["played-key"];
             verse_order = json_data.params.current_item["verse-order"];
             part_counts = json_data.params.current_item["part-counts"];
           } else {
+            cur_song_id = -1;
             verse_order = "";
             part_counts = [];
           }
         } else {
           slide_type = "none";
+          cur_song_id = -1;
           current_slides = [];
           verse_order = "";
           part_counts = [];
         }
-        update_music();
+        capo_check_update_music();
         break;
       case "update.slide-index-update":
         slide_index = json_data.params.slide_index;
@@ -255,15 +288,17 @@ function start_websocket(){
         current_slides = json_data.params.current_item.slides;
         current_title = json_data.params.current_item["title"];
         if (slide_type == "song"){
+          cur_song_id = json_data.params.current_item["song-id"];
           played_key = json_data.params.current_item["played-key"];
           verse_order = json_data.params.current_item["verse-order"];
           part_counts = json_data.params.current_item["part-counts"];
         } else {
+          cur_song_id = -1;
           verse_order = "";
           played_key = "";
           part_counts = [];
         }
-        update_music();
+        capo_check_update_music();
         break;
       default:
         console.error("Unsupported event", json_data);
