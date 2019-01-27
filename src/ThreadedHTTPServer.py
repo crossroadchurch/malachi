@@ -63,6 +63,8 @@ class RoutedRequestHandler(http.server.SimpleHTTPRequestHandler):
 class ThreadedHTTPServer():
     """Provide a HTTP server in a separate thread to the main thread"""
 
+    socketserver.TCPServer.allow_reuse_address = True
+
     def __init__(self, host, port):
         handler = RoutedRequestHandler
         self.server = socketserver.ThreadingTCPServer((host, port), handler)

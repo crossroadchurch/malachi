@@ -6,6 +6,7 @@
 import os
 import math
 import json
+import re
 import cv2
 from MalachiExceptions import InvalidVideoUrlError
 
@@ -15,11 +16,15 @@ class Video():
     def __init__(self, url):
         # URL is relative to Malachi directory, e.g. "./videos/video.mp4"
         if os.path.isfile(url):
-            self.url = url
+            self.url = os.path.split(url)[0] + "/" + \
+                re.sub(r'[^a-zA-Z0-9 \'\-_.,()]', '', os.path.split(url)[1])
+            # Remove invalid characters from url, renaming source file as appropriate
+            if self.url != url:
+                os.rename(os.path.abspath(url), os.path.abspath(self.url))
         else:
             raise InvalidVideoUrlError(url)
-        self.title = os.path.basename(url)
-        vid = cv2.VideoCapture(url)
+        self.title = os.path.basename(self.url)
+        vid = cv2.VideoCapture(self.url)
         self.fps = vid.get(cv2.CAP_PROP_FPS)
         frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
         self.duration = math.floor(frames/self.fps)
@@ -28,8 +33,8 @@ class Video():
         self.video_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.video_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
         # Generate thumbnail if needed
-        if not os.path.isfile(url + ".jpg"):
-            cv2_vid = cv2.VideoCapture(url)
+        if not os.path.isfile(self.url + ".jpg"):
+            cv2_vid = cv2.VideoCapture(self.url)
             scale_factor = 128 / self.video_width
             if self.duration > 10:
                 cv2_vid.set(cv2.CAP_PROP_POS_FRAMES, 10*self.fps)
@@ -38,7 +43,7 @@ class Video():
             status, frame = cv2_vid.read()
             if status:
                 thumbnail = cv2.resize(frame, (0, 0), fx=scale_factor, fy=scale_factor)
-                cv2.imwrite(url + ".jpg", thumbnail)
+                cv2.imwrite(self.url + ".jpg", thumbnail)
 
     def get_title(self):
         """Return the title of the Video"""

@@ -88,7 +88,8 @@ function update_from_style(style){
     $('#slide_area').css("font-size", style["font-size-vh"] + "vh");
 }
 
-$(document).ready(function(){
+function start_websocket(){
+    websocket = null;
     websocket = new WebSocket("ws://" + window.location.hostname + ":9001/display");
     websocket.onmessage = function (event) {
         json_data = JSON.parse(event.data);
@@ -187,6 +188,15 @@ $(document).ready(function(){
                 console.error("Unsupported event", json_data);
         }
     }
+    websocket.onclose = function(event){
+        if (event.wasClean == false){
+            setTimeout(start_websocket, 5000);
+        }
+    }
+}
+
+$(document).ready(function(){
+    start_websocket();
 
     // Mute foreground video element based on ?muted=true,false parameter, if it exists
     params = window.location.search.slice(1);

@@ -492,85 +492,8 @@ function update_transpose_slider(){
     }
 }
 
-$(document).ready(function(){
-    $("#elements_area").tabs();
-    $("#service_list").sortable();
-    $("#service_list").on("sortstart", function(event, ui){
-        service_sort_start = ui.item.index();
-    });
-    $("#service_list").on("sortupdate", function(event, ui){
-        websocket.send(JSON.stringify({
-            "action": "command.move-item",
-            "params": {"from-index": service_sort_start, "to-index": ui.item.index()}
-        }));
-    });
-
-    $("#song_search_div .ui-input-clear").on('click', function(e){
-        song_search();
-    });
-
-    $("#bible_search_div .ui-input-clear").on('click', function(e){
-        bible_search();
-    });
-    $("#bible_search").on('keypress', function(e){
-        key_code = e.which ? e.which : e.keyCode;
-        if (key_code == 13){
-            bible_search();
-        }
-    });
-
-    $('#version_changer').on('change', function(){
-        websocket.send(JSON.stringify({
-            "action": "command.change-bible-version",
-            "params": {"version": $('#version_changer').val()}
-        }));
-    });
-
-    $('#e_transpose').on('change', update_transpose_slider);
-    $('#e_key').on('change', update_transpose_slider);
-
-    $('#time_seek').parent().find('a').css('display','none');
-
-    $('#s_width').on("slidestop", function(event, ui){
-        websocket.send(JSON.stringify({
-            "action": "command.edit-style-param", 
-            "params": {
-                "param": "div-width-vw",
-                "value": $('#s_width').val()
-            }
-        }));
-    });
-
-    $('#s_font_size').on("slidestop", function(event, ui){
-        websocket.send(JSON.stringify({
-            "action": "command.edit-style-param", 
-            "params": {
-                "param": "font-size-vh",
-                "value": $('#s_font_size').val()
-            }
-        }));
-    });
-
-    $('#s_lines').on("slidestop", function(event, ui){
-        websocket.send(JSON.stringify({
-            "action": "command.edit-style-param", 
-            "params": {
-                "param": "max-lines",
-                "value": $('#s_lines').val()
-            }
-        }));
-    });
-
-    $('#s_margin').on("slidestop", function(event, ui){
-        websocket.send(JSON.stringify({
-            "action": "command.edit-style-param", 
-            "params": {
-                "param": "margin-top-vh",
-                "value": $('#s_margin').val()
-            }
-        }));
-    });
-
+function start_websocket(){
+    websocket = null;
     websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
     websocket.onmessage = function (event) {
         json_data = JSON.parse(event.data);
@@ -624,6 +547,10 @@ $(document).ready(function(){
                 } else {
                     $('#version_changer').parent().css('display', 'none');
                     $('#video_controls').css('display', 'none');
+                    $("#current_item_icon").attr('src', icon_dict["song"]);
+                    $("#current_item_name").html('No current item');
+                    $("#current_item_list").html('');
+                    $("#current_item_list").listview('refresh');
                 }
 
                 // Populate Presentation, Video and Loop lists
@@ -657,7 +584,7 @@ $(document).ready(function(){
 
                 // Populate current item list
                 if (json_data.params.item_index != -1){
-                    current_item = json_data.params.items[json_data.params.item_index];
+                    current_item = json_data.params.current_item;
                     display_current_item(current_item, json_data.params.slide_index);
                 } else {
                     $('#version_changer').parent().css('display', 'none');
@@ -832,6 +759,7 @@ $(document).ready(function(){
 
             case "result.bible-versions":
                 $('#select_b_version').html('');
+                $('#version_changer').html('');
                 for (let v in json_data.params.versions){
                     $('#select_b_version').append('<option value="' + json_data.params.versions[v] + '">' + json_data.params.versions[v] + '</option>');
                     $('#version_changer').append('<option value="' + json_data.params.versions[v] + '">' + json_data.params.versions[v] + '</option>');
@@ -936,13 +864,102 @@ $(document).ready(function(){
                 console.error("Unsupported event", json_data);
         }
     }
+    websocket.onclose = function(event){
+        if (event.wasClean == false){
+          toastr.options.positionClass = "toast-bottom-full-width";
+          toastr.error("Reconnection attempt will be made in 5 seconds", "Connection was closed/refused by server");
+          setTimeout(start_websocket, 5000);
+        }
+    }
+}
+
+$(document).ready(function(){
+    $("#elements_area").tabs();
+    $("#service_list").sortable();
+    $("#service_list").on("sortstart", function(event, ui){
+        service_sort_start = ui.item.index();
+    });
+    $("#service_list").on("sortupdate", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.move-item",
+            "params": {"from-index": service_sort_start, "to-index": ui.item.index()}
+        }));
+    });
+
+    $("#song_search_div .ui-input-clear").on('click', function(e){
+        song_search();
+    });
+
+    $("#bible_search_div .ui-input-clear").on('click', function(e){
+        bible_search();
+    });
+    $("#bible_search").on('keypress', function(e){
+        key_code = e.which ? e.which : e.keyCode;
+        if (key_code == 13){
+            bible_search();
+        }
+    });
+
+    $('#version_changer').on('change', function(){
+        websocket.send(JSON.stringify({
+            "action": "command.change-bible-version",
+            "params": {"version": $('#version_changer').val()}
+        }));
+    });
+
+    $('#e_transpose').on('change', update_transpose_slider);
+    $('#e_key').on('change', update_transpose_slider);
+
+    $('#time_seek').parent().find('a').css('display','none');
+
+    $('#s_width').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "div-width-vw",
+                "value": $('#s_width').val()
+            }
+        }));
+    });
+
+    $('#s_font_size').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "font-size-vh",
+                "value": $('#s_font_size').val()
+            }
+        }));
+    });
+
+    $('#s_lines').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "max-lines",
+                "value": $('#s_lines').val()
+            }
+        }));
+    });
+
+    $('#s_margin').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.edit-style-param", 
+            "params": {
+                "param": "margin-top-vh",
+                "value": $('#s_margin').val()
+            }
+        }));
+    });
 
     $('#select_b_version').on('change', function(event, ui){
         if ($('#passage_list input').length > 0 && $('#bible_search').val().trim() != ""){
             // A search has already been performed, so repeat the search with the new version
             bible_search();
         }
-    })
+    });
+
+    start_websocket();
 });
 
 $(window).resize(function(){

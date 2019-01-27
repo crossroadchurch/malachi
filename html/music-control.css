@@ -12,6 +12,13 @@
   src: local('Ubuntu Condensed'), url(/html/fonts/Ubuntu-C.ttf) format('truetype');
 }
 
+@font-face {
+  font-family: 'Quivira';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Quivira'), url(/html/fonts/Quivira.otf) format('truetype');
+}
+
 body {
   background-color: rgb(51, 51, 51);
   font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
@@ -154,7 +161,8 @@ span {
 }
 
 #playedkey, #verseorder, #keyandcapo {
-  display: inline;
+  display: inline-block;
+  height: 3rem;
 }
 
 #playedkey {
@@ -226,6 +234,7 @@ span {
   color: white;
   text-align: center;
   text-decoration: none;
+  line-height: 3rem;
 }
 
 .verse-button:active {
@@ -237,7 +246,8 @@ span {
 }
 
 .menu-button {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: 'Quivira';
+  font-size: 2rem;
   height: 3rem;
   width: 3rem;
   border: none;
@@ -245,6 +255,7 @@ span {
   color: white;
   text-align: center;
   text-decoration: none;
+  line-height: 3rem;
 }
 
 .icon-bar {
@@ -326,9 +337,9 @@ span {
 
 .option-button {
   font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
-  height: 3.5rem;
+  height: 2.8rem;
   width: 23%;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
   border:none;
   background-color: gray;
   color: white;
@@ -341,7 +352,7 @@ span {
 }
 
 .key-button {
-  font-size: 2.5rem;
+  font-size: 2rem;
 }
 
 .capo-button {
@@ -353,4 +364,8 @@ span {
   color: white;
   margin-top: 0;
   margin-bottom: 10px;
+}
+
+#key-buttons {
+  margin-bottom: 2rem;
 }

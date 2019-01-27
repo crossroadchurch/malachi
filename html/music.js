@@ -216,7 +216,8 @@ function update_capo(){
   websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
 }
 
-$(document).ready(function(){
+function start_websocket(){
+  websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/basic");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
@@ -268,6 +269,17 @@ $(document).ready(function(){
         console.error("Unsupported event", json_data);
     }
   }
+  websocket.onclose = function(event){
+    if (event.wasClean == false){
+      toastr.options.positionClass = "toast-bottom-full-width";
+      toastr.error("Reconnection attempt will be made in 5 seconds", "Connection was closed/refused by server");
+      setTimeout(start_websocket, 5000);
+    }
+  }
+}
+
+$(document).ready(function(){
+  start_websocket();
   $("#caposelect").change(update_capo);
 });
 
