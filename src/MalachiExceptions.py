@@ -40,6 +40,13 @@ class MalformedReferenceError(Exception):
         self.msg = "%s is not a valid form for a Bible reference" % ref
         super(MalformedReferenceError, self).__init__(self.msg)
 
+class UnknownReferenceError(Exception):
+    """Indicate that a Bible reference does not exist in the current version of the Bible."""
+    def __init__(self, verse_ref):
+        self.msg = "The reference {ref} does not exist in this version of the Bible"\
+            .format(ref=verse_ref)
+        super(UnknownReferenceError, self).__init__(self.msg)
+
 # Service
 class InvalidServiceUrlError(Exception):
     """Indicate that a specified Service URL does not exist"""

@@ -28,7 +28,7 @@ from LightHandler import LightHandler
 from Video import Video
 from Tracker import Tracker
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError
-from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError
+from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError, UnknownReferenceError
 from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
 from MalachiExceptions import InvalidVideoUrlError, UnspecifiedServiceUrl
@@ -674,6 +674,7 @@ class MalachiServer():
                 # Current item was removed
                 if self.s.item_index > 0:
                     self.s.item_index -= 1
+                    self.s.slide_index = 0
                     self.track_usage()
                 elif not self.s.items:
                     self.s.item_index = -1
@@ -681,6 +682,7 @@ class MalachiServer():
                 self.update_impress_change_item()
             elif index < self.s.item_index:
                 self.s.item_index -= 1
+                self.s.slide_index = 0
             await self.clients_service_items_update()
         else:
             status, details = "invalid-index", str(index)
@@ -1210,19 +1212,22 @@ class MalachiServer():
         params["version"] -- the version of the Bible to search
         params["search-ref"] -- the passage reference to search for
         """
-        status, verses = "ok", []
+        status, details, verses = "ok", "", []
         try:
             verses = json.loads(BiblePassage.ref_search(params["version"], \
                 params["search-ref"], self.bible_versions))
-        except InvalidVersionError:
-            status = "invalid-version"
-        except MalformedReferenceError:
-            status = "invalid-reference"
+        except InvalidVersionError as search_e:
+            status, details = "invalid-version", search_e.msg
+        except MalformedReferenceError as search_e:
+            status, details = "invalid-reference", search_e.msg
+        except UnknownReferenceError as search_e:
+            status, details = "unknown-reference", search_e.msg
         finally:
             await websocket.send(json.dumps({
                 "action": "result.bible-verses",
                 "params": {
                     "status": status,
+                    "details": details,
                     "verses": verses
                 }}))
 

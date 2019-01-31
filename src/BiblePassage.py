@@ -17,7 +17,8 @@ import re
 import math
 from PIL import ImageFont
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError,\
-    MalformedReferenceError, MissingStyleParameterError, MatchingVerseIdError
+    MalformedReferenceError, MissingStyleParameterError, MatchingVerseIdError,\
+    UnknownReferenceError
 
 
 class BiblePassage():
@@ -450,6 +451,8 @@ class BiblePassage():
                     ORDER BY b.id ASC, v.chapter ASC, v.verse ASC
                 '''.format(where=where_clause))
                 verses = cursor.fetchall()
+                if verses == []:
+                    raise UnknownReferenceError(search_ref)
             else:
                 cursor.execute('''
                     SELECT v.id
@@ -464,7 +467,7 @@ class BiblePassage():
                 '''.format(where=where2_clause))
                 verse2 = cursor.fetchone()
                 if (verse1 is None or verse2 is None):
-                    verses = []
+                    raise UnknownReferenceError(search_ref)
                 else:
                     cursor.execute('''
                         SELECT v.id, b.name, v.chapter, v.verse, v.text

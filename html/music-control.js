@@ -352,6 +352,8 @@ function start_websocket(){
     console.log(json_data);
     switch(json_data.action){
       case "update.leader-init":
+        toastr.options.positionClass = "toast-bottom-center";
+        toastr.success("Connected to Malachi server");
       case "update.service-overview-update":
         item_index = json_data.params.item_index;
         slide_index = json_data.params.slide_index;

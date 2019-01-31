@@ -46,9 +46,9 @@
         <li><a href="#service_element"><img class="element_icon" src="/html/icons/icons8-numbered-list-48.png" alt="Service" /></a></li>
         <li><a href="#song_element"><img class="element_icon" src="/html/icons/icons8-musical-notes-48.png" alt="Songs" /></a></li>
         <li><a href="#bible_element"><img class="element_icon" src="/html/icons/icons8-literature-48.png" alt="Bibles" /></a></li>
-        <li><a href="#presentation_element"><img class="element_icon" src="/html/icons/icons8-presentation-48.png" alt="Presentations" /></a></li>
+        <!--<li><a href="#presentation_element"><img class="element_icon" src="/html/icons/icons8-presentation-48.png" alt="Presentations" /></a></li>-->
         <li><a href="#video_element"><img class="element_icon" src="/html/icons/icons8-tv-show-48.png" alt="Videos" /></a></li>
-        <li><a href="#lights_element"><img class="element_icon" src="/html/icons/icons8-illumination-48.png" alt="Lights" /></a></li>
+        <!--<li><a href="#lights_element"><img class="element_icon" src="/html/icons/icons8-illumination-48.png" alt="Lights" /></a></li>-->
         <li><a href="#styles_element"><img class="element_icon" src="/html/icons/icons8-services-48.png" alt="Styles" /></a></li>
       </ul>
 
@@ -67,12 +67,13 @@
 
       <div id="song_element" class="ui-content">
         <div>
-          <div id="song_search_div">
+          <div id="song_search_div" style="width:75%; float:left;">
             <input type="search" id="song_search" value="" placeholder="Lyric or title search" oninput="song_search()">
           </div>
-          <div id="new_song_btn_div">
+          <div id="new_song_btn_div" style="width:20%; padding-left:5%; float:left;">
             <button id="new_song_btn" class="ui-btn ui-corner-all ui-btn-inline" onclick="create_song()">Create song</button>
           </div>
+          <div style="clear:both;"></div>
         </div>
         <ul id="song_list" data-role="listview" data-inset="true"></ul>
       </div>
@@ -108,19 +109,19 @@
         </fieldset>
       </div>
       
-      <div id="presentation_element" class="ui-content">
+      <!--<div id="presentation_element" class="ui-content">
         <h3>Available presentations</h3>
         <ul id="presentation_list" data-role="listview" data-inset="true"></ul>
-      </div>
+      </div>-->
 
       <div id="video_element" class="ui-content">
         <h3>Available videos</h3>
         <ul id="video_list" data-role="listview" data-inset="true"></ul>
       </div>
 
-      <div id="lights_element" class="ui-content">
+      <!--<div id="lights_element" class="ui-content">
         <h3>Lights control - coming soon!</h3>
-      </div>
+      </div>-->
 
       <div id="styles_element" class="ui-content">
         <h3>Loops</h3>

@@ -52,6 +52,22 @@ toastr_error_options = {
     "hideMethod": "fadeOut"
 };
 
+toastr_ws_close_options = {
+    "closeButton": false,
+    "newestOnTop": true,
+    "progressBar": false,
+    "positionClass": "toast-bottom-full-width",
+    "preventDuplicates": false,
+    "showDuration": "300",
+    "hideDuration": "300",
+    "timeOut": "2500",
+    "extendedTimeOut": "300",
+    "showEasing": "swing",
+    "hideEasing": "linear",
+    "showMethod": "fadeIn",
+    "hideMethod": "fadeOut"
+};
+
 function change_screen_state_flip(){
     str_state = ($('#flip_screen_state').prop("checked") === true) ? "on" : "off";
     websocket.send(JSON.stringify({"action": "command.set-display-state", "params": {"state": str_state}}));
@@ -337,9 +353,9 @@ function add_video(elt){
     websocket.send(JSON.stringify({"action": "command.add-video", "params": {"url": elt_text.substr(elt_text.indexOf(">") + 1)}}));
 }
 
-function add_presentation(elt){
-    websocket.send(JSON.stringify({"action": "command.add-presentation", "params": {"url": $(elt).children().first().html()}}));
-}
+// function add_presentation(elt){
+//     websocket.send(JSON.stringify({"action": "command.add-presentation", "params": {"url": $(elt).children().first().html()}}));
+// }
 
 function set_loop(elt){
     elt_text = $(elt).children().first().html();
@@ -500,6 +516,8 @@ function start_websocket(){
         console.log(json_data);
         switch(json_data.action){
             case "update.app-init":
+                toastr.options = toastr_info_options;
+                toastr.success("Connected to Malachi server");
                 screen_state = json_data.params.screen_state;
                 if (screen_state === "on"){
                     bool_screen_state = true;
@@ -554,7 +572,7 @@ function start_websocket(){
                 }
 
                 // Populate Presentation, Video and Loop lists
-                websocket.send(JSON.stringify({"action": "request.all-presentations", "params": {}}));
+                // websocket.send(JSON.stringify({"action": "request.all-presentations", "params": {}}));
                 websocket.send(JSON.stringify({"action": "request.all-videos", "params": {}}));
                 websocket.send(JSON.stringify({"action": "request.all-loops", "params": {}}));
 
@@ -622,13 +640,13 @@ function start_websocket(){
                 break;
 
             case "result.all-presentations":
-                let pres_list = "";
-                for (let url in json_data.params.urls){
-                    pres_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url] + "</a>";
-                    pres_list += "<a onclick='add_presentation($(this).parent());' href='javascript:void(0);'></li>";
-                }
-                $("#presentation_list").html(pres_list);
-                $("#presentation_list").listview('refresh');
+                // let pres_list = "";
+                // for (let url in json_data.params.urls){
+                //     pres_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url] + "</a>";
+                //     pres_list += "<a onclick='add_presentation($(this).parent());' href='javascript:void(0);'></li>";
+                // }
+                // $("#presentation_list").html(pres_list);
+                // $("#presentation_list").listview('refresh');
                 break;
 
             case "result.all-videos":
@@ -776,6 +794,10 @@ function start_websocket(){
 
             case "result.bible-verses":
                 $('#passage_list div').html('');
+                if (json_data.params.status !== "ok"){
+                    toastr.options = toastr_error_options;
+                    toastr.error(json_data.params.details, "Problem performing Bible search (" + json_data.params.status + ")");
+                }
                 for (let v in json_data.params.verses){
                     if (v == MAX_VERSE_ITEMS) {
                         break;
@@ -823,7 +845,7 @@ function start_websocket(){
                 break;
 
             case "response.add-presentation":
-                json_toast_response(json_data, "Presentation added to service", "Problem adding presentation");
+                // json_toast_response(json_data, "Presentation added to service", "Problem adding presentation");
                 break;
 
             case "response.set-loop":
@@ -866,9 +888,9 @@ function start_websocket(){
     }
     websocket.onclose = function(event){
         if (event.wasClean == false){
-          toastr.options.positionClass = "toast-bottom-full-width";
-          toastr.error("Reconnection attempt will be made in 5 seconds", "Connection was closed/refused by server");
-          setTimeout(start_websocket, 5000);
+            toastr.options = toastr_ws_close_options;
+            toastr.error("Reconnection attempt will be made in 5 seconds", "Connection was closed/refused by server");
+            setTimeout(start_websocket, 5000);
         }
     }
 }
@@ -1003,17 +1025,11 @@ $(document).on('keypress', function(e){
                 $("#elements_area").tabs("option", "active", 2);
                 $("#bible_search").focus();
                 break;
-            case 52: // 4 - Presentation element
+            case 52: // 4 - Video element
                 $("#elements_area").tabs("option", "active", 3);
                 break;
-            case 53: // 5 - Video element
+            case 53: // 5 - Styling control
                 $("#elements_area").tabs("option", "active", 4);
-                break;
-            case 54: // 6 - Lighting control
-                $("#elements_area").tabs("option", "active", 5);
-                break;
-            case 55: // 7 - Styling control
-                $("#elements_area").tabs("option", "active", 6);
                 break;
         }
     }
