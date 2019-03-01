@@ -688,6 +688,9 @@ function start_websocket(){
                         lyrics += "<" + full_song["parts"][i]["part"].toUpperCase() + ">\n";
                         lyrics += full_song["parts"][i]["data"];
                     }
+                    if (lyrics == ''){
+                        lyrics = "<V1>\n";
+                    }
                     $('#e_lyrics').val(lyrics);
                     $('#e_order').val(full_song["verse-order"].toUpperCase());
                     $('#e_key').val(full_song["song-key"]).change();
@@ -897,6 +900,13 @@ function start_websocket(){
 
 $(document).ready(function(){
     $("#elements_area").tabs();
+    $('.ui-tabs-anchor').keydown(function (event) {
+        key_code = event.which ? event.which : event.keyCode;
+        var e = $.Event("keydown");
+        e.which = key_code;
+        $("body").trigger(e);
+        return false;
+    });
     $("#service_list").sortable();
     $("#service_list").on("sortstart", function(event, ui){
         service_sort_start = ui.item.index();
@@ -993,7 +1003,7 @@ $(window).resize(function(){
     $('#current_item').css('height', window.innerHeight - video_height - 16);
 });
 
-$(document).on('keypress', function(e){
+$(document).on('keydown', function(e){
     key_code = e.which ? e.which : e.keyCode;
     let tag = e.target.tagName.toLowerCase();
     if (tag != 'input' && tag != 'textarea'){
@@ -1033,4 +1043,4 @@ $(document).on('keypress', function(e){
                 break;
         }
     }
-})
+});

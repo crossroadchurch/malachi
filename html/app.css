@@ -163,11 +163,11 @@ a.i-item {
 }
 
 a.i-item.selected {
-    background-color: gold;
+    background-color: gold !important;
 }
 
 a.i-item.selected:hover {
-    background-color: gold;
+    background-color: gold !important;
 }
 
 .edit-song-col-left {

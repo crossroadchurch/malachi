@@ -309,6 +309,7 @@ function start_websocket(){
   websocket.onclose = function(event){
     if (event.wasClean == false){
       toastr.options.positionClass = "toast-bottom-full-width";
+      toastr.options.timeOut = "3500";
       toastr.error("Reconnection attempt will be made in 5 seconds", "Connection was closed/refused by server");
       setTimeout(start_websocket, 5000);
     }

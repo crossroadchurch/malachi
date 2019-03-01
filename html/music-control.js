@@ -74,7 +74,7 @@ function update_music() {
   max_button_width = Math.floor(buttons_width / verse_list.length);
   pref_width = 6 * parseInt($("html").css("font-size")); /* 6rem */
   actual_width = Math.min(pref_width, max_button_width);
-  $(".verse-button").css("width", actual_width + "px");
+  $(".verse-button").css("width", (actual_width-1) + "px");
 
   if (slide_type == "song"){
 
@@ -440,6 +440,7 @@ function start_websocket(){
   websocket.onclose = function(event){
     if (event.wasClean == false){
       toastr.options.positionClass = "toast-bottom-full-width";
+      toastr.options.timeOut = "3500";
       toastr.error("Reconnection attempt will be made in 5 seconds", "Connection was closed/refused by server");
       setTimeout(start_websocket, 5000);
     }

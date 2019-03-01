@@ -222,7 +222,10 @@ class Song():
         elif self.verse_order.strip() == "":
             self.verse_order = ' '.join([x for x in self.parts])
 
-        slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
+        if self.parts != {}:
+            slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
+        else:
+            slide_temp = []
         self.slides = []
         self.part_slide_count = []
 
