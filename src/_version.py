@@ -1,3 +1,3 @@
 '''Specify the project version'''
 
-__version__ = "1.0rc3"
+__version__ = "1.0"
