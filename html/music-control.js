@@ -316,6 +316,18 @@ function previous_slide(event){
   websocket.send(JSON.stringify({"action": "command.previous-slide", "params": {}}));
 }
 
+function n_s(){
+  websocket.send(JSON.stringify({"action": "command.next-slide", "params": {}}));
+}
+
+function p_s(){
+  websocket.send(JSON.stringify({"action": "command.previous-slide", "params": {}}));
+}
+
+function l_c(channel, value){
+  websocket.send(JSON.stringify({"action": "command.set-light-channel", "params": {"channel": channel, "value": value}}));
+}
+
 function change_verse(id){
   websocket.send(JSON.stringify({"action": "command.goto-slide", "params": { "index": id }}));
 }

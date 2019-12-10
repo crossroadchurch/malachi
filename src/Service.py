@@ -34,7 +34,7 @@ class Service():
         Add an item to the end of the service plan.
 
         Arguments:
-        item -- the item (Song, BiblePassage, Presentation, Video) to be added.
+        item -- the item (Song, BiblePassage, Video, Presentation) to be added.
         """
         self.items.append(item)
         self.modified = True
@@ -290,15 +290,15 @@ class Service():
                         else:
                             raise MalformedServiceFileError("./services/" + fname, \
                                 "Missing key: 'song_id'")
-                    elif item["type"] == "presentation":
-                        if "url" in item:
-                            self.add_item(Presentation(item["url"]))
-                        else:
-                            raise MalformedServiceFileError("./services/" + fname, \
-                                "Missing key: 'url'")
                     elif item["type"] == "video":
                         if "url" in item:
                             self.add_item(Video(item["url"]))
+                        else:
+                            raise MalformedServiceFileError("./services/" + fname, \
+                                "Missing key: 'url'")
+                    elif item["type"] == "presentation":
+                        if "url" in item:
+                            self.add_item(Presentation(item["url"]))
                         else:
                             raise MalformedServiceFileError("./services/" + fname, \
                                 "Missing key: 'url'")

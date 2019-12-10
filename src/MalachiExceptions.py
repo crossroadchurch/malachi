@@ -5,13 +5,6 @@
 Provide custom Exception classes for Malachi.
 """
 
-# Presentations
-class InvalidPresentationUrlError(Exception):
-    """Indicate that a specified Presentation URL does not exist"""
-    def __init__(self, url):
-        self.msg = "Could not find a presentation at the url {url}".format(url=url)
-        super(InvalidPresentationUrlError, self).__init__(self.msg)
-
 # Bible
 class InvalidVersionError(Exception):
     """Indicate that a specified version of the Bible is not supported in Malachi"""
@@ -106,6 +99,13 @@ class InvalidVideoUrlError(Exception):
     def __init__(self, url):
         self.msg = "Could not find a video at the url {url}".format(url=url)
         super(InvalidVideoUrlError, self).__init__(self.msg)
+
+# Presentations
+class InvalidPresentationUrlError(Exception):
+    """Indicate that a specified Presentation URL does not exist"""
+    def __init__(self, url):
+        self.msg = "Could not find a presentation at the url {url}".format(url=url)
+        super(InvalidPresentationUrlError, self).__init__(self.msg)
 
 # Malachi
 class MissingDataFilesError(Exception):

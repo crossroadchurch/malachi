@@ -94,3 +94,8 @@ body {
   max-width: 90vw;
   max-height: 85vh;
 }
+
+#captureimage {
+  display: none;
+  position: absolute;
+}

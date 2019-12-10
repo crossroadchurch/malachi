@@ -36,6 +36,14 @@
             <input type="range" data-highlight="true" name="time_seek" id="time_seek" min="0" max="100">
           </div>
         </div>
+        <div id="presentation_controls" style="padding-left:1em; padding-right:1em; display:none;">
+          <button id="pres_start" onclick="start_presentation()" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play video-ctrl-btn">&nbsp;</button>
+          <select name="capture_source_chooser" id="capture_source_chooser" onchange="update_capturing();" data-mini="true" data-inline="true">
+            <option value="0">No screen capture</option>
+            <option value="1">Capture main monitor</option>
+            <option value="2">Capture extended monitor</option>
+          </select>
+        </div>
         <div style="padding: 0px 10px 10px 10px">
           <ul id="current_item_list" data-role="listview" data-inset="true"></ul>
         </div>
@@ -46,7 +54,7 @@
         <li><a href="#service_element"><img class="element_icon" src="/html/icons/icons8-numbered-list-48.png" alt="Service" /></a></li>
         <li><a href="#song_element"><img class="element_icon" src="/html/icons/icons8-musical-notes-48.png" alt="Songs" /></a></li>
         <li><a href="#bible_element"><img class="element_icon" src="/html/icons/icons8-literature-48.png" alt="Bibles" /></a></li>
-        <!--<li><a href="#presentation_element"><img class="element_icon" src="/html/icons/icons8-presentation-48.png" alt="Presentations" /></a></li>-->
+        <li><a href="#presentation_element"><img class="element_icon" src="/html/icons/icons8-presentation-48.png" alt="Presentations" /></a></li>
         <li><a href="#video_element"><img class="element_icon" src="/html/icons/icons8-tv-show-48.png" alt="Videos" /></a></li>
         <!--<li><a href="#lights_element"><img class="element_icon" src="/html/icons/icons8-illumination-48.png" alt="Lights" /></a></li>-->
         <li><a href="#styles_element"><img class="element_icon" src="/html/icons/icons8-services-48.png" alt="Styles" /></a></li>
@@ -109,10 +117,10 @@
         </fieldset>
       </div>
       
-      <!--<div id="presentation_element" class="ui-content">
+      <div id="presentation_element" class="ui-content">
         <h3>Available presentations</h3>
         <ul id="presentation_list" data-role="listview" data-inset="true"></ul>
-      </div>-->
+      </div>
 
       <div id="video_element" class="ui-content">
         <h3>Available videos</h3>

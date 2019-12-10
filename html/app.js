@@ -252,6 +252,21 @@ function stop_video(){
     websocket.send(JSON.stringify({"action": "command.stop-video", "params": {}}));
 }
 
+function update_capturing(){
+    mon = $('#capture_source_chooser')[0].value;
+    if (mon == 0){
+        // Stop capturing
+        websocket.send(JSON.stringify({"action": "command.stop-capture", "params": {}}));
+    } else {
+        // Start capturing from specified monitor
+        websocket.send(JSON.stringify({"action": "command.start-capture", "params": {"monitor": mon}}));
+    }
+}
+
+function start_presentation(){
+    websocket.send(JSON.stringify({"action": "command.start-presentation", "params": {}}));
+}
+
 function create_song(){
     // Empty all fields on popup
     $('#e_title').val("");
@@ -353,9 +368,9 @@ function add_video(elt){
     websocket.send(JSON.stringify({"action": "command.add-video", "params": {"url": elt_text.substr(elt_text.indexOf(">") + 1)}}));
 }
 
-// function add_presentation(elt){
-//     websocket.send(JSON.stringify({"action": "command.add-presentation", "params": {"url": $(elt).children().first().html()}}));
-// }
+function add_presentation(elt){
+    websocket.send(JSON.stringify({"action": "command.add-presentation", "params": {"url": $(elt).children().first().html()}}));
+}
 
 function set_loop(elt){
     elt_text = $(elt).children().first().html();
@@ -382,6 +397,11 @@ function display_current_item(current_item, slide_index){
     clearInterval(video_interval);
     video_timer = 0;
     $('#time_seek').val(video_timer).slider('refresh');
+
+    // Reset capture source, stopping any running capture sessions
+    if ($('#capture_source_chooser')[0].value !== "0"){
+        $('#capture_source_chooser').val("0").change();
+    }
 
     if (current_item.type == "song"){
         min_verse_order = current_item["verse-order"].split(" ");
@@ -411,6 +431,12 @@ function display_current_item(current_item, slide_index){
         $('#video_controls').css('display', 'none');
     }
 
+    if (current_item.type == "presentation"){
+        $('#presentation_controls').css('display', 'block');
+    } else {
+        $('#presentation_controls').css('display', 'none');
+    }
+
     let item_list = "";
     for (let slide in current_item.slides){
         if (current_item.type == "song"){
@@ -424,8 +450,6 @@ function display_current_item(current_item, slide_index){
               slide_text += "<br />";
             }
             slide_text += "</p>";
-        } else if (current_item.type == "presentation"){
-            slide_text = "<img style='width:50%;' src='" + current_item.slides[slide] + "' />";
         } else {
             slide_text = "<p style='white-space:normal;'>" + current_item.slides[slide] + "</p>";
         }
@@ -565,6 +589,7 @@ function start_websocket(){
                 } else {
                     $('#version_changer').parent().css('display', 'none');
                     $('#video_controls').css('display', 'none');
+                    $('#presentation_controls').css('display', 'none');
                     $("#current_item_icon").attr('src', icon_dict["song"]);
                     $("#current_item_name").html('No current item');
                     $("#current_item_list").html('');
@@ -572,7 +597,7 @@ function start_websocket(){
                 }
 
                 // Populate Presentation, Video and Loop lists
-                // websocket.send(JSON.stringify({"action": "request.all-presentations", "params": {}}));
+                websocket.send(JSON.stringify({"action": "request.all-presentations", "params": {}}));
                 websocket.send(JSON.stringify({"action": "request.all-videos", "params": {}}));
                 websocket.send(JSON.stringify({"action": "request.all-loops", "params": {}}));
 
@@ -607,6 +632,7 @@ function start_websocket(){
                 } else {
                     $('#version_changer').parent().css('display', 'none');
                     $('#video_controls').css('display', 'none');
+                    $('#presentation_controls').css('display', 'none');
                     $("#current_item_icon").attr('src', icon_dict["song"]);
                     $("#current_item_name").html('No current item');
                     $("#current_item_list").html('');
@@ -640,13 +666,14 @@ function start_websocket(){
                 break;
 
             case "result.all-presentations":
-                // let pres_list = "";
-                // for (let url in json_data.params.urls){
-                //     pres_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url] + "</a>";
-                //     pres_list += "<a onclick='add_presentation($(this).parent());' href='javascript:void(0);'></li>";
-                // }
-                // $("#presentation_list").html(pres_list);
-                // $("#presentation_list").listview('refresh');
+                console.log("Got here");
+                let pres_list = "";
+                for (let url in json_data.params.urls){
+                    pres_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url] + "</a>";
+                    pres_list += "<a onclick='add_presentation($(this).parent());' href='javascript:void(0);'></li>";
+                }
+                $("#presentation_list").html(pres_list);
+                $("#presentation_list").listview('refresh');
                 break;
 
             case "result.all-videos":
@@ -834,7 +861,7 @@ function start_websocket(){
             case "response.add-video":
                 json_toast_response(json_data, "Video added to service", "Problem adding video");
                 break;
-
+                
             case "response.add-song-item":
                 json_toast_response(json_data, "Song added to service", "Problem adding song");
                 break;
@@ -848,7 +875,7 @@ function start_websocket(){
                 break;
 
             case "response.add-presentation":
-                // json_toast_response(json_data, "Presentation added to service", "Problem adding presentation");
+                json_toast_response(json_data, "Presentation added to service", "Problem adding presentation");
                 break;
 
             case "response.set-loop":
@@ -871,7 +898,18 @@ function start_websocket(){
                 json_toast_response(json_data, "Item removed", "Problem removing item");
                 break;
 
+            case "response.stop-capture":
+                json_toast_response(json_data, "Capturing stopped", "Problem stopping capture");
+                break;
+
+            case "response.start-capture":
+                json_toast_response(json_data, "Capturing started", "Problem starting capture");
+                break;
+
             case "update.video-loop":
+            case "update.capture-update":
+            case "update.start-capture":
+            case "update.stop-capture":
             case "response.move-item":
             case "response.next-item":
             case "response.previous-item":
@@ -883,6 +921,7 @@ function start_websocket(){
             case "response.play-video":
             case "response.pause-video":
             case "response.stop-video":
+            case "response.start-presentation":
             case "response.edit-style-param":
                 break;  // No action required;
             default:

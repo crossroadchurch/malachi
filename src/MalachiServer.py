@@ -16,23 +16,24 @@ import json
 from json.decoder import JSONDecodeError
 import os
 import re
-import pathlib
 import threading
+import subprocess
 import cv2
 from Service import Service
 from BiblePassage import BiblePassage
 from Song import Song
 from Presentation import Presentation
-from PresentationHandler import PresentationHandler
 from LightHandler import LightHandler
 from Video import Video
 from Tracker import Tracker
+from ScreenCapturer import ScreenCapturer
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError
 from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError, UnknownReferenceError
-from MalachiExceptions import InvalidPresentationUrlError, InvalidSongIdError, InvalidSongFieldError
+from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
 from MalachiExceptions import InvalidVideoUrlError, UnspecifiedServiceUrl
 from MalachiExceptions import MissingStyleParameterError, MissingDataFilesError
+from MalachiExceptions import InvalidPresentationUrlError
 from MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class MalachiServer():
@@ -61,12 +62,13 @@ class MalachiServer():
             self.STYLE_STATE_SOCKETS = set()
             self.APP_SOCKETS = set()
             self.MEDIA_SOCKETS = set()
+            self.MONITOR_SOCKETS = set()
             self.CAPOS = dict()
             self.screen_state = "off"
             self.s = Service()
-            self.ph = PresentationHandler()
             self.load_light_presets()
             self.lh = LightHandler(self.light_channel_list)
+            self.scap = ScreenCapturer(self, 1)
             self.load_style()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
@@ -92,6 +94,8 @@ class MalachiServer():
             self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["lights", "app"]:
             self.LIGHT_STATE_SOCKETS.add((websocket, path[1:]))
+        if path[1:] in ["monitor"]:
+            self.MONITOR_SOCKETS.add((websocket, path[1:]))
 
     def unregister(self, websocket, path):
         """Unregister a websocket connection that has been closed by a client."""
@@ -108,6 +112,8 @@ class MalachiServer():
             self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["lights", "app"]:
             self.LIGHT_STATE_SOCKETS.remove((websocket, path[1:]))
+        if path[1:] in ["monitor"]:
+            self.MONITOR_SOCKETS.remove((websocket, path[1:]))
 
     @classmethod
     def key_check(cls, key_dict, required_keys):
@@ -204,6 +210,7 @@ class MalachiServer():
         # Send initial data packet based on path
         initial_data_switcher = {
             "basic": self.basic_init,
+            "monitor": self.basic_init,
             "leader": self.leader_init,
             "display": self.display_init,
             "app": self.app_init,
@@ -227,8 +234,8 @@ class MalachiServer():
                     ["version", "start-verse", "end-verse"]],
                 "command.change-bible-version": [self.change_bible_version, ["version"]],
                 "command.add-song-item": [self.add_song_item, ["song-id"]],
-                "command.add-presentation": [self.add_presentation, ["url"]],
                 "command.add-video": [self.add_video, ["url"]],
+                "command.add-presentation": [self.add_presentation, ["url"]],
                 "command.remove-item": [self.remove_item, ["index"]],
                 "command.move-item": [self.move_item, ["from-index", "to-index"]],
                 "command.set-display-state": [self.set_display_state, ["state"]],
@@ -252,9 +259,13 @@ class MalachiServer():
                 "command.pause-video": [self.pause_video, []],
                 "command.stop-video": [self.stop_video, []],
                 "command.seek-video": [self.seek_video, ["seconds"]],
+                "command.start-presentation": [self.start_presentation, []],
                 "command.transpose-up": [self.transpose_up, []],
                 "command.transpose-down": [self.transpose_down, []],
                 "command.transpose-by": [self.transpose_by, ["amount"]],
+                "command.start-capture": [self.start_capture, ["monitor"]],
+                "command.stop-capture": [self.stop_capture, []],
+                "command.change-capture-monitor": [self.change_capture_monitor, ["monitor"]],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -263,11 +274,11 @@ class MalachiServer():
                 "request.bible-versions": [self.request_bible_versions, []],
                 "request.bible-books": [self.request_bible_books, ["version"]],
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
-                "request.all-presentations": [self.request_all_presentations, []],
                 "request.all-videos": [self.request_all_videos, []],
                 "request.all-loops": [self.request_all_loops, []],
                 "request.all-services": [self.request_all_services, []],
-                "request.all-presets": [self.request_all_presets, []]
+                "request.all-presets": [self.request_all_presets, []],
+                "request.all-presentations": [self.request_all_presentations, []]
             }
             async for message in websocket:
                 try:
@@ -342,6 +353,52 @@ class MalachiServer():
                 "action" : "update.service-overview-update",
                 "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[socket[0]]))
                 }))
+
+    # Screen capture commands
+    async def start_capture(self, websocket, params):
+        """
+        Start screen capture of the specified screen.
+
+        Arguments:
+        params["monitor"] -- the number of the monitor to capture (1 = main desktop, 2 = extended)
+        """
+        status, details = "ok", ""
+        self.scap.stop()
+        self.scap = ScreenCapturer(self, int(params["monitor"]))
+        self.scap.start()
+        await self.server_response(websocket, "response.start-capture", status, details)
+
+    async def stop_capture(self, websocket, params):
+        """Stop any active screen captures and inform any monitor clients."""
+        status, details = "ok", ""
+        self.scap.stop()
+        for socket in self.MONITOR_SOCKETS:
+            await socket[0].send(json.dumps({
+                "action" : "update.stop-capture",
+                "params" : {}
+            }))
+        await self.server_response(websocket, "response.stop-capture", status, details)
+
+    async def change_capture_monitor(self, websocket, params):
+        """
+        Change the monitor that is being used for screen captures.
+
+        Arguments:
+        params["monitor"] -- the new monitor to capture from
+        """
+        status, details = "ok", ""
+        self.scap.change_monitor(int(params["monitor"]))
+        await self.server_response(websocket, "response.change-capture-monitor", status, details)
+
+    async def capture_update(self, capture_url, capture_w, capture_h):
+        """
+        Send update to all monitor clients following the production of a new screen capture image.
+        """
+        for socket in self.MONITOR_SOCKETS:
+            await socket[0].send(json.dumps({
+                "action" : "update.capture-update",
+                "params" : {"capture_url": capture_url, "width": capture_w, "height": capture_h}
+            }))
 
     # Lighting commands
     async def set_light_channel(self, websocket, params):
@@ -568,39 +625,25 @@ class MalachiServer():
     async def next_slide(self, websocket, params):
         """Advance to next slide and send update to appropriate clients."""
         status, details = "ok", ""
-        result = self.update_impress_next_effect()
-        if result == -1:
-            # We are not on a presentation, so advance slide as normal
-            s_result = self.s.next_slide()
-            if s_result == 1:
-                await self.clients_slide_index_update()
-            elif s_result == 0:
-                status, details = "invalid-index", "Already at last slide"
-            else:
-                status = "no-current-item"
-        else:
-            # We are showing a presentation, so update service slide index based on result
-            self.s.set_slide_index(result)
+        s_result = self.s.next_slide()
+        if s_result == 1:
             await self.clients_slide_index_update()
+        elif s_result == 0:
+            status, details = "invalid-index", "Already at last slide"
+        else:
+            status = "no-current-item"
         await self.server_response(websocket, "response.next-slide", status, details)
 
     async def previous_slide(self, websocket, params):
         """Advance to previous slide and send update to appropriate clients."""
         status, details = "ok", ""
-        result = self.update_impress_previous_effect()
-        if result == -1:
-            # We are not on a presentation, so advance slide as normal
-            s_result = self.s.previous_slide()
-            if s_result == 1:
-                await self.clients_slide_index_update()
-            elif s_result == 0:
-                status, details = "invalid-index", "Already at first slide"
-            else:
-                status = "no-current-item"
-        else:
-            # We are showing a presentation, so update service slide index based on result
-            self.s.set_slide_index(result)
+        s_result = self.s.previous_slide()
+        if s_result == 1:
             await self.clients_slide_index_update()
+        elif s_result == 0:
+            status, details = "invalid-index", "Already at first slide"
+        else:
+            status = "no-current-item"
         await self.server_response(websocket, "response.previous-slide", status, details)
 
     async def goto_slide(self, websocket, params):
@@ -611,7 +654,6 @@ class MalachiServer():
         params["index"] -- the slide index to advance to.
         """
         status, details = "ok", ""
-        self.update_impress_goto_slide(int(params["index"]))
         s_result = self.s.set_slide_index(int(params["index"]))
         if s_result == 1:
             await self.clients_slide_index_update()
@@ -626,7 +668,6 @@ class MalachiServer():
         status, details = "ok", ""
         if self.s.next_item():
             self.track_usage()
-            self.update_impress_change_item()
             await self.clients_item_index_update()
         else:
             status, details = "invalid-index", "Already at last index"
@@ -637,7 +678,6 @@ class MalachiServer():
         status, details = "ok", ""
         if self.s.previous_item():
             self.track_usage()
-            self.update_impress_change_item()
             await self.clients_item_index_update()
         else:
             status, details = "invalid-index", "Already at first index"
@@ -653,7 +693,6 @@ class MalachiServer():
         status, details = "ok", ""
         if self.s.set_item_index(int(params["index"])):
             self.track_usage()
-            self.update_impress_change_item()
             await self.clients_item_index_update()
         else:
             status, details = "invalid-index", "Index out of bounds error"
@@ -679,7 +718,6 @@ class MalachiServer():
                 elif not self.s.items:
                     self.s.item_index = -1
                     self.s.slide_index = -1
-                self.update_impress_change_item()
             elif index < self.s.item_index:
                 self.s.item_index -= 1
                 self.s.slide_index = 0
@@ -819,22 +857,6 @@ class MalachiServer():
             await self.server_response(websocket, "response.add-song-item", status, details)
             await self.clients_service_items_update()
 
-    async def add_presentation(self, websocket, params):
-        """
-        Add a Presentation to the service plan.
-
-        Arguments:
-        params["url"] -- the URL of the Presentation to add, relative to the root of Malachi.
-        """
-        status, details = "ok", ""
-        try:
-            self.s.add_item(Presentation(params["url"]))
-        except InvalidPresentationUrlError as e:
-            status, details = "invalid-presentation", e.msg
-        finally:
-            await self.server_response(websocket, "response.add-presentation", status, details)
-            await self.clients_service_items_update()
-
     async def add_video(self, websocket, params):
         """
         Add a Video to the service plan.
@@ -849,6 +871,22 @@ class MalachiServer():
             status, details = "invalid-video", e.msg
         finally:
             await self.server_response(websocket, "response.add-video", status, details)
+            await self.clients_service_items_update()
+
+    async def add_presentation(self, websocket, params):
+        """
+        Add a Presentation to the service plan.
+
+        Arguments:
+        params["url"] -- the URL of the Presentation to add, relative to the root of Malachi.
+        """
+        status, details = "ok", ""
+        try:
+            self.s.add_item(Presentation(params["url"]))
+        except InvalidPresentationUrlError as e:
+            status, details = "invalid-presentation", e.msg
+        finally:
+            await self.server_response(websocket, "response.add-presentation", status, details)
             await self.clients_service_items_update()
 
     async def set_display_state(self, websocket, params):
@@ -866,7 +904,6 @@ class MalachiServer():
                     "state": self.screen_state
                     }
                 }))
-        self.update_impress_screen_state()
         await self.server_response(websocket, "response.set-display-state", "ok", "")
 
     async def new_service(self, websocket, params):
@@ -1074,6 +1111,17 @@ class MalachiServer():
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.seek-video", status, details)
+
+    async def start_presentation(self, websocket, params):
+        """Call LibreOffice to start the presentation of the current service item."""
+        status, details = "ok", ""
+        if self.s.get_current_item_type() == "Presentation":
+            idx = self.s.item_index
+            url = self.s.items[idx].get_url()
+            subprocess.Popen(['soffice', '--show', url])
+        else:
+            status, details = "invalid-item", "Current service item is not a presentation"
+        await self.server_response(websocket, "response.start-presentation", status, details)
 
     async def transpose_up(self, websocket, params):
         """Transpose the current song up by one semitone and update appropriate clients."""
@@ -1323,16 +1371,6 @@ class MalachiServer():
                 }
             }))
 
-    async def request_all_presentations(self, websocket, params):
-        """Return a list of all presentations URLs in the ./presentations directory to websocket."""
-        urls = Presentation.get_all_presentations()
-        await websocket.send(json.dumps({
-            "action": "result.all-presentations",
-            "params": {
-                "urls": urls
-            }
-        }))
-
     async def request_all_videos(self, websocket, params):
         """Return a list of all video URLs in the ./videos directory to websocket."""
         urls = Video.get_all_videos()
@@ -1373,75 +1411,21 @@ class MalachiServer():
             }
         }))
 
+    async def request_all_presentations(self, websocket, params):
+        """Return a list of all presentations in the ./presentations directory to websocket."""
+        fnames = Presentation.get_all_presentations()
+        await websocket.send(json.dumps({
+            "action": "result.all-presentations",
+            "params": {
+                "urls": fnames
+            }
+        }))
+
     # Song usage tracking
     def track_usage(self):
         """Register usage of the current item, if it is a Song, in the tracking database."""
         if self.s.get_current_item_type() == "Song":
             Tracker.log(self.s.items[self.s.item_index].song_id)
-
-    # Presentation control with LibreOffice
-    def update_impress_change_item(self):
-        """
-        Load the current item, if it is a Presentation, into LibreOffice Impress and
-        then start it, if allowed by the current screen state.
-        """
-        # If previous item was a presentation then unload it
-        if self.ph.pres_loaded:
-            self.ph.unload_presentation()
-        # If current item is a presentation then load it
-        if self.s.get_current_item_type() == "Presentation":
-            self.ph.load_presentation(pathlib.Path(os.path.abspath(\
-                self.s.items[self.s.item_index].url)).as_uri())
-            # Show presentation if screen state allows it
-            if self.screen_state == "on":
-                self.ph.start_presentation()
-
-    def update_impress_screen_state(self):
-        """
-        Start or end the current presentation in LibreOffice Impress to match
-        the screen state.  If the current service item is not a presentation then
-        no action will be taken.
-        """
-        if self.s.get_current_item_type() == "Presentation":
-            # Start or end presentation as necessary
-            if self.screen_state == "on" and not self.ph.pres_started:
-                self.ph.start_presentation()
-            elif self.screen_state == "off" and self.ph.pres_started:
-                self.ph.stop_presentation()
-
-    def update_impress_goto_slide(self, index):
-        """
-        Go to a particular effect index in the current presentation in LibreOffice Impress.
-        If the current service item is not a presentation then no action will be taken.
-
-        Arguments:
-        index -- the effect index to advance to.
-        """
-        if self.s.get_current_item_type() == "Presentation":
-            if self.ph.pres_started:
-                self.ph.load_effect(index)
-
-    def update_impress_next_effect(self):
-        """
-        Go to the next effect in the current presentation in LibreOffice Impress.
-        If the current service item is not a presentation then no action will be taken.
-        """
-        if self.s.get_current_item_type() == "Presentation":
-            index = self.ph.next_effect()
-            return index
-        else:
-            return -1
-
-    def update_impress_previous_effect(self):
-        """
-        Go to the previous effect in the current presentation in LibreOffice Impress.
-        If the current service item is not a presentation then no action will be taken.
-        """
-        if self.s.get_current_item_type() == "Presentation":
-            index = self.ph.previous_effect()
-            return index
-        else:
-            return -1
 
     def load_style(self):
         """Load style information from ./data/global_style.json"""

@@ -9,6 +9,9 @@ var slide_index = -1;
 var item_index = -1;
 
 function update_music() {
+  // First clear any capture image
+  hide_capture_image();
+
   $("#playedkey").html(played_key);
   verse_list = "";
   verse_control_list = "<ul>";
@@ -77,9 +80,38 @@ function update_music() {
   }
 }
 
+function display_capture_image(url, cap_w, cap_h){
+  // Bypass caching to ensure new images are always loaded when using same urls
+  document.getElementById('captureimage').src = url + "#" + new Date().getTime();
+  $('#captureimage').css('display', 'block');
+  $('#songarea').css('display', 'none');
+  capture_ar = cap_w / cap_h;
+  screen_ar = window.innerWidth / window.innerHeight;
+  console.log("CAR: " + capture_ar + ", SAR: " + screen_ar);
+  if (capture_ar <= screen_ar){
+    left_pos = window.innerWidth * 0.5 * (1 - (capture_ar/screen_ar));
+    $('#captureimage').css('height', window.innerHeight + "px");
+    $('#captureimage').css('width', 'auto');
+    $('#captureimage').css('top', '0px');
+    $('#captureimage').css('left', left_pos + "px");
+  } else {
+    top_pos = window.innerHeight * 0.5 * (1 - (screen_ar/capture_ar));
+    $('#captureimage').css('height', 'auto');
+    $('#captureimage').css('width', window.innerWidth + "px");
+    $('#captureimage').css('top', top_pos + "px");
+    $('#captureimage').css('left', '0px');
+  }
+}
+
+function hide_capture_image(){
+  $('#captureimage').attr('src', '');
+  $('#captureimage').css('display', 'none');
+  $('#songarea').css('display', 'block');
+}
+
 function start_websocket(){
   websocket = null;
-  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/basic");
+  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/monitor");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     console.log(json_data);
@@ -132,6 +164,12 @@ function start_websocket(){
           part_counts = [];
         }
         update_music();
+        break;
+      case "update.capture-update":
+        display_capture_image(json_data.params.capture_url, json_data.params.width, json_data.params.height);
+        break;
+      case "update.stop-capture":
+        hide_capture_image();
         break;
       default:
         console.error("Unsupported event", json_data);

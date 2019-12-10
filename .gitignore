@@ -1,3 +1,4 @@
+*.pyc
 /out
 /thumbnails/*
 !/thumbnails/.gitkeep
@@ -9,3 +10,5 @@
 !/videos/.gitkeep
 /loops/*
 !/loops/.gitkeep
+/captures/*
+!/captures/.gitkeep
