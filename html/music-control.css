@@ -160,7 +160,7 @@ span {
   white-space: pre;
 }
 
-#playedkey, #verseorder, #keyandcapo {
+#playedkey, #verseorder, #keyandcapo, #pres-controls {
   display: inline-block;
   height: 3rem;
 }

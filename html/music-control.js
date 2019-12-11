@@ -30,6 +30,9 @@ function view_music_options(val){
 }
 
 function update_music() {
+  // First clear any capture image
+  hide_capture_image();
+
   $("#playedkey").html(played_key);
   if (played_key === ""){
     $('#music-options-btn').css('display', 'none');
@@ -43,6 +46,12 @@ function update_music() {
   }
   verse_control_list = "";
   verse_list = "";
+
+  if (slide_type == "presentation"){
+    $('#pres-controls').css('display', 'inline-block');
+  } else {
+    $('#pres-controls').css('display', 'none');
+  }
 
   if (slide_type == "song"){
     verse_list = verse_order.split(" ");
@@ -239,17 +248,6 @@ function update_music() {
     current_text = current_text + "</div>";
     $("#currentslide").html(current_text);
     $("#nextslide").html("");
-  } else if (slide_type == "presentation") {
-    if (slide_index < current_slides.length - 1){
-      $("#currentslide").html(
-          "<div class='two-image-div'><p>Current:</p><img class='pres-two-thumb' src = '" + current_slides[slide_index] + "' /></div>" + 
-          "<div class='two-image-div'><p>Next:</p><img class='pres-two-thumb' src = '" + current_slides[slide_index+1] + "' /></div>");
-    } else {
-      $("#currentslide").html(
-        "<div class='two-image-div'><p>Current:</p><img class='pres-two-thumb' src = '" + current_slides[slide_index] + "' /></div>" + 
-        "<div class='two-image-div'></div>");
-    }
-    $("#nextslide").html("");
   } else {
     $("#currentslide").html("");
     $("#nextslide").html("");
@@ -308,12 +306,32 @@ function change_key(new_key){
 
 function next_slide(event){
   event.preventDefault();
-  websocket.send(JSON.stringify({"action": "command.next-slide", "params": {}}));
+  if (slide_type == 'presentation'){
+    websocket.send(JSON.stringify({"action": "command.next-presentation-slide", "params": {}}));
+  } else {
+    websocket.send(JSON.stringify({"action": "command.next-slide", "params": {}}));
+  }
 }
 
 function previous_slide(event){
   event.preventDefault();
-  websocket.send(JSON.stringify({"action": "command.previous-slide", "params": {}}));
+  if (slide_type == 'presentation'){
+    websocket.send(JSON.stringify({"action": "command.prev-presentation-slide", "params": {}}));
+  } else {
+    websocket.send(JSON.stringify({"action": "command.previous-slide", "params": {}}));
+  }
+}
+
+function start_presentation(){
+  if (slide_type == 'presentation'){
+    websocket.send(JSON.stringify({"action": "command.start-presentation", "params": {}}));
+  }
+}
+
+function stop_presentation(){
+  if (slide_type == 'presentation'){
+    websocket.send(JSON.stringify({"action": "command.stop-presentation", "params": {}}));
+  }
 }
 
 function n_s(){
@@ -354,6 +372,32 @@ function capo_check_update_music(){
   } else {
     update_music();
   }
+}
+
+function display_capture_image(url, cap_w, cap_h){
+  // Bypass caching to ensure new images are always loaded when using same urls
+  document.getElementById('captureimage').src = url + "?" + new Date().getTime();
+  $('#captureimage').css('display', 'block');
+  capture_ar = cap_w / cap_h;
+  div_ar = $('#musicarea').width() / $('#musicarea').height();  // Need to use div size
+  if (capture_ar <= div_ar){
+    left_pos = $('#musicarea').width() * 0.5 * (1 - (capture_ar/div_ar));
+    $('#captureimage').css('height', $('#musicarea').height() + "px");
+    $('#captureimage').css('width', 'auto');
+    $('#captureimage').css('top', '0px');
+    $('#captureimage').css('left', left_pos + "px");
+  } else {
+    top_pos = $('#musicarea').height() * 0.5 * (1 - (div_ar/capture_ar));
+    $('#captureimage').css('height', 'auto');
+    $('#captureimage').css('width', $('#musicarea').width() + "px");
+    $('#captureimage').css('top', top_pos + "px");
+    $('#captureimage').css('left', '0px');
+  }
+}
+
+function hide_capture_image(){
+  $('#captureimage').attr('src', '');
+  $('#captureimage').css('display', 'none');
 }
 
 function start_websocket(){
@@ -435,9 +479,19 @@ function start_websocket(){
           $("body").css("border-top", "6px solid red");
         }
         break;
+      case "update.capture-update":
+        display_capture_image(json_data.params.capture_url, json_data.params.width, json_data.params.height);
+        break;
+      case "update.stop-capture":
+        hide_capture_image();
+        break;
       case "response.set-display-state":
       case "response.next-slide":
       case "response.previous-slide":
+      case "response.next-presentation-slide":
+      case "response.prev-presentation-slide":
+      case "response.start-presentation":
+      case "response.stop-presentation":
       case "response.goto-slide":
       case "response.goto-item":
       case "response.transpose-up":

@@ -21,10 +21,17 @@
         <button id="music-options-btn" class="menu-button" onclick="view_music_options(!music_options_visible);">&#119135;</button>
         <div id="playedkey"></div>
       </div>
+      <div id="pres-controls">
+        <button id="start-pres" class="verse-button" onclick="start_presentation();">Start</button>
+        <button id="stop-pres" class="verse-button" onclick="stop_presentation();">Stop</button>
+      </div>
       <div id="verseorder"></div>
     </div>
     <div id="musiccontrol">
       <div id="musicarea">
+        <div id="capturearea">
+          <img id="captureimage" src="" />
+        </div>
         <div id="currentslide"></div>
         <div id="nextslide"></div>
         <div id="music-options" style="display:none;">

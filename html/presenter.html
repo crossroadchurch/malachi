@@ -2,21 +2,24 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Malachi Singers View</title>
-  <link rel="stylesheet" href="/html/singers.css" />
+  <title>Malachi Presenter View</title>
+  <link rel="stylesheet" href="/html/presenter.css" />
   <link rel="icon" href="/html/favicon.png" type="image/png" />
   <link rel="stylesheet" href="/html/toastr.min.css" />
   <script type="text/javascript" src="/html/jquery-1.12.4.min.js"></script>
-  <script type="text/javascript" src="/html/singers.js"></script>
+  <script type="text/javascript" src="/html/presenter.js"></script>
   <script type="text/javascript" src="/html/toastr.min.js"></script>
 </head>
 <body>
   <div id="capturearea">
-    <img id="captureimage" src="" />
+    <div id="imagearea">
+      <img id="captureimage" src="" />
+    </div>
+    <div id="controlarea">
+      <button id="controller-prev" class="vert-button-25 large-button" onclick="prev_slide();">Prev</button>
+      <button id="controller-next" class="vert-button-75 large-button" onclick="next_slide();">Next</button>
+    </div>
   </div>
-  <video id="video_item" style="display:none;z-index:-1;">
-    <source src="" id="video_item_src">
-  </video>
   <div id="songarea">
     <div id="header">
       <div id="playedkey"></div>

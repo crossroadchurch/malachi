@@ -19,6 +19,7 @@ import re
 import threading
 import subprocess
 import cv2
+import pyautogui
 from Service import Service
 from BiblePassage import BiblePassage
 from Song import Song
@@ -89,12 +90,13 @@ class MalachiServer():
             self.APP_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["display", "app"]:
             self.STYLE_STATE_SOCKETS.add((websocket, path[1:]))
+        if path[1:] in ["display", "app", "monitor"]:
             self.MEDIA_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["lights", "app"]:
             self.LIGHT_STATE_SOCKETS.add((websocket, path[1:]))
-        if path[1:] in ["monitor"]:
+        if path[1:] in ["monitor", "leader"]:
             self.MONITOR_SOCKETS.add((websocket, path[1:]))
 
     def unregister(self, websocket, path):
@@ -107,12 +109,13 @@ class MalachiServer():
             self.APP_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["display", "app"]:
             self.STYLE_STATE_SOCKETS.remove((websocket, path[1:]))
+        if path[1:] in ["display", "app", "monitor"]:
             self.MEDIA_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["lights", "app"]:
             self.LIGHT_STATE_SOCKETS.remove((websocket, path[1:]))
-        if path[1:] in ["monitor"]:
+        if path[1:] in ["monitor", "leader"]:
             self.MONITOR_SOCKETS.remove((websocket, path[1:]))
 
     @classmethod
@@ -260,6 +263,9 @@ class MalachiServer():
                 "command.stop-video": [self.stop_video, []],
                 "command.seek-video": [self.seek_video, ["seconds"]],
                 "command.start-presentation": [self.start_presentation, []],
+                "command.stop-presentation": [self.stop_presentation, []],
+                "command.next-presentation-slide": [self.next_presentation_slide, []],
+                "command.prev-presentation-slide": [self.prev_presentation_slide, []],
                 "command.transpose-up": [self.transpose_up, []],
                 "command.transpose-down": [self.transpose_down, []],
                 "command.transpose-by": [self.transpose_by, ["amount"]],
@@ -1122,6 +1128,35 @@ class MalachiServer():
         else:
             status, details = "invalid-item", "Current service item is not a presentation"
         await self.server_response(websocket, "response.start-presentation", status, details)
+
+    async def stop_presentation(self, websocket, params):
+        """
+        Generate keystroke to stop the current LibreOffice presentation.  This will fail if
+        the LibreOffice presenter view does not have focus on the computer running the server.
+        """
+        status, details = "ok", ""
+        pyautogui.press('escape')
+        await self.server_response(websocket, "response.stop-presentation", status, details)
+
+    async def next_presentation_slide(self, websocket, params):
+        """
+        Generate keystroke to advance to the next slide or animation in the current LibreOffice
+        presentation.  This will fail if the LibreOffice presenter view does not have focus on the
+        computer running the server.
+        """
+        status, details = "ok", ""
+        pyautogui.press('pagedown')
+        await self.server_response(websocket, "response.next-presentation-slide", status, details)
+
+    async def prev_presentation_slide(self, websocket, params):
+        """
+        Generate keystroke to advance to the previous slide or animation in the current LibreOffice
+        presentation.  This will fail if the LibreOffice presenter view does not have focus on the
+        computer running the server.
+        """
+        status, details = "ok", ""
+        pyautogui.press('pageup')
+        await self.server_response(websocket, "response.prev-presentation-slide", status, details)
 
     async def transpose_up(self, websocket, params):
         """Transpose the current song up by one semitone and update appropriate clients."""

@@ -666,7 +666,6 @@ function start_websocket(){
                 break;
 
             case "result.all-presentations":
-                console.log("Got here");
                 let pres_list = "";
                 for (let url in json_data.params.urls){
                     pres_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url] + "</a>";

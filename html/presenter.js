@@ -67,12 +67,11 @@ function update_music() {
     }
     $("#nextslide").html(next_text);
   } else if (slide_type == "video") {
-    $("#currentslide").html("");
+    current_text = "<div class =\"nonsong-block\"><p class=\"nonsong-line\">";
+    current_text = current_text + current_slides[0].replace(/\n/g, "</p><p class=\"nonsong-line\">");
+    current_text = current_text + "</div>";
+    $("#currentslide").html(current_text);
     $("#nextslide").html("");
-    // Background load video, wait for trigger to display and start playback
-    resize_video_item();
-    $('#video_item_src').attr('src', current_item.url);
-    $('#video_item').load();
   } else if (slide_type == "presentation"){
     $("#currentslide").html("<img class='pres-thumb' src = '" + current_slides[slide_index] + "' />");
     $("#nextslide").html("");
@@ -82,47 +81,22 @@ function update_music() {
   }
 }
 
-function resize_video_item(){
-  console.log("Called");
-  video_ar = current_item.video_width / current_item.video_height;
-  screen_ar = window.innerWidth / window.innerHeight;
-  if (video_ar <= screen_ar){
-      left_pos = window.innerWidth * 0.5 * (1 - (video_ar/screen_ar));
-      $('#video_item').css('height', '100%');
-      $('#video_item').css('width', 'auto');
-      $('#video_item').css('top', '0');
-      $('#video_item').css('left', left_pos);
-  } else {
-      top_pos = window.innerHeight * 0.5 * (1 - (screen_ar/video_ar));
-      $('#video_item').css('height', 'auto');
-      $('#video_item').css('width', '100%');
-      $('#video_item').css('top', top_pos);
-      $('#video_item').css('left', '0');
-  }
-}
-
-function stop_running_video(){
-  document.getElementById('video_item').pause();
-  $('#video_item').css('display', 'none');
-}
-
 function display_capture_image(url, cap_w, cap_h){
   // Bypass caching to ensure new images are always loaded when using same urls
   document.getElementById('captureimage').src = url + "?" + new Date().getTime();
   $('#captureimage').css('display', 'block');
-  $('#songarea').css('display', 'none');
   capture_ar = cap_w / cap_h;
-  screen_ar = window.innerWidth / window.innerHeight;
-  if (capture_ar <= screen_ar){
-    left_pos = window.innerWidth * 0.5 * (1 - (capture_ar/screen_ar));
-    $('#captureimage').css('height', window.innerHeight + "px");
+  area_ar = $('#imagearea').width() / $('#imagearea').height();
+  if (capture_ar <= area_ar){
+    left_pos = $('#imagearea').width() * 0.5 * (1 - (capture_ar/area_ar));
+    $('#captureimage').css('height', $('#imagearea').height() + "px");
     $('#captureimage').css('width', 'auto');
     $('#captureimage').css('top', '0px');
     $('#captureimage').css('left', left_pos + "px");
   } else {
-    top_pos = window.innerHeight * 0.5 * (1 - (screen_ar/capture_ar));
+    top_pos = $('#imagearea').height() * 0.5 * (1 - (area_ar/capture_ar));
     $('#captureimage').css('height', 'auto');
-    $('#captureimage').css('width', window.innerWidth + "px");
+    $('#captureimage').css('width', $('#imagearea').width() + "px");
     $('#captureimage').css('top', top_pos + "px");
     $('#captureimage').css('left', '0px');
   }
@@ -131,7 +105,18 @@ function display_capture_image(url, cap_w, cap_h){
 function hide_capture_image(){
   $('#captureimage').attr('src', '');
   $('#captureimage').css('display', 'none');
-  $('#songarea').css('display', 'block');
+}
+
+function next_slide(){
+  if (slide_type == 'presentation'){
+    websocket.send(JSON.stringify({"action": "command.next-presentation-slide", "params": {}}));
+  }
+}
+
+function prev_slide(){
+  if (slide_type == 'presentation'){
+    websocket.send(JSON.stringify({"action": "command.prev-presentation-slide", "params": {}}));
+  }
 }
 
 function start_websocket(){
@@ -198,19 +183,8 @@ function start_websocket(){
       case "update.stop-capture":
         hide_capture_image();
         break;
-      case "trigger.play-video":
-        $('#video_item').css('display', 'block');
-        document.getElementById('video_item').play();
-        break;
-      case "trigger.pause-video":
-        document.getElementById('video_item').pause();
-        break;
-      case "trigger.stop-video":
-        stop_running_video();
-        document.getElementById('video_item').currentTime = 0.0;
-        break;
-      case "trigger.seek-video":
-        document.getElementById('video_item').currentTime = json_data.params.seconds;
+      case "response.next-presentation-slide":
+      case "response.prev-presentation-slide":
         break;
       default:
         console.error("Unsupported event", json_data);
@@ -227,7 +201,6 @@ function start_websocket(){
 }
 
 $(document).ready(function(){
-  $('#video_item').prop('muted', 'true');
   start_websocket();
 });
 
