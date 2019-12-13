@@ -259,7 +259,7 @@ function update_capturing(){
         websocket.send(JSON.stringify({"action": "command.stop-capture", "params": {}}));
     } else {
         // Start capturing from specified monitor
-        websocket.send(JSON.stringify({"action": "command.start-capture", "params": {"monitor": mon}}));
+        websocket.send(JSON.stringify({"action": "command.start-capture", "params": {"monitor": parseInt(mon)}}));
     }
 }
 

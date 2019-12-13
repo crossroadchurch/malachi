@@ -12,6 +12,7 @@ var item_index = -1;
 function update_music() {
   // First clear any capture image
   hide_capture_image();
+  stop_running_video();
 
   $("#playedkey").html(played_key);
   verse_list = "";
@@ -70,11 +71,11 @@ function update_music() {
     $("#currentslide").html("");
     $("#nextslide").html("");
     // Background load video, wait for trigger to display and start playback
-    resize_video_item();
+    $('#songarea').css('display', 'none');
     $('#video_item_src').attr('src', current_item.url);
     $('#video_item').load();
   } else if (slide_type == "presentation"){
-    $("#currentslide").html("<img class='pres-thumb' src = '" + current_slides[slide_index] + "' />");
+    $("#currentslide").html("");
     $("#nextslide").html("");
   } else {
     $("#currentslide").html("");
@@ -83,7 +84,6 @@ function update_music() {
 }
 
 function resize_video_item(){
-  console.log("Called");
   video_ar = current_item.video_width / current_item.video_height;
   screen_ar = window.innerWidth / window.innerHeight;
   if (video_ar <= screen_ar){
@@ -104,6 +104,7 @@ function resize_video_item(){
 function stop_running_video(){
   document.getElementById('video_item').pause();
   $('#video_item').css('display', 'none');
+  $('#songarea').css('display', 'block');
 }
 
 function display_capture_image(url, cap_w, cap_h){
@@ -199,7 +200,9 @@ function start_websocket(){
         hide_capture_image();
         break;
       case "trigger.play-video":
+        $('#songarea').css('display', 'none');
         $('#video_item').css('display', 'block');
+        resize_video_item();
         document.getElementById('video_item').play();
         break;
       case "trigger.pause-video":

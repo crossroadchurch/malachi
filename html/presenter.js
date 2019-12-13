@@ -73,7 +73,7 @@ function update_music() {
     $("#currentslide").html(current_text);
     $("#nextslide").html("");
   } else if (slide_type == "presentation"){
-    $("#currentslide").html("<img class='pres-thumb' src = '" + current_slides[slide_index] + "' />");
+    $("#currentslide").html("");
     $("#nextslide").html("");
   } else {
     $("#currentslide").html("");
