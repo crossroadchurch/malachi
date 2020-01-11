@@ -1,7 +1,6 @@
 *.pyc
+/.vscode/*
 /out
-/thumbnails/*
-!/thumbnails/.gitkeep
 /presentations/*
 !/presentations/.gitkeep
 /services/*

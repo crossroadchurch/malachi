@@ -233,6 +233,18 @@ function edit_song(){
     websocket.send(JSON.stringify({"action": "request.full-song", "params": {"song-id": clicked_song_id}}));
 }
 
+function refresh_presentations(){
+    websocket.send(JSON.stringify({"action": "request.all-presentations", "params": {}}));
+}
+
+function refresh_videos(){
+    websocket.send(JSON.stringify({"action": "request.all-videos", "params": {}}));
+}
+
+function refresh_loops(){
+    websocket.send(JSON.stringify({"action": "request.all-loops", "params": {}}));
+}
+
 function video_tick(){
     video_timer += 1;
     if (update_slider == true){
@@ -365,11 +377,11 @@ function save_song(){
 
 function add_video(elt){
     elt_text = $(elt).children().first().html();
-    websocket.send(JSON.stringify({"action": "command.add-video", "params": {"url": elt_text.substr(elt_text.indexOf(">") + 1)}}));
+    websocket.send(JSON.stringify({"action": "command.add-video", "params": {"url": "./videos/" + elt_text.substr(elt_text.indexOf(">") + 1)}}));
 }
 
 function add_presentation(elt){
-    websocket.send(JSON.stringify({"action": "command.add-presentation", "params": {"url": $(elt).children().first().html()}}));
+    websocket.send(JSON.stringify({"action": "command.add-presentation", "params": {"url": "./presentations/" + $(elt).children().first().html()}}));
 }
 
 function set_loop(elt){
@@ -668,7 +680,7 @@ function start_websocket(){
             case "result.all-presentations":
                 let pres_list = "";
                 for (let url in json_data.params.urls){
-                    pres_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url] + "</a>";
+                    pres_list +="<li data-icon='plus'><a href='#'>" + json_data.params.urls[url].substring(16) + "</a>";
                     pres_list += "<a onclick='add_presentation($(this).parent());' href='javascript:void(0);'></li>";
                 }
                 $("#presentation_list").html(pres_list);
@@ -680,7 +692,7 @@ function start_websocket(){
                 for (let url in json_data.params.urls){
                     vid_list += "<li data-icon='plus'><a href='#' style='min-height:auto !important;'>";
                     vid_list += "<img src='" + json_data.params.urls[url] + ".jpg' />";
-                    vid_list += "" + json_data.params.urls[url] + "</a>";
+                    vid_list += "" + json_data.params.urls[url].substring(9) + "</a>";
                     vid_list += "<a onclick='add_video($(this).parent());' href='javascript:void(0);'></li>";
                 }
                 $("#video_list").html(vid_list);

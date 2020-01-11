@@ -99,3 +99,8 @@ body {
   display: none;
   position: absolute;
 }
+
+#video_item {
+  display: none;
+  position: absolute;
+}

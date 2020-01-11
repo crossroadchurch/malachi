@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <title>Malachi App</title>
   <link rel="stylesheet" href="/html/app.css" />
-  <link rel="stylesheet" href="/html/jquery-ui.min.css" />
-  <link rel="stylesheet" href="/html/jquery.mobile-1.4.5.min.css" />
-  <link rel="stylesheet" href="/html/toastr.min.css" />
-  <link rel="icon" href="/html/favicon.png" type="image/png" />
-  <script type="text/javascript" src="/html/jquery-1.12.4.min.js"></script>
-  <script type="text/javascript" src="/html/jquery-ui.min.js"></script>
-  <script type="text/javascript" src="/html/jquery.mobile-1.4.5.min.js"></script>
-  <script type="text/javascript" src="/html/toastr.min.js"></script>
+  <link rel="stylesheet" href="/html/libs/jquery-ui.min.css" />
+  <link rel="stylesheet" href="/html/libs/jquery.mobile-1.4.5.min.css" />
+  <link rel="stylesheet" href="/html/libs/toastr.min.css" />
+  <link rel="shortcut icon" href="/html/favicon.png" type="image/ico" />
+  <script type="text/javascript" src="/html/libs/jquery-1.12.4.min.js"></script>
+  <script type="text/javascript" src="/html/libs/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="/html/libs/jquery.mobile-1.4.5.min.js"></script>
+  <script type="text/javascript" src="/html/libs/toastr.min.js"></script>
   <script type="text/javascript" src="/html/app.js"></script>
 </head>
 <body>
@@ -118,12 +118,28 @@
       </div>
       
       <div id="presentation_element" class="ui-content">
-        <h3>Available presentations</h3>
+        <div>
+          <div style="width:75%; float:left;">
+            <h3>Available presentations</h3>
+          </div>
+          <div style="width:25%; float:left;">
+            <button id="refresh_pres" onclick="refresh_presentations();" style="float:right;" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn">&nbsp;</button>
+          </div>
+        </div>
+        <div style="clear: both;"></div>
         <ul id="presentation_list" data-role="listview" data-inset="true"></ul>
       </div>
 
       <div id="video_element" class="ui-content">
-        <h3>Available videos</h3>
+        <div>
+          <div style="width:75%; float:left;">
+            <h3>Available videos</h3>
+          </div>
+          <div style="width:25%; float:left;">
+            <button id="refresh_vids" onclick="refresh_videos();" style="float:right;" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn">&nbsp;</button>
+          </div>
+        </div>
+        <div style="clear: both;"></div>
         <ul id="video_list" data-role="listview" data-inset="true"></ul>
       </div>
 
@@ -132,7 +148,15 @@
       </div>-->
 
       <div id="styles_element" class="ui-content">
-        <h3>Loops</h3>
+        <div>
+          <div style="width:75%; float:left;">
+            <h3>Loops</h3>
+          </div>
+          <div style="width:25%; float:left;">
+            <button id="refresh_loops" onclick="refresh_loops();" style="float:right;" class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn">&nbsp;</button>
+          </div>
+        </div>
+        <div style="clear: both;"></div>
         <ul id="loop_list" data-role="listview" data-inset="true"></ul>
         <button id="cancel_loop_btn" class="ui-btn ui-corner-all" onclick="clear_loop()">Clear loop</button>
         <h3>Styling</h3>

@@ -4,17 +4,17 @@
   <meta charset="utf-8" />
   <title>Malachi Screen</title>
   <link rel="stylesheet" href="/html/screen.css" />
-  <link rel="icon" href="/html/favicon.png" type="image/png" />
-  <script type="text/javascript" src="/html/jquery-1.12.4.min.js"></script>
+  <link rel="shortcut icon" href="/html/favicon.png" type="image/ico" />
+  <script type="text/javascript" src="/html/libs/jquery-1.12.4.min.js"></script>
   <script type="text/javascript" src="/html/screen.js"></script>
 </head>
 <body>
   <div id="main_area">
-    <video id="video_item" style="display:none;z-index:-1;">
-      <source src="" id="video_item_src">
+    <video id="video_item" preload="auto" style="display:none;z-index:-1;">
+      <source src="/html/black-frame.mp4" id="video_item_src">
     </video>
     <video autoplay loop id="loop_video" style="z-index:-2;">
-      <source src="" id="loop_video_src">
+      <source src="/html/black-frame.mp4" id="loop_video_src">
     </video>
     <div id="slide_area">
     </div>

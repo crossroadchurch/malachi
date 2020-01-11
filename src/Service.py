@@ -38,6 +38,7 @@ class Service():
         """
         self.items.append(item)
         self.modified = True
+        self.autosave()
 
     def remove_item_at(self, index):
         """
@@ -54,6 +55,7 @@ class Service():
         if index >= 0 and self.items and index < len(self.items):
             del self.items[index]
             self.modified = True
+            self.autosave()
             return True
         else:
             return False
@@ -82,6 +84,7 @@ class Service():
                     self.items.insert(to_index, self.items[from_index])
                     del self.items[from_index + 1]
                 self.modified = True
+                self.autosave()
                 return 1
             else:
                 return -1 # Invalid index specified
@@ -332,6 +335,15 @@ class Service():
         """
         self.file_name = fname
         self.save()
+
+
+    def autosave(self):
+        """
+        Autosave the current service plan to /services/autosave.json.
+        """
+        with open("./services/autosave.json", 'w') as json_file:
+            json.dump({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, json_file)
+
 
     @classmethod
     def get_all_services(cls):

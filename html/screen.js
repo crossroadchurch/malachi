@@ -104,7 +104,7 @@ function start_websocket(){
                     loop_ar = loop_width / loop_height;
                     resize_loop();
                 } else {
-                    $('#loop_video_src').attr('src', '');
+                    $('#loop_video_src').attr('src', '/html/black-frame.mp4');
                     $('#loop_video').load();
                     loop_height = 0;
                     loop_width = 0;
@@ -157,7 +157,7 @@ function start_websocket(){
                     loop_ar = loop_width / loop_height;
                     resize_loop();
                 } else {
-                    $('#loop_video_src').attr('src', '');
+                    $('#loop_video_src').attr('src', '/html/black-frame.mp4');
                     $('#loop_video').load();
                     loop_height = 0;
                     loop_width = 0;

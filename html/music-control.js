@@ -346,6 +346,14 @@ function l_c(channel, value){
   websocket.send(JSON.stringify({"action": "command.set-light-channel", "params": {"channel": channel, "value": value}}));
 }
 
+function n_i(){
+  websocket.send(JSON.stringify({"action": "command.next-item", "params": {}}));
+}
+
+function p_i(){
+  websocket.send(JSON.stringify({"action": "command.previous-item", "params": {}}));
+}
+
 function change_verse(id){
   websocket.send(JSON.stringify({"action": "command.goto-slide", "params": { "index": id }}));
 }
@@ -488,6 +496,8 @@ function start_websocket(){
       case "response.set-display-state":
       case "response.next-slide":
       case "response.previous-slide":
+      case "response.next-item":
+      case "response.previous-item":
       case "response.next-presentation-slide":
       case "response.prev-presentation-slide":
       case "response.start-presentation":

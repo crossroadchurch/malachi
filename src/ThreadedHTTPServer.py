@@ -68,6 +68,7 @@ class ThreadedHTTPServer():
     def __init__(self, host, port):
         handler = RoutedRequestHandler
         self.server = socketserver.ThreadingTCPServer((host, port), handler)
+        self.server.request_queue_size = 64
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.daemon = True
 

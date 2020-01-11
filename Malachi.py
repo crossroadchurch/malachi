@@ -26,10 +26,6 @@ if __name__ == "__main__":
     HTTP_SERVER.start()
     time.sleep(2)
 
-    # In Linux need to run:
-    # soffice --accept="socket,host=localhost,port=2002;urp" --quickstart
-    # in a separate terminal before starting Malachi
-
     try:
         MALACHI_SERVER = MalachiServer()
 

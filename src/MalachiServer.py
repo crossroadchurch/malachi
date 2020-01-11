@@ -18,6 +18,7 @@ import os
 import re
 import threading
 import subprocess
+from websockets.exceptions import ConnectionClosed
 import cv2
 import pyautogui
 from Service import Service
@@ -286,30 +287,38 @@ class MalachiServer():
                 "request.all-presets": [self.request_all_presets, []],
                 "request.all-presentations": [self.request_all_presentations, []]
             }
-            async for message in websocket:
-                try:
-                    json_data = json.loads(message)
-                    # Check json_data has action and params keys
-                    k_check = MalachiServer.key_check(json_data, ["action", "params"])
-                    if k_check == "":
-                        command_item = command_switcher.get(json_data["action"])
-                        if command_item is not None:
-                            # Check that all required parameters have been supplied
-                            p_check = MalachiServer.key_check(json_data["params"], command_item[1])
-                            if p_check == "":
-                                await command_item[0](websocket, json_data["params"])
+            try:
+                async for message in websocket:
+                    try:
+                        json_data = json.loads(message)
+                        # Check json_data has action and params keys
+                        k_check = MalachiServer.key_check(json_data, ["action", "params"])
+                        if k_check == "":
+                            command_item = command_switcher.get(json_data["action"])
+                            if command_item is not None:
+                                # Check that all required parameters have been supplied
+                                p_check = MalachiServer.key_check(json_data["params"], \
+                                    command_item[1])
+                                if p_check == "":
+                                    await command_item[0](websocket, json_data["params"])
+                                else:
+                                    await self.server_response(websocket, "error.json", \
+                                        "missing-params", json_data["action"] + ": " + p_check)
                             else:
+                                # Invalid command
                                 await self.server_response(websocket, "error.json", \
-                                    "missing-params", json_data["action"] + ": " + p_check)
+                                    "invalid-command", json_data["action"])
                         else:
-                            # Invalid command
-                            await self.server_response(websocket, "error.json", \
-                                "invalid-command", json_data["action"])
-                    else:
-                        # Malformed JSON
-                        await self.server_response(websocket, "error.json", "missing-keys", k_check)
-                except JSONDecodeError:
-                    await self.server_response(websocket, "error.json", "decode-error", message)
+                            # Malformed JSON
+                            await self.server_response(websocket, \
+                                "error.json", "missing-keys", k_check)
+                    except JSONDecodeError:
+                        await self.server_response(websocket, "error.json", "decode-error", message)
+            except ConnectionClosed as e:
+                if e.reason:
+                    print("ConnectionClosed exception: " + str(e.code) + ", " + str(e.reason))
+                else:
+                    print("ConnectionClosed exception: " + str(e.code) + ", no reason provided")
         finally:
             # Websocket is closed by client
             self.unregister(websocket, path)
