@@ -81,9 +81,8 @@ function update_music() {
   }
 }
 
-function display_capture_image(url, cap_w, cap_h){
-  // Bypass caching to ensure new images are always loaded when using same urls
-  document.getElementById('captureimage').src = url + "?" + new Date().getTime();
+function display_capture_image(src, cap_w, cap_h){
+  document.getElementById('captureimage').setAttribute('src', src);
   $('#captureimage').css('display', 'block');
   capture_ar = cap_w / cap_h;
   area_ar = $('#imagearea').width() / $('#imagearea').height();
@@ -177,8 +176,11 @@ function start_websocket(){
         }
         update_music();
         break;
-      case "update.capture-update":
-        display_capture_image(json_data.params.capture_url, json_data.params.width, json_data.params.height);
+      case "update.capture-ready":
+        websocket.send(JSON.stringify({"action": "request.capture-update", "params": {}}));
+        break;
+      case "result.capture-update":
+        display_capture_image(json_data.params.capture_src, json_data.params.width, json_data.params.height);
         break;
       case "update.stop-capture":
         hide_capture_image();

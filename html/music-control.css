@@ -1,8 +1,7 @@
 @font-face {
-  font-family: 'Raleway';
+  font-family: 'Inter Semi Bold';
   font-style: normal;
-  font-weight: 700;
-  src: local('Raleway-Bold'), url(/html/fonts/Raleway-Bold.ttf) format('truetype');
+  src: local('Inter-SemiBold'), url(/html/fonts/Inter-SemiBold.otf) format('opentype');
 }
 
 @font-face {
@@ -84,7 +83,7 @@ body {
 }
 
 .lyric-chunk {
-  font-family: 'Raleway', sans-serif;
+  font-family: 'Inter Semi Bold', sans-serif;
   color: white;
   display: inline-block;
   margin: 2rem 0rem 0.5rem 0rem;
@@ -111,7 +110,7 @@ body {
 }
 
 .next-lyric-chunk {
-  font-family: 'Raleway', sans-serif;;
+  font-family: 'Inter Semi Bold', sans-serif;;
   color: #999;
   display: inline-block;
   margin: 2rem 0rem 0.5rem 0rem;
@@ -139,7 +138,7 @@ body {
 }
 
 .nonsong-block {
-  font-family: 'Raleway', sans-serif;;
+  font-family: 'Inter Semi Bold', sans-serif;;
   color: white;
   display: inline-block;
   margin: 0.5rem 0rem;
@@ -150,7 +149,7 @@ body {
 }
 
 .next-nonsong-block {
-  font-family: 'Raleway', sans-serif;;
+  font-family: 'Inter Semi Bold', sans-serif;;
   color: #999;
   display: inline-block;
   margin: 0.5rem 0rem;

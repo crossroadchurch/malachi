@@ -1,10 +1,9 @@
 @font-face {
-    font-family: 'Raleway';
+    font-family: 'Inter Semi Bold';
     font-style: normal;
-    font-weight: 700;
-    src: local('Raleway-Bold'), url(/html/fonts/Raleway-Bold.ttf) format('truetype');
+    src: local('Inter-SemiBold'), url(/html/fonts/Inter-SemiBold.otf) format('opentype');
 }
-  
+
 body {
     margin: 0;
     overflow: hidden;
@@ -34,7 +33,7 @@ body {
     width: 80vw;
     margin-left: 10vw;
     margin-top: 10vh;
-    font-family: 'Raleway';
+    font-family: 'Inter Semi Bold';
     font-size: 10vh;
     text-shadow: rgb(0,0,0) 0.5vh 0.5vh 0px;
     text-align: center

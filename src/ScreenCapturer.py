@@ -6,11 +6,11 @@ Produce screen captures for mirroring of presentations to clients using the /mon
 """
 
 import asyncio
-import os
+import base64
+from io import BytesIO
 import threading
-import time
 import mss
-from PIL import Image, ImageChops
+from PIL import Image
 
 # Basic stoppable thread code from:
 # https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
@@ -60,46 +60,26 @@ class ScreenCapturer(threading.Thread):
         loop.run_until_complete(self._run())
         loop.close()
 
-    def equal_images(self, i1, i2):
-        """
-        Test two images for pixel-by-pixel equality.
-
-        Arguments:
-        i1, i2 -- images to compare, of class PIL.Image
-
-        Returns:
-        True if and only if each pixel of i1 equals the corresponding pixel of i2, False otherwise.
-        """
-        if not i1.size == i2.size:
-            return False
-        return ImageChops.difference(i1, i2).getbbox() is None
-
     async def _run(self):
-        """ Run the thread.  Take a new screen capture every 2 seconds."""
-        out_num = 0
-        prev_capture = Image.new('RGB', (100, 100))
+        """ Run the thread.  Take a new screen capture every second."""
+        prev_png_bytes = b""
         with mss.mss() as sct:
             while not self.stopped():
-                capture_png = "./captures/capture_{n}.png".format(n=out_num)
-                sct.shot(mon=self.mon, output=capture_png)
-                time.sleep(0.25)
-                cur_capture = Image.open(capture_png)
-                if not self.equal_images(prev_capture, cur_capture):
-                    # Only serve capture if it is different to the previous one served
-                    capture_jpg = "./captures/capture_{n}.jpg".format(n=out_num)
-                    im_out = Image.new("RGB", cur_capture.size, (255, 255, 255))
-                    im_out.paste(cur_capture, (0, 0))
-                    im_out.save(capture_jpg, quality=90)
-                    time.sleep(0.25)
-                    # Serve the smaller capture to clients
-                    if os.path.getsize(capture_png) < os.path.getsize(capture_jpg):
-                        await self.mserver.capture_update(capture_png, \
-                            sct.monitors[self.mon]["width"], sct.monitors[self.mon]["height"])
+                sct_img = sct.grab(sct.monitors[self.mon])
+                new_frame = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+                img_buffer = BytesIO()
+                new_frame.save(img_buffer, format="PNG")
+                png_bytes = base64.b64encode(img_buffer.getvalue())
+                if not png_bytes == prev_png_bytes:
+                    # Only serve image if it is different to the previous one served
+                    img_buffer = BytesIO()
+                    new_frame.save(img_buffer, format="JPEG", quality=90)
+                    jpg_bytes = base64.b64encode(img_buffer.getvalue())
+                    if len(png_bytes) <= len(jpg_bytes):
+                        await self.mserver.capture_ready(\
+                            "data:image/png;base64," + png_bytes.decode('utf-8'))
                     else:
-                        await self.mserver.capture_update(capture_jpg, \
-                            sct.monitors[self.mon]["width"], sct.monitors[self.mon]["height"])
-                    out_num = (out_num + 1) % 5
-                    prev_capture = cur_capture
-                    time.sleep(1.5)
-                else:
-                    time.sleep(1.75)
+                        await self.mserver.capture_ready(\
+                            "data:image/jpeg;base64," + png_bytes.decode('utf-8'))
+                    prev_png_bytes = png_bytes
+                await asyncio.sleep(1.0)

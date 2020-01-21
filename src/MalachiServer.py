@@ -71,6 +71,7 @@ class MalachiServer():
             self.load_light_presets()
             self.lh = LightHandler(self.light_channel_list)
             self.scap = ScreenCapturer(self, 1)
+            self.last_cap = ""
             self.load_style()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
@@ -285,7 +286,8 @@ class MalachiServer():
                 "request.all-loops": [self.request_all_loops, []],
                 "request.all-services": [self.request_all_services, []],
                 "request.all-presets": [self.request_all_presets, []],
-                "request.all-presentations": [self.request_all_presentations, []]
+                "request.all-presentations": [self.request_all_presentations, []],
+                "request.capture-update": [self.capture_update, []]
             }
             try:
                 async for message in websocket:
@@ -405,15 +407,29 @@ class MalachiServer():
         self.scap.change_monitor(int(params["monitor"]))
         await self.server_response(websocket, "response.change-capture-monitor", status, details)
 
-    async def capture_update(self, capture_url, capture_w, capture_h):
+    async def capture_ready(self, capture_src):
         """
-        Send update to all monitor clients following the production of a new screen capture image.
+        Inform all monitor clients that a new capture is available.
+
+        Arguments:
+        capture_src -- the new capture image as a base64 URI.
         """
+        self.last_cap = capture_src
         for socket in self.MONITOR_SOCKETS:
             await socket[0].send(json.dumps({
-                "action" : "update.capture-update",
-                "params" : {"capture_url": capture_url, "width": capture_w, "height": capture_h}
+                "action": "update.capture-ready",
+                "params": {}
             }))
+
+    async def capture_update(self, websocket, params):
+        """
+        Send current captured image as a base64 URI to the specified websocket.
+        """
+        await websocket.send(json.dumps({
+            "action" : "result.capture-update",
+            "params" : {"capture_src": self.last_cap,\
+                "width": self.scap.mon_w, "height": self.scap.mon_h}
+        }))
 
     # Lighting commands
     async def set_light_channel(self, websocket, params):
