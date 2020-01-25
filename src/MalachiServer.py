@@ -46,7 +46,7 @@ class MalachiServer():
 
     LIGHT_PRESET_FILE = "./lights/light_presets.json"
     SONGS_DATABASE = "./data/songs.sqlite"
-    GLOBAL_STYLE_FILE = "./data/global_style.json"
+    GLOBAL_SETTINGS_FILE = "./data/global_settings.json"
     BIBLE_VERSIONS_FILES = "./data/bible_versions.json"
 
     def __init__(self):
@@ -54,6 +54,7 @@ class MalachiServer():
             self.light_preset_list, self.light_channel_list = [], []
             self.bible_versions = [] # Loaded within check_data_files()
             self.screen_style = []
+            self.capture_refresh_rate = 1000
             self.video_loop = ""
             self.loop_width, self.loop_height = 0, 0
             self.check_data_files()
@@ -65,6 +66,7 @@ class MalachiServer():
             self.APP_SOCKETS = set()
             self.MEDIA_SOCKETS = set()
             self.MONITOR_SOCKETS = set()
+            self.LOCKED_SOCKETS = set()
             self.CAPOS = dict()
             self.screen_state = "off"
             self.s = Service()
@@ -72,7 +74,7 @@ class MalachiServer():
             self.lh = LightHandler(self.light_channel_list)
             self.scap = ScreenCapturer(self, 1)
             self.last_cap = ""
-            self.load_style()
+            self.load_settings()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
 
@@ -119,6 +121,8 @@ class MalachiServer():
             self.LIGHT_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["monitor", "leader"]:
             self.MONITOR_SOCKETS.remove((websocket, path[1:]))
+        if websocket in self.LOCKED_SOCKETS:
+            self.LOCKED_SOCKETS.remove(websocket)
 
     @classmethod
     def key_check(cls, key_dict, required_keys):
@@ -171,6 +175,7 @@ class MalachiServer():
         """Send initialisation message to new app client"""
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.screen_style
+        service_data['refresh_rate'] = self.capture_refresh_rate
         service_data['light_preset_list'] = self.light_preset_list
         service_data['screen_state'] = self.screen_state
         service_data['video_loop'] = self.video_loop
@@ -274,6 +279,8 @@ class MalachiServer():
                 "command.start-capture": [self.start_capture, ["monitor"]],
                 "command.stop-capture": [self.stop_capture, []],
                 "command.change-capture-monitor": [self.change_capture_monitor, ["monitor"]],
+                "command.change-capture-rate": [self.change_capture_rate, ["rate"]],
+                "command.unlock-socket": [self.unlock_socket, []],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -407,6 +414,40 @@ class MalachiServer():
         self.scap.change_monitor(int(params["monitor"]))
         await self.server_response(websocket, "response.change-capture-monitor", status, details)
 
+    async def change_capture_rate(self, websocket, params):
+        """
+        Change the capture rate that is being used for screen captures.
+
+        Arguments:
+        params["rate"] -- the new capture rate in milliseconds, must be in the range [200,5000]
+        """
+        status, details = "ok", ""
+        rate = int(params["rate"])
+        if 200 <= rate <= 5000:
+            self.capture_refresh_rate = rate
+            self.save_settings()
+            for socket in self.APP_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action": "update.capture-rate",
+                    "params": {
+                        "refresh_rate": self.capture_refresh_rate
+                    }
+                }))
+        else:
+            status, details = "invalid-rate", "Capture rate must be in the range [200, 5000]"
+        await self.server_response(websocket, "response.change-capture-rate", status, details)
+
+    async def unlock_socket(self, websocket, params):
+        """
+        Unlock the current socket to allow it to receive further capture updates.
+        """
+        status, details = "ok", ""
+        if websocket in self.LOCKED_SOCKETS:
+            self.LOCKED_SOCKETS.remove(websocket)
+        else:
+            status, details = "unlock-error", "Socket was not locked"
+        await self.server_response(websocket, "response.unlock-socket", status, details)
+
     async def capture_ready(self, capture_src):
         """
         Inform all monitor clients that a new capture is available.
@@ -416,15 +457,17 @@ class MalachiServer():
         """
         self.last_cap = capture_src
         for socket in self.MONITOR_SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "update.capture-ready",
-                "params": {}
-            }))
+            if not socket[0] in self.LOCKED_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action": "update.capture-ready",
+                    "params": {}
+                }))
 
     async def capture_update(self, websocket, params):
         """
         Send current captured image as a base64 URI to the specified websocket.
         """
+        self.LOCKED_SOCKETS.add(websocket)
         await websocket.send(json.dumps({
             "action" : "result.capture-update",
             "params" : {"capture_src": self.last_cap,\
@@ -1024,7 +1067,7 @@ class MalachiServer():
                 elif isinstance(self.s.items[i], BiblePassage):
                     self.s.items[i].paginate_from_style(self.screen_style)
             await self.clients_service_items_update()
-            self.save_style()
+            self.save_settings()
             for socket in self.STYLE_STATE_SOCKETS:
                 await socket[0].send(json.dumps({
                     "action": "update.style-update",
@@ -1487,17 +1530,19 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Song":
             Tracker.log(self.s.items[self.s.item_index].song_id)
 
-    def load_style(self):
-        """Load style information from ./data/global_style.json"""
-        with open(MalachiServer.GLOBAL_STYLE_FILE) as f:
+    def load_settings(self):
+        """Load settings information from ./data/global_settings.json"""
+        with open(MalachiServer.GLOBAL_SETTINGS_FILE) as f:
             json_data = json.load(f)
         self.screen_style = json_data["style"]
+        self.capture_refresh_rate = json_data["capture_refresh"]
 
-    def save_style(self):
-        """Save style information to ./data/global_style.json"""
+    def save_settings(self):
+        """Save settings information to ./data/global_settings.json"""
         json_data = {}
         json_data["style"] = self.screen_style
-        with open(MalachiServer.GLOBAL_STYLE_FILE, "w") as f:
+        json_data["capture_refresh"] = self.capture_refresh_rate
+        with open(MalachiServer.GLOBAL_SETTINGS_FILE, "w") as f:
             f.write(json.dumps(json_data, indent=2))
 
     def load_light_presets(self):
@@ -1527,7 +1572,7 @@ class MalachiServer():
         """
         missing_files = []
         for f in [MalachiServer.BIBLE_VERSIONS_FILES, MalachiServer.SONGS_DATABASE,
-                  MalachiServer.LIGHT_PRESET_FILE, MalachiServer.GLOBAL_STYLE_FILE]:
+                  MalachiServer.LIGHT_PRESET_FILE, MalachiServer.GLOBAL_SETTINGS_FILE]:
             if not os.path.isfile(f):
                 missing_files.append(f)
         if missing_files:

@@ -576,6 +576,9 @@ function start_websocket(){
                 // Display style parameters in style tab
                 update_style_sliders(json_data.params.style);
 
+                // Update capture refresh rate slider
+                $('#c_rate').val(json_data.params["refresh_rate"]).slider('refresh');
+
                 // Populate service plan list
                 service_list = "";
                 for (let item in json_data.params.items){
@@ -675,6 +678,10 @@ function start_websocket(){
 
             case "update.style-update":
                 update_style_sliders(json_data.params.style);
+                break;
+
+            case "update.capture-rate":
+                $('#c_rate').val(json_data.params["refresh_rate"]).slider('refresh');
                 break;
 
             case "result.all-presentations":
@@ -934,6 +941,7 @@ function start_websocket(){
             case "response.stop-video":
             case "response.start-presentation":
             case "response.edit-style-param":
+            case "response.change-capture-rate":
                 break;  // No action required;
             default:
                 console.error("Unsupported event", json_data);
@@ -1030,6 +1038,15 @@ $(document).ready(function(){
             "params": {
                 "param": "margin-top-vh",
                 "value": $('#s_margin').val()
+            }
+        }));
+    });
+
+    $('#c_rate').on("slidestop", function(event, ui){
+        websocket.send(JSON.stringify({
+            "action": "command.change-capture-rate", 
+            "params": {
+                "rate": $('#c_rate').val()
             }
         }));
     });

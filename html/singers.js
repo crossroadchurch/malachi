@@ -197,6 +197,7 @@ function start_websocket(){
         break;
       case "result.capture-update":
         display_capture_image(json_data.params.capture_src, json_data.params.width, json_data.params.height);
+        websocket.send(JSON.stringify({"action": "command.unlock-socket", "params": {}}));
         break;
       case "update.stop-capture":
         hide_capture_image();
@@ -216,6 +217,9 @@ function start_websocket(){
         break;
       case "trigger.seek-video":
         document.getElementById('video_item').currentTime = json_data.params.seconds;
+        break;
+      case "response.unlock-socket":
+      case "update.video-loop":
         break;
       default:
         console.error("Unsupported event", json_data);

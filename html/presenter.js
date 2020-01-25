@@ -181,12 +181,14 @@ function start_websocket(){
         break;
       case "result.capture-update":
         display_capture_image(json_data.params.capture_src, json_data.params.width, json_data.params.height);
+        websocket.send(JSON.stringify({"action": "command.unlock-socket", "params": {}}));
         break;
       case "update.stop-capture":
         hide_capture_image();
         break;
       case "response.next-presentation-slide":
       case "response.prev-presentation-slide":
+      case "response.unlock-socket":
         break;
       default:
         console.error("Unsupported event", json_data);

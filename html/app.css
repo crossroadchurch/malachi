@@ -158,6 +158,10 @@ a.i-item {
     margin-left: 15px;
 }
 
+#c_rate_slider .ui-slider-handle {
+    width: 4em;
+}
+
 .toast {
     text-shadow: none;
 }

@@ -5,6 +5,7 @@
     "div-width-vw": "90",
     "margin-top-vh": "8",
     "max-lines": "5",
-    "font-file": "./html/fonts/Raleway-Bold.ttf"
-  }
+    "font-file": "./html/fonts/Inter-SemiBold.otf"
+  },
+  "capture_refresh": 250
 }

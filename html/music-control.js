@@ -491,6 +491,7 @@ function start_websocket(){
         break;
       case "result.capture-update":
         display_capture_image(json_data.params.capture_src, json_data.params.width, json_data.params.height);
+        websocket.send(JSON.stringify({"action": "command.unlock-socket", "params": {}}));
         break;
       case "update.stop-capture":
         hide_capture_image();
@@ -509,6 +510,7 @@ function start_websocket(){
       case "response.transpose-up":
       case "response.transpose-down":
       case "response.transpose-by":
+      case "response.unlock-socket":
         console.log("Server response: [" + json_data.action + "], Status: [" + json_data.params.status + "], Details: [" + json_data.params.details + "]");
         break;
       default:

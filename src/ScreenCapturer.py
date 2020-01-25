@@ -82,4 +82,4 @@ class ScreenCapturer(threading.Thread):
                         await self.mserver.capture_ready(\
                             "data:image/jpeg;base64," + png_bytes.decode('utf-8'))
                     prev_png_bytes = png_bytes
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(self.mserver.capture_refresh_rate/1000)
