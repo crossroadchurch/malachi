@@ -73,19 +73,6 @@ class InvalidSongFieldError(Exception):
         self.msg = "Invalid field data provided: {data}".format(data=data)
         super(InvalidSongFieldError, self).__init__(self.msg)
 
-# Lighting
-class QLCConnectionError(Exception):
-    """Indicate that a connection to QLC could not be made"""
-    def __init__(self):
-        self.msg = "A connection with QLC is not currently active."
-        super(QLCConnectionError, self).__init__(self.msg)
-
-class LightingBlockedError(Exception):
-    """Indicate that the lighting system is currently blocked"""
-    def __init__(self):
-        self.msg = "The action could not be performed as another lighting action is in progress."
-        super(LightingBlockedError, self).__init__(self.msg)
-
 # Styles
 class MissingStyleParameterError(Exception):
     """Indicate that a required style parameter is missing from the current style"""

@@ -16,7 +16,6 @@ import json
 from json.decoder import JSONDecodeError
 import os
 import re
-import threading
 import subprocess
 from websockets.exceptions import ConnectionClosed
 import cv2
@@ -25,7 +24,6 @@ from Service import Service
 from BiblePassage import BiblePassage
 from Song import Song
 from Presentation import Presentation
-from LightHandler import LightHandler
 from Video import Video
 from Tracker import Tracker
 from ScreenCapturer import ScreenCapturer
@@ -36,7 +34,6 @@ from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
 from MalachiExceptions import InvalidVideoUrlError, UnspecifiedServiceUrl
 from MalachiExceptions import MissingStyleParameterError, MissingDataFilesError
 from MalachiExceptions import InvalidPresentationUrlError
-from MalachiExceptions import QLCConnectionError, LightingBlockedError
 
 class MalachiServer():
     """
@@ -44,14 +41,12 @@ class MalachiServer():
     of appropriate state changes
     """
 
-    LIGHT_PRESET_FILE = "./lights/light_presets.json"
     SONGS_DATABASE = "./data/songs.sqlite"
     GLOBAL_SETTINGS_FILE = "./data/global_settings.json"
     BIBLE_VERSIONS_FILES = "./data/bible_versions.json"
 
     def __init__(self):
         try:
-            self.light_preset_list, self.light_channel_list = [], []
             self.bible_versions = [] # Loaded within check_data_files()
             self.screen_style = []
             self.capture_refresh_rate = 1000
@@ -60,7 +55,6 @@ class MalachiServer():
             self.check_data_files()
             Video.generate_video_thumbnails()
             self.SOCKETS = set()
-            self.LIGHT_STATE_SOCKETS = set()
             self.DISPLAY_STATE_SOCKETS = set()
             self.STYLE_STATE_SOCKETS = set()
             self.APP_SOCKETS = set()
@@ -70,8 +64,6 @@ class MalachiServer():
             self.CAPOS = dict()
             self.screen_state = "off"
             self.s = Service()
-            self.load_light_presets()
-            self.lh = LightHandler(self.light_channel_list)
             self.scap = ScreenCapturer(self, 1)
             self.last_cap = ""
             self.load_settings()
@@ -98,10 +90,10 @@ class MalachiServer():
             self.MEDIA_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
-        if path[1:] in ["lights", "app"]:
-            self.LIGHT_STATE_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["monitor", "leader"]:
             self.MONITOR_SOCKETS.add((websocket, path[1:]))
+        print("Websocket registered: " + websocket.remote_address[0] + ":" + \
+            str(websocket.remote_address[1]) + " (" + path + ")")
 
     def unregister(self, websocket, path):
         """Unregister a websocket connection that has been closed by a client."""
@@ -117,12 +109,12 @@ class MalachiServer():
             self.MEDIA_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
-        if path[1:] in ["lights", "app"]:
-            self.LIGHT_STATE_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["monitor", "leader"]:
             self.MONITOR_SOCKETS.remove((websocket, path[1:]))
         if websocket in self.LOCKED_SOCKETS:
             self.LOCKED_SOCKETS.remove(websocket)
+        print("Websocket unregistered: " + websocket.remote_address[0] + ":" + \
+            str(websocket.remote_address[1]) + " (" + path + ")")
 
     @classmethod
     def key_check(cls, key_dict, required_keys):
@@ -176,7 +168,6 @@ class MalachiServer():
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.screen_style
         service_data['refresh_rate'] = self.capture_refresh_rate
-        service_data['light_preset_list'] = self.light_preset_list
         service_data['screen_state'] = self.screen_state
         service_data['video_loop'] = self.video_loop
         service_data['loop-width'] = self.loop_width
@@ -185,20 +176,6 @@ class MalachiServer():
             "action" : "update.app-init",
             "params" : service_data
             }))
-
-    async def light_init(self, websocket):
-        """Send initialisation message to new light client"""
-        try:
-            light_data = self.lh.get_channels()
-        except QLCConnectionError:
-            light_data = []
-        finally:
-            await websocket.send(json.dumps({
-                "action": "update.light-init",
-                "params": {
-                    "channels": light_data,
-                    "light-preset-list": self.light_preset_list
-                }}))
 
     async def responder(self, websocket, path):
         """
@@ -223,8 +200,7 @@ class MalachiServer():
             "monitor": self.basic_init,
             "leader": self.leader_init,
             "display": self.display_init,
-            "app": self.app_init,
-            "lights": self.light_init
+            "app": self.app_init
         }
         if path[1:] in initial_data_switcher:
             initial_func = initial_data_switcher.get(path[1:], lambda: "None")
@@ -256,13 +232,6 @@ class MalachiServer():
                 "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
                 "command.set-loop": [self.set_loop, ["url"]],
                 "command.clear-loop": [self.clear_loop, []],
-                "command.set-light-channel": [self.set_light_channel, ["channel", "value"]],
-                "command.set-light-channels": [self.set_light_channels, ["channels"]],
-                "command.get-light-channels": [self.get_light_channels, []],
-                "command.fade-light-channels": [self.fade_light_channels, ["end-channels"]],
-                "command.blackout-lights": [self.blackout_lights, []],
-                "command.unblackout-lights": [self.unblackout_lights, []],
-                "command.save-preset": [self.save_preset, []],
                 "command.create-song": [self.create_song, ["title", "fields"]],
                 "command.edit-song": [self.edit_song, ["song-id", "fields"]],
                 "command.play-video": [self.play_video, []],
@@ -292,7 +261,6 @@ class MalachiServer():
                 "request.all-videos": [self.request_all_videos, []],
                 "request.all-loops": [self.request_all_loops, []],
                 "request.all-services": [self.request_all_services, []],
-                "request.all-presets": [self.request_all_presets, []],
                 "request.all-presentations": [self.request_all_presentations, []],
                 "request.capture-update": [self.capture_update, []]
             }
@@ -324,10 +292,12 @@ class MalachiServer():
                     except JSONDecodeError:
                         await self.server_response(websocket, "error.json", "decode-error", message)
             except ConnectionClosed as e:
+                message = "ConnectionClosed exception from " + websocket.remote_address[0] + ":" + \
+                    str(websocket.remote_address[1]) + " (" + path + "): "
                 if e.reason:
-                    print("ConnectionClosed exception: " + str(e.code) + ", " + str(e.reason))
+                    print(message + str(e.code) + ", " + str(e.reason))
                 else:
-                    print("ConnectionClosed exception: " + str(e.code) + ", no reason provided")
+                    print(message + str(e.code) + ", no reason provided")
         finally:
             # Websocket is closed by client
             self.unregister(websocket, path)
@@ -473,178 +443,6 @@ class MalachiServer():
             "params" : {"capture_src": self.last_cap,\
                 "width": self.scap.mon_w, "height": self.scap.mon_h}
         }))
-
-    # Lighting commands
-    async def set_light_channel(self, websocket, params):
-        """
-        Set value of a single lighting channel and send update message to appropriate clients.
-
-        Arguments:
-        params["channel"] -- the lighting channel to set
-        params["value"] -- the new value for the lighting channel
-        """
-        status, details = "ok", ""
-        try:
-            channel, value = params["channel"], params["value"]
-            self.lh.set_channel(channel, value)
-            for socket in self.LIGHT_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.light-channel-update",
-                    "params" : {
-                        "channel": channel,
-                        "value": value
-                    }
-                }))
-        except QLCConnectionError as e:
-            status, details = "no-connection", e.msg
-        except LightingBlockedError as e:
-            status, details = "lighting-blocked", e.msg
-        finally:
-            await self.server_response(websocket, "response.set-light-channel", status, details)
-
-    async def set_light_channels(self, websocket, params):
-        """
-        Set values of multiple lighting channels and send update message to appropriate clients.
-
-        Arguments:
-        params["channels"] -- a list of [channel number, new value] pairs
-        """
-        status, details = "ok", ""
-        try:
-            self.lh.set_channels(params["channels"])
-            for socket in self.LIGHT_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.light-channels-update",
-                    "params" : {
-                        "channels": params["channels"]
-                    }
-                }))
-        except QLCConnectionError as e:
-            status, details = "no-connection", e.msg
-        except LightingBlockedError as e:
-            status, details = "lighting-blocked", e.msg
-        finally:
-            await self.server_response(websocket, "response.set-light-channels", status, details)
-
-    async def get_light_channels(self, websocket, params):
-        """Retrieve the current values of the lighting channels and send this data to websocket"""
-        status, details = "ok", ""
-        try:
-            details = self.lh.get_channels()
-        except QLCConnectionError as e:
-            status, details = "no-connection", e.msg
-        except LightingBlockedError as e:
-            status, details = "lighting-blocked", e.msg
-        finally:
-            await websocket.send(json.dumps({
-                "action": "result.get-light-channels",
-                "params": {
-                    "status": status,
-                    "details": details
-                }
-            }))
-
-    async def fade_light_channels(self, websocket, params):
-        """
-        Perform a lighting fade and send update message to appropriate clients.
-
-        Arguments:
-        params["end-channels"] -- a list of [channel number, end value] pairs, representing
-        the state of the lighting at the end of the fade
-        """
-        status, details = "ok", ""
-        try:
-            fade_thread = threading.Thread(target=self.lh.fade_channels, \
-                args=(params["end-channels"], 4000))
-            fade_thread.start()
-            for socket in self.LIGHT_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.fade-update",
-                    "params" : {
-                        "channels": params["end-channels"],
-                        "duration": 4000
-                    }
-                }))
-        except QLCConnectionError as e:
-            status, details = "no-connection", e.msg
-        except LightingBlockedError as e:
-            status, details = "lighting-blocked", e.msg
-        finally:
-            await self.server_response(websocket, "response.fade-light-channels", status, details)
-
-    async def blackout_lights(self, websocket, params):
-        """
-        Perform a faded blackout on the lighting and send update message to appropriate clients.
-        The pre-fade values of the lighting channels are saved and can be restored by calling
-        unblackout_lights.
-        """
-        status, details = "ok", ""
-        try:
-            self.lh.save_fixture_channels()
-            fade_thread = threading.Thread(target=self.lh.fade_channels, \
-                args=(self.lh.blackout_channels, 4000))
-            fade_thread.start()
-            for socket in self.LIGHT_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.fade-update",
-                    "params" : {
-                        "channels": self.lh.blackout_channels,
-                        "duration": 4000
-                    }
-                }))
-        except QLCConnectionError as e:
-            status, details = "no-connection", e.msg
-        except LightingBlockedError as e:
-            status, details = "lighting-blocked", e.msg
-        finally:
-            await self.server_response(websocket, "response.blackout-lights", status, details)
-
-    async def unblackout_lights(self, websocket, params):
-        """
-        Perform a faded unblackout on the lighting and send update message to appropriate clients.
-        The lighting channels will be restored to the values saved when blackout_lights was called.
-        """
-        status, details = "ok", ""
-        try:
-            fade_thread = threading.Thread(target=self.lh.fade_channels, \
-                args=(self.lh.saved_channels, 4000))
-            fade_thread.start()
-            for socket in self.LIGHT_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.fade-update",
-                    "params" : {
-                        "channels": self.lh.saved_channels,
-                        "duration": 4000
-                    }
-                }))
-        except QLCConnectionError as e:
-            status, details = "no-connection", e.msg
-        except LightingBlockedError as e:
-            status, details = "lighting-blocked", e.msg
-        finally:
-            await self.server_response(websocket, "response.unblackout-lights", status, details)
-
-    async def save_preset(self, websocket, params):
-        """
-        Save the current lighting setup as a new lighting preset and send a message containing
-        the updated lighting preset list to appropriate clients.
-        """
-        status, details = "ok", ""
-        try:
-            preset = self.lh.get_channels()
-            self.light_preset_list.append(preset)
-            self.save_light_presets()
-            for socket in self.LIGHT_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action" : "update.light-preset-list-update",
-                    "params" : {
-                        "list-preset-list": self.light_preset_list
-                    }
-                }))
-        except QLCConnectionError as e:
-            status, details = "no-connection", e.msg
-        finally:
-            await self.server_response(websocket, "response.save-preset", status, details)
 
     async def create_song(self, websocket, params):
         """
@@ -1505,15 +1303,6 @@ class MalachiServer():
             }
         }))
 
-    async def request_all_presets(self, websocket, params):
-        """Return a list of all lighting presets to websocket."""
-        await websocket.send(json.dumps({
-            "action": "result.all-presets",
-            "params": {
-                "presets": self.light_preset_list
-            }
-        }))
-
     async def request_all_presentations(self, websocket, params):
         """Return a list of all presentations in the ./presentations directory to websocket."""
         fnames = Presentation.get_all_presentations()
@@ -1545,26 +1334,11 @@ class MalachiServer():
         with open(MalachiServer.GLOBAL_SETTINGS_FILE, "w") as f:
             f.write(json.dumps(json_data, indent=2))
 
-    def load_light_presets(self):
-        """Load lighting preset information from ./lights/light_presets.json"""
-        with open(MalachiServer.LIGHT_PRESET_FILE) as f:
-            json_data = json.load(f)
-        self.light_preset_list = json_data["presets"]
-        self.light_channel_list = json_data["channels"]
-
-    def save_light_presets(self):
-        """Save lighting preset information to ./lights/light_presets.json"""
-        json_data = {}
-        json_data["channels"] = self.light_channel_list
-        json_data["presets"] = self.light_preset_list
-        with open(MalachiServer.LIGHT_PRESET_FILE, "w") as f:
-            f.write(json.dumps(json_data))
-
     def check_data_files(self):
         """
         Check that all essential data files exist.
         Those files deemed to be essential are the songs database, the JSON settings files
-        for Bible versions, lighting presets and global style, and Bible databases referenced
+        for Bible versions and global style, and Bible databases referenced
         in the Bible versions JSON file.
 
         Possible exceptions:
@@ -1572,7 +1346,7 @@ class MalachiServer():
         """
         missing_files = []
         for f in [MalachiServer.BIBLE_VERSIONS_FILES, MalachiServer.SONGS_DATABASE,
-                  MalachiServer.LIGHT_PRESET_FILE, MalachiServer.GLOBAL_SETTINGS_FILE]:
+                  MalachiServer.GLOBAL_SETTINGS_FILE]:
             if not os.path.isfile(f):
                 missing_files.append(f)
         if missing_files:
