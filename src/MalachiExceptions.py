@@ -87,6 +87,13 @@ class InvalidVideoUrlError(Exception):
         self.msg = "Could not find a video at the url {url}".format(url=url)
         super(InvalidVideoUrlError, self).__init__(self.msg)
 
+# Backgrounds
+class InvalidBackgroundUrlError(Exception):
+    """Indicate that a specified Background URL does not exist"""
+    def __init__(self, url):
+        self.msg = "Could not find a background at the url {url}".format(url=url)
+        super(InvalidBackgroundUrlError, self).__init__(self.msg)
+
 # Presentations
 class InvalidPresentationUrlError(Exception):
     """Indicate that a specified Presentation URL does not exist"""

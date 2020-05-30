@@ -25,6 +25,7 @@ from BiblePassage import BiblePassage
 from Song import Song
 from Presentation import Presentation
 from Video import Video
+from Background import Background
 from Tracker import Tracker
 from ScreenCapturer import ScreenCapturer
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError
@@ -32,8 +33,10 @@ from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError, Unk
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
 from MalachiExceptions import InvalidVideoUrlError, UnspecifiedServiceUrl
+from MalachiExceptions import InvalidBackgroundUrlError
 from MalachiExceptions import MissingStyleParameterError, MissingDataFilesError
 from MalachiExceptions import InvalidPresentationUrlError
+
 
 class MalachiServer():
     """
@@ -47,13 +50,14 @@ class MalachiServer():
 
     def __init__(self):
         try:
-            self.bible_versions = [] # Loaded within check_data_files()
+            self.bible_versions = []  # Loaded within check_data_files()
             self.screen_style = []
             self.capture_refresh_rate = 1000
             self.video_loop = ""
             self.loop_width, self.loop_height = 0, 0
             self.check_data_files()
             Video.generate_video_thumbnails()
+            Background.generate_background_thumbnails()
             self.SOCKETS = set()
             self.DISPLAY_STATE_SOCKETS = set()
             self.STYLE_STATE_SOCKETS = set()
@@ -92,8 +96,8 @@ class MalachiServer():
             self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["monitor", "leader"]:
             self.MONITOR_SOCKETS.add((websocket, path[1:]))
-        print("Websocket registered: " + websocket.remote_address[0] + ":" + \
-            str(websocket.remote_address[1]) + " (" + path + ")")
+        print("Websocket registered: " + websocket.remote_address[0] + ":" +
+              str(websocket.remote_address[1]) + " (" + path + ")")
 
     def unregister(self, websocket, path):
         """Unregister a websocket connection that has been closed by a client."""
@@ -113,8 +117,8 @@ class MalachiServer():
             self.MONITOR_SOCKETS.remove((websocket, path[1:]))
         if websocket in self.LOCKED_SOCKETS:
             self.LOCKED_SOCKETS.remove(websocket)
-        print("Websocket unregistered: " + websocket.remote_address[0] + ":" + \
-            str(websocket.remote_address[1]) + " (" + path + ")")
+        print("Websocket unregistered: " + websocket.remote_address[0] + ":" +
+              str(websocket.remote_address[1]) + " (" + path + ")")
 
     @classmethod
     def key_check(cls, key_dict, required_keys):
@@ -137,31 +141,33 @@ class MalachiServer():
     async def basic_init(self, websocket):
         """Send initialisation message to new basic client"""
         await websocket.send(json.dumps({
-            "action" : "update.basic-init",
-            "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
-            }))
+            "action": "update.basic-init",
+            "params": json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
+        }))
 
     async def leader_init(self, websocket):
         """Send initialisation message to new leader client"""
-        service_data = json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
+        service_data = json.loads(
+            self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
         service_data['screen_state'] = self.screen_state
         await websocket.send(json.dumps({
-            "action" : "update.leader-init",
-            "params" : service_data
-            }))
+            "action": "update.leader-init",
+            "params": service_data
+        }))
 
     async def display_init(self, websocket):
         """Send initialisation message to new display client"""
-        service_data = json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
+        service_data = json.loads(
+            self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
         service_data['style'] = self.screen_style
         service_data['screen_state'] = self.screen_state
         service_data['video_loop'] = self.video_loop
         service_data['loop-width'] = self.loop_width
         service_data['loop-height'] = self.loop_height
         await websocket.send(json.dumps({
-            "action" : "update.display-init",
-            "params" : service_data
-            }))
+            "action": "update.display-init",
+            "params": service_data
+        }))
 
     async def app_init(self, websocket):
         """Send initialisation message to new app client"""
@@ -173,9 +179,9 @@ class MalachiServer():
         service_data['loop-width'] = self.loop_width
         service_data['loop-height'] = self.loop_height
         await websocket.send(json.dumps({
-            "action" : "update.app-init",
-            "params" : service_data
-            }))
+            "action": "update.app-init",
+            "params": service_data
+        }))
 
     async def responder(self, websocket, path):
         """
@@ -217,7 +223,7 @@ class MalachiServer():
                 "command.previous-item": [self.previous_item, []],
                 "command.goto-item": [self.goto_item, ["index"]],
                 "command.add-bible-item": [self.add_bible_item, \
-                    ["version", "start-verse", "end-verse"]],
+                                           ["version", "start-verse", "end-verse"]],
                 "command.change-bible-version": [self.change_bible_version, ["version"]],
                 "command.add-song-item": [self.add_song_item, ["song-id"]],
                 "command.add-video": [self.add_video, ["url"]],
@@ -230,6 +236,7 @@ class MalachiServer():
                 "command.save-service": [self.save_service, []],
                 "command.save-service-as": [self.save_service_as, ["filename"]],
                 "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
+                "command.edit-style-params": [self.edit_style_params, ["style_params"]],
                 "command.set-loop": [self.set_loop, ["url"]],
                 "command.clear-loop": [self.clear_loop, []],
                 "command.create-song": [self.create_song, ["title", "fields"]],
@@ -260,6 +267,7 @@ class MalachiServer():
                 "request.chapter-structure": [self.request_chapter_structure, ["version"]],
                 "request.all-videos": [self.request_all_videos, []],
                 "request.all-loops": [self.request_all_loops, []],
+                "request.all-backgrounds": [self.request_all_backgrounds, []],
                 "request.all-services": [self.request_all_services, []],
                 "request.all-presentations": [self.request_all_presentations, []],
                 "request.capture-update": [self.capture_update, []]
@@ -269,26 +277,28 @@ class MalachiServer():
                     try:
                         json_data = json.loads(message)
                         # Check json_data has action and params keys
-                        k_check = MalachiServer.key_check(json_data, ["action", "params"])
+                        k_check = MalachiServer.key_check(
+                            json_data, ["action", "params"])
                         if k_check == "":
-                            command_item = command_switcher.get(json_data["action"])
+                            command_item = command_switcher.get(
+                                json_data["action"])
                             if command_item is not None:
                                 # Check that all required parameters have been supplied
-                                p_check = MalachiServer.key_check(json_data["params"], \
-                                    command_item[1])
+                                p_check = MalachiServer.key_check(json_data["params"],
+                                                                  command_item[1])
                                 if p_check == "":
                                     await command_item[0](websocket, json_data["params"])
                                 else:
-                                    await self.server_response(websocket, "error.json", \
-                                        "missing-params", json_data["action"] + ": " + p_check)
+                                    await self.server_response(websocket, "error.json",
+                                                               "missing-params", json_data["action"] + ": " + p_check)
                             else:
                                 # Invalid command
-                                await self.server_response(websocket, "error.json", \
-                                    "invalid-command", json_data["action"])
+                                await self.server_response(websocket, "error.json",
+                                                           "invalid-command", json_data["action"])
                         else:
                             # Malformed JSON
-                            await self.server_response(websocket, \
-                                "error.json", "missing-keys", k_check)
+                            await self.server_response(websocket,
+                                                       "error.json", "missing-keys", k_check)
                     except JSONDecodeError:
                         await self.server_response(websocket, "error.json", "decode-error", message)
             except ConnectionClosed as e:
@@ -310,12 +320,12 @@ class MalachiServer():
         """
         for socket in self.SOCKETS:
             await socket[0].send(json.dumps({
-                "action" : "update.slide-index-update",
-                "params" : {
+                "action": "update.slide-index-update",
+                "params": {
                     "item_index": self.s.item_index,
                     "slide_index": self.s.slide_index
-                    }
-                }))
+                }
+            }))
 
     async def clients_item_index_update(self):
         """
@@ -326,16 +336,16 @@ class MalachiServer():
             if not self.s.items:
                 cur_item = {}
             else:
-                cur_item = json.loads(self.s.items[self.s.item_index]\
-                    .to_JSON(self.CAPOS[socket[0]]))
+                cur_item = json.loads(self.s.items[self.s.item_index]
+                                      .to_JSON(self.CAPOS[socket[0]]))
             await socket[0].send(json.dumps({
-                "action" : "update.item-index-update",
-                "params" : {
+                "action": "update.item-index-update",
+                "params": {
                     "item_index": self.s.item_index,
                     "slide_index": self.s.slide_index,
                     "current_item": cur_item
-                    }
-                }))
+                }
+            }))
 
     async def clients_service_items_update(self):
         """
@@ -344,9 +354,9 @@ class MalachiServer():
         """
         for socket in self.SOCKETS:
             await socket[0].send(json.dumps({
-                "action" : "update.service-overview-update",
-                "params" : json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[socket[0]]))
-                }))
+                "action": "update.service-overview-update",
+                "params": json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[socket[0]]))
+            }))
 
     # Screen capture commands
     async def start_capture(self, websocket, params):
@@ -368,8 +378,8 @@ class MalachiServer():
         self.scap.stop()
         for socket in self.MONITOR_SOCKETS:
             await socket[0].send(json.dumps({
-                "action" : "update.stop-capture",
-                "params" : {}
+                "action": "update.stop-capture",
+                "params": {}
             }))
         await self.server_response(websocket, "response.stop-capture", status, details)
 
@@ -439,9 +449,9 @@ class MalachiServer():
         """
         self.LOCKED_SOCKETS.add(websocket)
         await websocket.send(json.dumps({
-            "action" : "result.capture-update",
-            "params" : {"capture_src": self.last_cap,\
-                "width": self.scap.mon_w, "height": self.scap.mon_h}
+            "action": "result.capture-update",
+            "params": {"capture_src": self.last_cap,
+                       "width": self.scap.mon_w, "height": self.scap.mon_h}
         }))
 
     async def create_song(self, websocket, params):
@@ -671,9 +681,9 @@ class MalachiServer():
                 old_start = self.s.items[self.s.item_index].start_id
                 old_end = self.s.items[self.s.item_index].end_id
                 new_version = params["version"]
-                new_start = BiblePassage.translate_verse_id(\
+                new_start = BiblePassage.translate_verse_id(
                     old_start, old_version, new_version, self.bible_versions)
-                new_end = BiblePassage.translate_verse_id(\
+                new_end = BiblePassage.translate_verse_id(
                     old_end, old_version, new_version, self.bible_versions)
                 new_passage = BiblePassage(
                     new_version, new_start, new_end,
@@ -691,10 +701,11 @@ class MalachiServer():
                     # Find the slide in new_passage that contains the start of this verse
                     new_slide_index, new_verse_count = -1, 0
                     while new_verse_count < verse_count and \
-                        new_slide_index < len(new_passage.slides):
+                            new_slide_index < len(new_passage.slides):
                         new_slide_index += 1
                         new_verse_count += \
-                            len(re.findall("<sup>", new_passage.slides[new_slide_index]))
+                            len(re.findall(
+                                "<sup>", new_passage.slides[new_slide_index]))
                     self.s.slide_index = new_slide_index
                 # Replace item in service with new passage
                 del self.s.items[self.s.item_index]
@@ -771,11 +782,11 @@ class MalachiServer():
         self.screen_state = params["state"]
         for socket in self.DISPLAY_STATE_SOCKETS:
             await socket[0].send(json.dumps({
-                "action" : "update.display-state",
-                "params" : {
+                "action": "update.display-state",
+                "params": {
                     "state": self.screen_state
-                    }
-                }))
+                }
+            }))
         await self.server_response(websocket, "response.set-display-state", "ok", "")
 
     async def new_service(self, websocket, params):
@@ -810,7 +821,8 @@ class MalachiServer():
         status, details = "ok", ""
         if not self.s.modified or params["force"]:
             try:
-                self.s.load_service(params["filename"], self.screen_style, self.bible_versions)
+                self.s.load_service(
+                    params["filename"], self.screen_style, self.bible_versions)
             except InvalidServiceUrlError as e:
                 self.s = Service()
                 status, details = "invalid-url", e.msg
@@ -874,8 +886,46 @@ class MalachiServer():
                     }
                 }))
         else:
-            status, details = "invalid-param", "Invalid style parameter: " + params["param"]
+            status, details = "invalid-param", "Invalid style parameter: " + \
+                params["param"]
         await self.server_response(websocket, "response.edit-style-param", status, details)
+
+    async def edit_style_params(self, websocket, params):
+        """
+        Edit one or more parameters of the screen style and send update to appropriate clients.
+
+        Arguments:
+        params["style_params"] -- the array of parameters to be edited, each element of the form
+          { "param": param_name, "value": new_value }.
+        """
+        status, details = "ok", ""
+        invalid_params = []
+        for style_param in params["style_params"]:
+            if style_param["param"] in self.screen_style:
+                self.screen_style[style_param["param"]] = style_param["value"]
+            else:
+                invalid_params.append(style_param["param"])
+        if not invalid_params:
+            # Repaginate in new style
+            for i in range(len(self.s.items)):
+                if isinstance(self.s.items[i], Song):
+                    self.s.items[i].get_nonslide_data()
+                    self.s.items[i].paginate_from_style(self.screen_style)
+                elif isinstance(self.s.items[i], BiblePassage):
+                    self.s.items[i].paginate_from_style(self.screen_style)
+            await self.clients_service_items_update()
+            self.save_settings()
+            for socket in self.STYLE_STATE_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action": "update.style-update",
+                    "params": {
+                        "style": self.screen_style
+                    }
+                }))
+        else:
+            status, details = "invalid-params", "Invalid style parameters: " + \
+                ', '.join(invalid_params)
+        await self.server_response(websocket, "response.edit-style-params", status, details)
 
     async def set_loop(self, websocket, params):
         """
@@ -887,7 +937,7 @@ class MalachiServer():
         status, details = "ok", ""
         url = params["url"]
         if os.path.isfile(url) and \
-            (url.endswith('.mpg') or url.endswith('mp4') or url.endswith('mov')):
+                (url.endswith('.mpg') or url.endswith('mp4') or url.endswith('mov')):
             self.video_loop = url
             vid = cv2.VideoCapture(url)
             self.loop_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -927,9 +977,9 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Video":
             for socket in self.MEDIA_SOCKETS:
                 await socket[0].send(json.dumps({
-                    "action" : "trigger.play-video",
-                    "params" : {}
-                    }))
+                    "action": "trigger.play-video",
+                    "params": {}
+                }))
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.play-video", status, details)
@@ -940,9 +990,9 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Video":
             for socket in self.MEDIA_SOCKETS:
                 await socket[0].send(json.dumps({
-                    "action" : "trigger.pause-video",
-                    "params" : {}
-                    }))
+                    "action": "trigger.pause-video",
+                    "params": {}
+                }))
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.pause-video", status, details)
@@ -953,9 +1003,9 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Video":
             for socket in self.MEDIA_SOCKETS:
                 await socket[0].send(json.dumps({
-                    "action" : "trigger.stop-video",
-                    "params" : {}
-                    }))
+                    "action": "trigger.stop-video",
+                    "params": {}
+                }))
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.stop-video", status, details)
@@ -973,13 +1023,14 @@ class MalachiServer():
             if 0 <= sec <= self.s.items[self.s.item_index].get_duration():
                 for socket in self.MEDIA_SOCKETS:
                     await socket[0].send(json.dumps({
-                        "action" : "trigger.seek-video",
-                        "params" : {
+                        "action": "trigger.seek-video",
+                        "params": {
                             "seconds": int(params["seconds"])
                         }
                     }))
             else:
-                status, details = "invalid-time", "Invalid seek time: " + str(params["seconds"])
+                status, details = "invalid-time", "Invalid seek time: " + \
+                    str(params["seconds"])
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.seek-video", status, details)
@@ -1030,7 +1081,8 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Song":
             idx = self.s.item_index
             new_transpose = (self.s.items[idx].transpose_by + 1) % 12
-            Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
+            Song.edit_song(self.s.items[idx].song_id, {
+                           "transpose_by": new_transpose})
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
             self.s.items[idx].paginate_from_style(self.screen_style)
@@ -1046,7 +1098,8 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Song":
             idx = self.s.item_index
             new_transpose = (self.s.items[idx].transpose_by - 1) % 12
-            Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
+            Song.edit_song(self.s.items[idx].song_id, {
+                           "transpose_by": new_transpose})
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
             self.s.items[idx].paginate_from_style(self.screen_style)
@@ -1067,8 +1120,10 @@ class MalachiServer():
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Song":
             idx = self.s.item_index
-            new_transpose = (self.s.items[idx].transpose_by + int(params["amount"])) % 12
-            Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
+            new_transpose = (
+                self.s.items[idx].transpose_by + int(params["amount"])) % 12
+            Song.edit_song(self.s.items[idx].song_id, {
+                           "transpose_by": new_transpose})
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
             self.s.items[idx].paginate_from_style(self.screen_style)
@@ -1095,12 +1150,12 @@ class MalachiServer():
         details -- blank if the action was successfully performed, details of the error otherwise.
         """
         await websocket.send(json.dumps({
-            "action" : action,
-            "params" : {
+            "action": action,
+            "params": {
                 "status": status,
                 "details": details
-                }
-            }))
+            }
+        }))
 
     # Client functions - response to client only
     async def set_capo(self, websocket, params):
@@ -1114,15 +1169,16 @@ class MalachiServer():
         if not self.s.items:
             cur_item = {}
         else:
-            cur_item = json.loads(self.s.items[self.s.item_index].to_JSON(self.CAPOS[websocket]))
+            cur_item = json.loads(
+                self.s.items[self.s.item_index].to_JSON(self.CAPOS[websocket]))
         await websocket.send(json.dumps({
-            "action" : "update.item-index-update",
-            "params" : {
+            "action": "update.item-index-update",
+            "params": {
                 "item_index": self.s.item_index,
                 "slide_index": self.s.slide_index,
                 "current_item": cur_item
-                }
-            }))
+            }
+        }))
 
     # Query functions - response to client only
     async def bible_text_query(self, websocket, params):
@@ -1137,8 +1193,8 @@ class MalachiServer():
         """
         status, verses = "ok", []
         try:
-            verses = json.loads(BiblePassage.text_search(params["version"], \
-                params["search-text"], self.bible_versions))
+            verses = json.loads(BiblePassage.text_search(params["version"],
+                                                         params["search-text"], self.bible_versions))
         except InvalidVersionError:
             status = "invalid-version"
         except MalformedReferenceError:
@@ -1163,8 +1219,8 @@ class MalachiServer():
         """
         status, details, verses = "ok", "", []
         try:
-            verses = json.loads(BiblePassage.ref_search(params["version"], \
-                params["search-ref"], self.bible_versions))
+            verses = json.loads(BiblePassage.ref_search(params["version"],
+                                                        params["search-ref"], self.bible_versions))
         except InvalidVersionError as search_e:
             status, details = "invalid-version", search_e.msg
         except MalformedReferenceError as search_e:
@@ -1207,7 +1263,8 @@ class MalachiServer():
         """
         status, data = "ok", {}
         try:
-            data = json.loads(Song(params["song-id"], self.screen_style).to_JSON_full_data())
+            data = json.loads(
+                Song(params["song-id"], self.screen_style).to_JSON_full_data())
         except InvalidSongIdError:
             status = "invalid-id"
         finally:
@@ -1237,7 +1294,8 @@ class MalachiServer():
         """
         status, books = "ok", []
         try:
-            books = BiblePassage.get_books(params["version"], self.bible_versions)
+            books = BiblePassage.get_books(
+                params["version"], self.bible_versions)
         except InvalidVersionError:
             status = "invalid-version"
         finally:
@@ -1260,7 +1318,8 @@ class MalachiServer():
         """
         status, chapters = "ok", []
         try:
-            chapters = BiblePassage.get_chapter_structure(params["version"], self.bible_versions)
+            chapters = BiblePassage.get_chapter_structure(
+                params["version"], self.bible_versions)
         except InvalidVersionError:
             status = "invalid-version"
         finally:
@@ -1283,13 +1342,27 @@ class MalachiServer():
         }))
 
     async def request_all_loops(self, websocket, params):
-        """Return a list of all video URKS in the ./loops directory to websocket."""
+        """Return a list of all video URLs in the ./loops directory to websocket."""
         urls = ['./loops/' + f for f in os.listdir('./loops')
                 if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
         await websocket.send(json.dumps({
             "action": "result.all-loops",
             "params": {
                 "urls": urls
+            }
+        }))
+
+    async def request_all_backgrounds(self, websocket, params):
+        """Return a list of all background URLs in the ./backgrounds directory to websocket."""
+        urls = ['./backgrounds/' + f for f in os.listdir('./backgrounds')
+                if f.endswith('.jpg') or f.endswith('.JPG') or f.endswith('.png')]
+        bgs = [Background(url) for url in urls]
+        bg_json = [{"url": './backgrounds/' + bg.title, 
+            "width": bg.image_width, "height": bg.image_height} for bg in bgs]
+        await websocket.send(json.dumps({
+            "action": "result.all-backgrounds",
+            "params": {
+                "bg_data": bg_json
             }
         }))
 

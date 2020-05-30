@@ -1,49 +1,111 @@
 @font-face {
-    font-family: 'Inter Semi Bold';
-    font-style: normal;
-    src: local('Inter-SemiBold'), url(/html/fonts/Inter-SemiBold.otf) format('opentype');
+  font-family: "Inter Semi Bold";
+  font-style: normal;
+  src: local("Inter-SemiBold"),
+    url(/html/fonts/Inter-SemiBold.otf) format("opentype");
+}
+
+@font-face {
+  font-family: "Inter Medium";
+  font-style: normal;
+  src: local("Inter-Medium"),
+    url(/html/fonts/Inter-Medium.otf) format("opentype");
 }
 
 body {
-    margin: 0;
-    overflow: hidden;
-    background-color: #000000;
+  margin: 0;
+  overflow: hidden;
+  background-color: #000000;
 }
 
 #main_area {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 #loop_video {
-    position: absolute;
-    top: 0;
+  position: absolute;
+  top: 0;
 }
 
 #video_item {
-    position: absolute;
-    top: 0;
+  position: absolute;
+  top: 0;
+}
+
+#bg_image {
+  position: absolute;
+  top: 0;
 }
 
 #slide_area {
-    position: fixed;
-    top: 0;
-    color: white;
-    width: 80vw;
-    margin-left: 10vw;
-    margin-top: 10vh;
-    font-family: 'Inter Semi Bold';
-    font-size: 10vh;
-    text-shadow: rgb(0,0,0) 0.5vh 0.5vh 0px;
-    text-align: center
+  position: fixed;
+  top: 0;
+  color: white;
+  width: 80vw;
+  margin-left: 10vw;
+  margin-top: 10vh;
+  font-family: "Inter Semi Bold";
+  font-size: 10vh;
+  text-align: center;
+}
+
+.drop_shadow {
+  text-shadow: rgb(0, 0, 0) 0.05em 0.05em 0px;
+}
+
+.outline {
+  text-shadow: -0.025em -0.025em 0 #000, 0 -0.025em 0 #000,
+    0.025em -0.025em 0 #000, 0.025em 0 0 #000, 0.025em 0.025em 0 #000,
+    0 0.025em 0 #000, -0.025em 0.025em 0 #000, -0.025em 0 0 #000;
+}
+
+#copyright_area {
+  position: fixed;
+  bottom: 0;
+  left: 1em;
+  width: 50vw;
+  font-family: "Inter Medium";
+  font-size: 1vh;
+  color: white;
+  text-shadow: rgb(0, 0, 0) 0.1em 0.1em 0px;
+}
+
+#copyright_area p {
+  margin: 0 0 2vh 0;
+}
+
+#verseorder_area {
+  position: fixed;
+  bottom: 0;
+  right: 1em;
+  width: 45vw;
+  font-family: "Inter Medium";
+  font-size: 3vh;
+  color: white;
+  text-shadow: rgb(0, 0, 0) 0.1em 0.1em 0px;
+  text-align: right;
+}
+
+#verseorder_area span {
+  padding: 0.15em 0.25em;
+  display: inline-block;
+}
+
+#verseorder_area span.selected {
+  background-color: green;
+}
+
+#verseorder_area p {
+  margin: 0 0 2vh 0;
 }
 
 #slide_area p {
-    margin: 0;
+  margin: 0;
 }
 
 sup {
-    padding-right: 0.5em;
-    font-size: 0.5em;
+  padding-right: 0.5em;
+  font-size: 0.5em;
 }

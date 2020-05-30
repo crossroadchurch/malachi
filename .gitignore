@@ -9,3 +9,8 @@
 !/videos/.gitkeep
 /loops/*
 !/loops/.gitkeep
+/backgrounds/*
+!/backgrounds/.gitkeep
+!/backgrounds/thumbnails/
+/backgrounds/thumbnails/*
+!/backgrounds/thumbnails/.gitkeep

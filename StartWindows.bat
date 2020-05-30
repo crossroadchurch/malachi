@@ -1,0 +1,2 @@
+python StartWindows.py
+PAUSE

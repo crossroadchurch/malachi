@@ -17,6 +17,7 @@ from PIL import ImageFont
 from Chords import Chords
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError, MissingStyleParameterError
 
+
 class Song():
     """Represent a Song object in Malachi."""
 
@@ -42,11 +43,12 @@ class Song():
         self.parts = {}
         self.verse_order = ""
         self.part_slide_count = []
-        self.get_nonslide_data() # Must call before paginating slides
+        self.get_nonslide_data()  # Must call before paginating slides
         try:
             self.paginate_from_style(cur_style)
         except MissingStyleParameterError as style_error:
-            raise MissingStyleParameterError(style_error.msg[42:]) from style_error
+            raise MissingStyleParameterError(
+                style_error.msg[42:]) from style_error
 
     @classmethod
     def is_valid_song_id(cls, song_id):
@@ -67,7 +69,6 @@ class Song():
         result = cursor.fetchall()
         song_db.close()
         return bool(result)
-
 
     def get_nonslide_data(self):
         """Retrieve non-lyric Song data from the songs database."""
@@ -119,15 +120,17 @@ class Song():
                 p_key = "Capo {n} ({c})".format(n=capo, c=capo_key)
                 c_slides = []
                 for slide in self.slides:
-                    c_slides.append(Chords.transpose_section(slide, self.resultant_key, -int(capo)))
+                    c_slides.append(Chords.transpose_section(
+                        slide, self.resultant_key, -int(capo)))
         else:
             p_key, o_key = "", ""
             c_slides = self.slides
         return json.dumps({
-            "type":"song",
-            "song-id":self.song_id,
-            "title":self.title,
-            "slides":c_slides,
+            "type": "song",
+            "song-id": self.song_id,
+            "title": self.title,
+            "copyright": self.copyright,
+            "slides": c_slides,
             "played-key": p_key,
             "non-capo-key": o_key,
             "verse-order": self.verse_order,
@@ -144,7 +147,8 @@ class Song():
                 if combined_line == "[br]":
                     lc_data = lc_data + "[br]\n"
                 else:
-                    chords, lyrics = Chords.extract_chords_and_lyrics(combined_line)
+                    chords, lyrics = Chords.extract_chords_and_lyrics(
+                        combined_line)
                     if chords.strip() == "":
                         lc_data = lc_data + lyrics + "\n"
                     else:
@@ -198,7 +202,7 @@ class Song():
         max_lines -- the maximum number of lines to be displayed at any one time.
         font_file -- the URL of the font being used, relative to the root of Malachi.
         """
-        window_height = 800 # Arbitrary value chosen
+        window_height = 800  # Arbitrary value chosen
         window_width = window_height * float(aspect_ratio)
         font_size_px = window_height * int(font_size_vh) / 100
         div_width_px = window_width * int(div_width_vw) / 100
@@ -213,7 +217,8 @@ class Song():
         '''.format(s_id=self.song_id))
         result = cursor.fetchone()
 
-        self.parts = dict([x["part"], x["data"]] for x in json.loads(result[0]))
+        self.parts = dict([x["part"], x["data"]]
+                          for x in json.loads(result[0]))
         self.verse_order = result[1]
 
         # Create verse order if it is missing
@@ -229,11 +234,11 @@ class Song():
         self.slides = []
         self.part_slide_count = []
 
-        ### FOR EACH V1, C1 etc IN SONG ORDER:
+        # FOR EACH V1, C1 etc IN SONG ORDER:
         for slide in slide_temp:
-            m_slide_sections = slide.split("[br]") # Mandatory slide breaks
+            m_slide_sections = slide.split("[br]")  # Mandatory slide breaks
             section_length = 0
-            ### FOR EACH MANDATORY SLIDE SECTION
+            # FOR EACH MANDATORY SLIDE SECTION
             for m_slide_section in m_slide_sections:
                 # Transpose m_slide_section if appropriate:
                 if self.resultant_key != "" and self.transpose_by != 0:
@@ -250,11 +255,13 @@ class Song():
                     line_words = line.split(" ")
                     line_count, line_start, slide_start = 0, 0, 0
                     for i in range(len(line_words)):
-                        line_part_chorded = ' '.join(line_words[line_start:i+1])
-                        line_part = re.sub(r'\[[\w\+#\/]*\]', '', line_part_chorded)
+                        line_part_chorded = ' '.join(
+                            line_words[line_start:i+1])
+                        line_part = re.sub(
+                            r'\[[\w\+#\/]*\]', '', line_part_chorded)
                         if line_part:
                             size = font.getsize(line_part)
-                        else: # Zero length line
+                        else:  # Zero length line
                             size = [0, 0]
                         if size[0] > div_width_px:
                             line_count += 1
@@ -262,7 +269,8 @@ class Song():
                             # Line is longer than an entire slide, so break over two slides
                             # This is a very unlikely case...!
                             if line_count == int(max_lines):
-                                self.slides.append(' '.join(line_words[slide_start:i]))
+                                self.slides.append(
+                                    ' '.join(line_words[slide_start:i]))
                                 section_length += 1
                                 slide_start, line_count = i, 0
                     line_count += 1
@@ -383,10 +391,12 @@ class Song():
             else:
                 fields["title"] = fields["title"].strip()
                 # search_title only has alphanumeric characters and spaces
-                fields["search_title"] = ''.join(re.findall(r'[\w\s]*', fields["title"].lower()))
+                fields["search_title"] = ''.join(
+                    re.findall(r'[\w\s]*', fields["title"].lower()))
         if "song_key" in fields:
             if fields["song_key"] not in Chords.key_list:
-                raise InvalidSongFieldError("Unrecognised song key: " + fields["song_key"])
+                raise InvalidSongFieldError(
+                    "Unrecognised song key: " + fields["song_key"])
         if "transpose_by" in fields:
             if isinstance(fields["transpose_by"], int):
                 fields["transpose_by"] = fields["transpose_by"] % 12
@@ -426,7 +436,7 @@ class Song():
                         if line[-1] == "@":
                             if len(prev_line) >= 1 and prev_line[-1] == "@":
                                 # Previous line is chords
-                                section_data += Chords.combine_chords_and_lyrics(\
+                                section_data += Chords.combine_chords_and_lyrics(
                                     prev_line[:-1], "", song_key) + "\n"
                                 prev_line = line
                             elif not prev_line:
@@ -441,7 +451,7 @@ class Song():
                         elif line.strip() == "[br]":
                             if len(prev_line) >= 1 and prev_line[-1] == "@":
                                 # Previous line is chords
-                                section_data += Chords.combine_chords_and_lyrics(\
+                                section_data += Chords.combine_chords_and_lyrics(
                                     prev_line[:-1], "", song_key) + "\n[br]\n"
                                 prev_line = ""
                             elif not prev_line:
@@ -457,7 +467,7 @@ class Song():
                         else:
                             if len(prev_line) >= 1 and prev_line[-1] == "@":
                                 # Previous line is chords
-                                section_data += Chords.combine_chords_and_lyrics(\
+                                section_data += Chords.combine_chords_and_lyrics(
                                     prev_line[:-1], line, song_key) + "\n"
                                 prev_line = ""
                             elif not prev_line:
@@ -472,7 +482,7 @@ class Song():
                     # Deal with final line, if necessary
                     if len(prev_line) >= 1 and prev_line[-1] == "@":
                         # Final line is chords
-                        section_data += Chords.combine_chords_and_lyrics(\
+                        section_data += Chords.combine_chords_and_lyrics(
                             prev_line[:-1], "", song_key) + "\n"
                     elif prev_line:
                         # Final line is unprocesssed lyrics
@@ -488,9 +498,11 @@ class Song():
                     search_lyrics = search_lyrics + re.sub(
                         r'\[.*?\]', '', cur_section["data"].lower().replace('\n', ' ')) + " "
                 else:
-                    raise InvalidSongFieldError("lyrics_chords is not correctly formatted")
+                    raise InvalidSongFieldError(
+                        "lyrics_chords is not correctly formatted")
             search_lyrics = re.sub(r'[^a-zA-Z0-9\s]', '', search_lyrics)
-            fields["search_lyrics"] = ' '.join(search_lyrics.lower().split()) # Remove extra spaces
+            fields["search_lyrics"] = ' '.join(
+                search_lyrics.lower().split())  # Remove extra spaces
 
         # Create update query for all valid fields in param["fields"] and update song
         update_str = "UPDATE songs SET "
@@ -503,7 +515,8 @@ class Song():
         cursor = song_db.cursor()
         if len(update_str) > 17:
             if update_str[-2] == ",":
-                update_str = update_str[:-2] # Remove trailing comma, if it exists
+                # Remove trailing comma, if it exists
+                update_str = update_str[:-2]
             update_str = update_str + " WHERE id = ?"
             query_params.append(song_id)
             cursor.execute(update_str, tuple(query_params))

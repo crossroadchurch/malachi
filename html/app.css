@@ -1,190 +1,199 @@
 body {
-    margin: 0;
-    overflow: hidden;
-    background-color: #222222;
+  margin: 0;
+  overflow: hidden;
+  background-color: #222222;
 }
 
 #main_area {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 #controller_area {
-    width: 33vw;
-    height: 100vh;
-    float: left;
-    background-color: red;
+  width: 33vw;
+  height: 100vh;
+  float: left;
+  background-color: red;
 }
 
 #screen_view {
-    margin-top: 8px;
-    width: 70%;
-    padding-bottom: 50%;
-    position: relative;
-    left: 15%;
+  margin-top: 8px;
+  width: 70%;
+  padding-bottom: 50%;
+  position: relative;
+  left: 15%;
 }
 
 #screen_iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 #item_area {
-    width: 49vw;
-    height: 100vh;
-    float: left;
+  width: 49vw;
+  height: 100vh;
+  float: left;
 }
 
 #current_item {
-    overflow-y: scroll;
-    padding-top: 0.5em;
+  overflow-y: scroll;
+  padding-top: 0.5em;
 }
 
 #current_item_icon {
-    max-width: 1em;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
+  max-width: 1em;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
 }
 
-
 #elements_area {
-    width: 50vw;
-    height: 100vh;
-    float:left;
-    overflow-y: scroll;
+  width: 50vw;
+  height: 100vh;
+  float: left;
+  overflow-y: scroll;
 }
 
 .element_icon {
-    height: 24px;
-    width: 24px;
+  height: 24px;
+  width: 24px;
 }
 
 .service_icon {
-    height: 16px;
-    width: 16px;
+  height: 16px;
+  width: 16px;
 }
 
 #song_search_div {
-    width: 65%;
-    display: inline-block;
+  width: 65%;
+  display: inline-block;
 }
 
 #new_song_btn_div {
-    width: 25%;
-    display: inline-block;
-    padding-left: 5%;
+  width: 25%;
+  display: inline-block;
+  padding-left: 5%;
 }
 
 a.i-item {
-    padding-top: 3px;
-    padding-bottom: 3px;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
 .ui-icon-play::after {
-    background-image: url("/html/icons/icons8-play-48.png");
-    background-position: 3px 3px;
+  background-image: url("/html/icons/icons8-play-48.png");
+  background-position: 3px 3px;
 }
 
 .ui-icon-pause::after {
-    background-image: url("/html/icons/icons8-pause-48.png");
-    background-position: 3px 3px;
+  background-image: url("/html/icons/icons8-pause-48.png");
+  background-position: 3px 3px;
 }
 
 .ui-icon-stop::after {
-    background-image: url("/html/icons/icons8-stop-48.png");
-    background-position: 3px 3px;
+  background-image: url("/html/icons/icons8-stop-48.png");
+  background-position: 3px 3px;
 }
 
 .ui-icon-reload::after {
-    background-image: url("/html/icons/icons8-synchronize-24.png");
-    background-position: 3px 3px;
+  background-image: url("/html/icons/icons8-synchronize-24.png");
+  background-position: 3px 3px;
 }
 
 .video-ctrl-btn::after {
-    background-color: rgba(0,0,0,0) !important;
-    border-radius: 0 !important;
-    -webkit-border-radius: 0 !important;
-    left: 33% !important;
+  background-color: rgba(0, 0, 0, 0) !important;
+  border-radius: 0 !important;
+  -webkit-border-radius: 0 !important;
+  left: 33% !important;
 }
 
 #time_seek {
-    display: none;
+  display: none;
 }
 
 #time_seek_area .ui-slider-track {
-    margin-left: 15px;
+  margin-left: 15px;
 }
 
 /* Custom indentations are needed because the length of custom labels differs from
    the length of the standard labels */
 .custom-size-flipswitch.ui-flipswitch .ui-btn.ui-flipswitch-on {
-    text-indent: -7.4em;
+  text-indent: -7.4em;
 }
 .custom-size-flipswitch.ui-flipswitch .ui-flipswitch-off {
-    text-indent: 1em;
+  text-indent: 1em;
 }
 /* Custom widths are needed because the length of custom labels differs from
    the length of the standard labels */
 .custom-size-flipswitch.ui-flipswitch {
-    width: 11em;
+  width: 11em;
 }
 .custom-size-flipswitch.ui-flipswitch.ui-flipswitch-active {
-    padding-left: 9em;
-    width: 2em;
+  padding-left: 9em;
+  width: 2em;
 }
 @media (min-width: 28em) {
-    /*Repeated from rule .ui-flipswitch above*/
-    .ui-field-contain > label + .custom-size-flipswitch.ui-flipswitch {
-        width: 2em;
-    }
+  /*Repeated from rule .ui-flipswitch above*/
+  .ui-field-contain > label + .custom-size-flipswitch.ui-flipswitch {
+    width: 2em;
+  }
 }
 
 #e_lyrics {
-    height: 375px;
-    font-size: 0.9rem;
-    font-family: 'Courier New', Courier, monospace;
+  height: 375px;
+  font-size: 0.9rem;
+  font-family: "Courier New", Courier, monospace;
 }
 
 .inputless-slider input {
-    display: none !important;
+  display: none !important;
 }
 
 .inputless-slider .ui-slider-track {
-    margin-left: 15px;
+  margin-left: 15px;
 }
 
 #c_rate_slider .ui-slider-handle {
-    width: 4em;
+  width: 4em;
 }
 
 .toast {
-    text-shadow: none;
+  text-shadow: none;
 }
 
 .i-item sup {
-    padding-right: 0.5em;
-    font-size: 0.75em;
+  padding-right: 0.5em;
+  font-size: 0.75em;
 }
 
 a.i-item.selected {
-    background-color: gold !important;
+  background-color: gold !important;
 }
 
 a.i-item.selected:hover {
-    background-color: gold !important;
+  background-color: gold !important;
 }
 
 .edit-song-col-left {
-    padding-left: 5px !important;
-    padding-right: 10px !important;
+  padding-left: 5px !important;
+  padding-right: 10px !important;
 }
 
 .edit-song-col-right {
-    padding-left: 10px !important;
-    padding-right: 5px !important;
+  padding-left: 10px !important;
+  padding-right: 5px !important;
+}
+
+.style_header {
+  margin-bottom: 5px;
+}
+
+.style_group {
+  padding: 20px;
+  border: 1px solid #dddddd;
+  border-radius: 5px;
 }
