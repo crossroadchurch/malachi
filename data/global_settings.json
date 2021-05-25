@@ -5,6 +5,8 @@
     "div-width-vw": "90",
     "margin-top-vh": "8",
     "max-lines": "5",
+    "countdown-size-vh": "26",
+    "countdown-top-vh": "29",
     "font-file": "./html/fonts/Inter-SemiBold.otf",
     "font-color": "FFFFFF",
     "outline-style": "drop-shadow",
@@ -17,9 +19,9 @@
     "song-background-url": "none",
     "song-background-w": 1,
     "song-background-h": 1,
-    "bible-background-url": "./backgrounds/P1020862.JPG",
-    "bible-background-w": 4272,
-    "bible-background-h": 2856
+    "bible-background-url": "none",
+    "bible-background-w": 1,
+    "bible-background-h": 1
   },
   "capture_refresh": 250
 }

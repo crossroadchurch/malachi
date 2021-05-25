@@ -257,6 +257,8 @@ class MalachiServer():
                 "command.change-capture-monitor": [self.change_capture_monitor, ["monitor"]],
                 "command.change-capture-rate": [self.change_capture_rate, ["rate"]],
                 "command.unlock-socket": [self.unlock_socket, []],
+                "command.start-countdown": [self.start_countdown, ["seconds"]],
+                "command.clear-countdown": [self.clear_countdown, []],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
@@ -1034,6 +1036,41 @@ class MalachiServer():
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.seek-video", status, details)
+
+
+    async def start_countdown(self, websocket, params):
+        """
+        Send a message to appropriate clients to start a countdown of a specified length.
+
+        Arguments:
+        params["seconds"] -- the length, in seconds, of the countdown.
+        """
+        status, details = "ok", ""
+        sec = int(params["seconds"])
+        if sec > 0:
+            for socket in self.MEDIA_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action": "trigger.start-countdown",
+                    "params": {
+                        "seconds": int(params["seconds"])
+                    }
+                }))
+        else:
+            status, details = "invalid-time", "Invalid countdown time: " + \
+                str(params["seconds"])
+        await self.server_response(websocket, "response.start-countdown", status, details)
+
+
+    async def clear_countdown(self, websocket, params):
+        """Send a message to clear any running countdown."""
+        status, details = "ok", ""
+        for socket in self.MEDIA_SOCKETS:
+            await socket[0].send(json.dumps({
+                "action": "trigger.clear-countdown",
+                "params": {}
+            }))
+        await self.server_response(websocket, "response.clear-countdown", status, details)
+
 
     async def start_presentation(self, websocket, params):
         """Call LibreOffice to start the presentation of the current service item."""

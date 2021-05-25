@@ -25,7 +25,7 @@ let valid_keys = [
   "Ab",
   "A",
   "Bb",
-  "B"
+  "B",
 ];
 
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
@@ -46,7 +46,7 @@ toastr_info_options = {
   showEasing: "swing",
   hideEasing: "linear",
   showMethod: "fadeIn",
-  hideMethod: "fadeOut"
+  hideMethod: "fadeOut",
 };
 
 toastr_error_options = {
@@ -63,7 +63,7 @@ toastr_error_options = {
   showEasing: "swing",
   hideEasing: "linear",
   showMethod: "fadeIn",
-  hideMethod: "fadeOut"
+  hideMethod: "fadeOut",
 };
 
 toastr_ws_close_options = {
@@ -79,7 +79,7 @@ toastr_ws_close_options = {
   showEasing: "swing",
   hideEasing: "linear",
   showMethod: "fadeIn",
-  hideMethod: "fadeOut"
+  hideMethod: "fadeOut",
 };
 
 function change_screen_state_flip() {
@@ -87,7 +87,7 @@ function change_screen_state_flip() {
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
-      params: { state: str_state }
+      params: { state: str_state },
     })
   );
 }
@@ -96,15 +96,11 @@ function add_verses() {
   verses = $("input[name=v_list]:checked");
   version = $("#select_b_version").val();
   if (verses.length > 0) {
-    let range_start = $(verses[0])
-      .attr("id")
-      .substr(2);
+    let range_start = $(verses[0]).attr("id").substr(2);
     let prev_id = range_start - 1;
     let v_id;
     for (v = 0; v < verses.length; v++) {
-      v_id = $(verses[v])
-        .attr("id")
-        .substr(2);
+      v_id = $(verses[v]).attr("id").substr(2);
       if (v_id - prev_id == 1) {
         // Range continues from previous verse
         prev_id = v_id;
@@ -116,8 +112,8 @@ function add_verses() {
             params: {
               version: version,
               "start-verse": range_start,
-              "end-verse": prev_id
-            }
+              "end-verse": prev_id,
+            },
           })
         );
         range_start = v_id;
@@ -131,8 +127,8 @@ function add_verses() {
         params: {
           version: version,
           "start-verse": range_start,
-          "end-verse": v_id
-        }
+          "end-verse": v_id,
+        },
       })
     );
   }
@@ -162,7 +158,7 @@ function load_service(force) {
   websocket.send(
     JSON.stringify({
       action: "command.load-service",
-      params: { filename: sel_text, force: force }
+      params: { filename: sel_text, force: force },
     })
   );
 }
@@ -177,7 +173,7 @@ function save_service_as(elt) {
   websocket.send(
     JSON.stringify({
       action: "command.save-service-as",
-      params: { filename: clean_name }
+      params: { filename: clean_name },
     })
   );
   // Reset input for next time
@@ -195,7 +191,7 @@ function delete_item() {
   websocket.send(
     JSON.stringify({
       action: "command.remove-item",
-      params: { index: clicked_service_item }
+      params: { index: clicked_service_item },
     })
   );
 }
@@ -214,7 +210,7 @@ function goto_item() {
   websocket.send(
     JSON.stringify({
       action: "command.goto-item",
-      params: { index: clicked_service_item }
+      params: { index: clicked_service_item },
     })
   );
 }
@@ -245,8 +241,8 @@ function song_search() {
       JSON.stringify({
         action: "query.song-by-text",
         params: {
-          "search-text": song_val
-        }
+          "search-text": song_val,
+        },
       })
     );
   } else {
@@ -258,36 +254,28 @@ function bible_search() {
   if (
     $("input[name=b_search_type]:checked").attr("id") == "b_search_type_ref"
   ) {
-    if (
-      $("#bible_search")
-        .val()
-        .trim() !== ""
-    ) {
+    if ($("#bible_search").val().trim() !== "") {
       websocket.send(
         JSON.stringify({
           action: "query.bible-by-ref",
           params: {
             version: $("#select_b_version").val(),
-            "search-ref": $("#bible_search").val()
-          }
+            "search-ref": $("#bible_search").val(),
+          },
         })
       );
     } else {
       $("#passage_list div").html("");
     }
   } else {
-    if (
-      $("#bible_search")
-        .val()
-        .trim().length > 2
-    ) {
+    if ($("#bible_search").val().trim().length > 2) {
       websocket.send(
         JSON.stringify({
           action: "query.bible-by-text",
           params: {
             version: $("#select_b_version").val(),
-            "search-text": $("#bible_search").val()
-          }
+            "search-text": $("#bible_search").val(),
+          },
         })
       );
     } else {
@@ -309,7 +297,7 @@ function add_song() {
   websocket.send(
     JSON.stringify({
       action: "command.add-song-item",
-      params: { "song-id": clicked_song_id }
+      params: { "song-id": clicked_song_id },
     })
   );
 }
@@ -318,7 +306,7 @@ function edit_song() {
   websocket.send(
     JSON.stringify({
       action: "request.full-song",
-      params: { "song-id": clicked_song_id }
+      params: { "song-id": clicked_song_id },
     })
   );
 }
@@ -346,9 +334,7 @@ function refresh_backgrounds() {
 function video_tick() {
   video_timer += 1;
   if (update_slider == true) {
-    $("#time_seek")
-      .val(video_timer)
-      .slider("refresh");
+    $("#time_seek").val(video_timer).slider("refresh");
   }
 }
 
@@ -364,6 +350,15 @@ function stop_video() {
   websocket.send(JSON.stringify({ action: "command.stop-video", params: {} }));
 }
 
+function start_countdown() {
+  var cd_length = $("#cd_time").val() * 60;
+  websocket.send(JSON.stringify({ action: "command.start-countdown", params: { seconds: cd_length }}))
+}
+
+function clear_countdown() {
+  websocket.send(JSON.stringify({ action: "command.clear-countdown", params: {}}));
+}
+
 function update_capturing() {
   mon = $("#capture_source_chooser")[0].value;
   if (mon == 0) {
@@ -376,7 +371,7 @@ function update_capturing() {
     websocket.send(
       JSON.stringify({
         action: "command.start-capture",
-        params: { monitor: parseInt(mon) }
+        params: { monitor: parseInt(mon) },
       })
     );
   }
@@ -398,9 +393,7 @@ function create_song() {
   $("#e_copyright").val("");
   $("#e_lyrics").val("<V1>\n");
   $("#e_order").val("");
-  $("#e_key")
-    .val("")
-    .change();
+  $("#e_key").val("").change();
   $("#e_transpose").val(0);
   $("#e_transpose_div a").html("");
   // Switch into create song mode
@@ -418,11 +411,7 @@ function reset_edit_song_form() {
 
 function save_song() {
   // Validation: title can't be empty, other validation carried out by server
-  if (
-    $("#e_title")
-      .val()
-      .trim() == ""
-  ) {
+  if ($("#e_title").val().trim() == "") {
     $("label[for=e_title").css("color", "red");
     $("label[for=e_title").css("font-weight", "bold");
   } else {
@@ -461,12 +450,10 @@ function save_song() {
       author: $("#e_author").val(),
       transpose_by: $("#e_transpose").val() % 12,
       lyrics_chords: parts,
-      verse_order: $("#e_order")
-        .val()
-        .toLowerCase(),
+      verse_order: $("#e_order").val().toLowerCase(),
       song_book_name: $("#e_book").val(),
       song_number: $("#e_number").val(),
-      copyright: $("#e_copyright").val()
+      copyright: $("#e_copyright").val(),
     };
     // Deal with optional field
     if ($("#e_key").val() != null) {
@@ -480,8 +467,8 @@ function save_song() {
           action: "command.edit-song",
           params: {
             "song-id": clicked_song_id,
-            fields: fields
-          }
+            fields: fields,
+          },
         })
       );
     } else {
@@ -490,8 +477,8 @@ function save_song() {
           action: "command.create-song",
           params: {
             title: $("#e_title").val(),
-            fields: fields
-          }
+            fields: fields,
+          },
         })
       );
     }
@@ -500,14 +487,11 @@ function save_song() {
 }
 
 function add_video(elt) {
-  elt_text = $(elt)
-    .children()
-    .first()
-    .html();
+  elt_text = $(elt).children().first().html();
   websocket.send(
     JSON.stringify({
       action: "command.add-video",
-      params: { url: "./videos/" + elt_text.substr(elt_text.indexOf(">") + 1) }
+      params: { url: "./videos/" + elt_text.substr(elt_text.indexOf(">") + 1) },
     })
   );
 }
@@ -517,26 +501,18 @@ function add_presentation(elt) {
     JSON.stringify({
       action: "command.add-presentation",
       params: {
-        url:
-          "./presentations/" +
-          $(elt)
-            .children()
-            .first()
-            .html()
-      }
+        url: "./presentations/" + $(elt).children().first().html(),
+      },
     })
   );
 }
 
 function set_loop(elt) {
-  elt_text = $(elt)
-    .children()
-    .first()
-    .html();
+  elt_text = $(elt).children().first().html();
   websocket.send(
     JSON.stringify({
       action: "command.set-loop",
-      params: { url: "./loops/" + elt_text.substr(elt_text.indexOf(">") + 1) }
+      params: { url: "./loops/" + elt_text.substr(elt_text.indexOf(">") + 1) },
     })
   );
 }
@@ -550,14 +526,14 @@ function toggle_display_state() {
     websocket.send(
       JSON.stringify({
         action: "command.set-display-state",
-        params: { state: "off" }
+        params: { state: "off" },
       })
     );
   } else {
     websocket.send(
       JSON.stringify({
         action: "command.set-display-state",
-        params: { state: "on" }
+        params: { state: "on" },
       })
     );
   }
@@ -570,15 +546,11 @@ function display_current_item(current_item, slide_index) {
   // Reset video seek track
   clearInterval(video_interval);
   video_timer = 0;
-  $("#time_seek")
-    .val(video_timer)
-    .slider("refresh");
+  $("#time_seek").val(video_timer).slider("refresh");
 
   // Reset capture source, stopping any running capture sessions
   if ($("#capture_source_chooser")[0].value !== "0") {
-    $("#capture_source_chooser")
-      .val("0")
-      .change();
+    $("#capture_source_chooser").val("0").change();
   }
 
   if (current_item.type == "song") {
@@ -596,23 +568,17 @@ function display_current_item(current_item, slide_index) {
     cur_title = current_item.title;
     v_start = cur_title.indexOf("(") + 1;
     v_end = cur_title.indexOf(")");
-    $("#version_changer")
-      .parent()
-      .css("display", "inline-block");
+    $("#version_changer").parent().css("display", "inline-block");
     $("#version_changer")
       .val(cur_title.substr(v_start, v_end - v_start))
       .selectmenu("refresh");
   } else {
-    $("#version_changer")
-      .parent()
-      .css("display", "none");
+    $("#version_changer").parent().css("display", "none");
   }
 
   if (current_item.type == "video") {
     $("#video_controls").css("display", "block");
-    $("#time_seek")
-      .prop("max", current_item.duration)
-      .slider("refresh");
+    $("#time_seek").prop("max", current_item.duration).slider("refresh");
   } else {
     $("#video_controls").css("display", "none");
   }
@@ -652,7 +618,7 @@ function display_current_item(current_item, slide_index) {
   }
   $("#current_item_list").html(item_list);
   $("#current_item_list").listview("refresh");
-  $("#current_item_list a.i-item").on("click", function(event, ui) {
+  $("#current_item_list a.i-item").on("click", function (event, ui) {
     goto_slide($(this).data("id"));
   });
 
@@ -697,39 +663,23 @@ function indicate_current_item(item_index) {
 }
 
 function update_style_sliders(style) {
-  $("#s_width")
-    .val(style["div-width-vw"])
-    .slider("refresh");
-  $("#s_font_size")
-    .val(style["font-size-vh"])
-    .slider("refresh");
-  $("#s_lines")
-    .val(style["max-lines"])
-    .slider("refresh");
-  $("#s_margin")
-    .val(style["margin-top-vh"])
-    .slider("refresh");
-  $("#o_style")
-    .val(style["outline-style"])
-    .selectmenu("refresh");
+  $("#s_width").val(style["div-width-vw"]).slider("refresh");
+  $("#s_font_size").val(style["font-size-vh"]).slider("refresh");
+  $("#s_lines").val(style["max-lines"]).slider("refresh");
+  $("#s_margin").val(style["margin-top-vh"]).slider("refresh");
+  $("#o_style").val(style["outline-style"]).selectmenu("refresh");
+  $("#cd_size").val(style["countdown-size-vh"]).slider("refresh");
+  $("#cd_top").val(style["countdown-top-vh"]).slider("refresh");
   $("#d_copyright")
     .prop("checked", style["display-copyright"])
     .flipswitch("refresh");
-  $("#cp_size")
-    .val(style["copy-size-vh"])
-    .slider("refresh");
-  $("#cp_width")
-    .val(style["copy-width-vw"])
-    .slider("refresh");
+  $("#cp_size").val(style["copy-size-vh"]).slider("refresh");
+  $("#cp_width").val(style["copy-width-vw"]).slider("refresh");
   $("#d_verseorder")
     .prop("checked", style["display-verseorder"])
     .flipswitch("refresh");
-  $("#vo_size")
-    .val(style["order-size-vh"])
-    .slider("refresh");
-  $("#vo_width")
-    .val(style["order-width-vw"])
-    .slider("refresh");
+  $("#vo_size").val(style["order-size-vh"]).slider("refresh");
+  $("#vo_width").val(style["order-width-vw"]).slider("refresh");
   $("#t_color").val(style["font-color"]);
   // Update background status items
   if (style["song-background-url"] == "none") {
@@ -768,28 +718,18 @@ function json_toast_response(json_data, success_message, error_message) {
 }
 
 function setup_service_list_handlers() {
-  $("#service_list a.popup-trigger").on("click", function(event, ui) {
-    if (
-      $(this)
-        .parent()
-        .children()
-        .first()
-        .data("songid") !== undefined
-    ) {
+  $("#service_list a.popup-trigger").on("click", function (event, ui) {
+    if ($(this).parent().children().first().data("songid") !== undefined) {
       $("#btn_popup_edit_song").css("display", "inline-block");
       clicked_song_id = parseInt(
-        $(this)
-          .parent()
-          .children()
-          .first()
-          .data("songid")
+        $(this).parent().children().first().data("songid")
       );
     } else {
       $("#btn_popup_edit_song").css("display", "none");
     }
     clicked_service_item = $(this).data("id");
   });
-  $("#service_list a.s-item").on("dblclick", function(event, ui) {
+  $("#service_list a.s-item").on("dblclick", function (event, ui) {
     clicked_service_item = $(this).data("id");
     goto_item();
   });
@@ -812,9 +752,9 @@ function set_background_songs() {
         style_params: [
           { param: "song-background-url", value: clicked_background },
           { param: "song-background-w", value: clicked_background_w },
-          { param: "song-background-h", value: clicked_background_h }
-        ]
-      }
+          { param: "song-background-h", value: clicked_background_h },
+        ],
+      },
     })
   );
 }
@@ -827,9 +767,9 @@ function set_background_bible() {
         style_params: [
           { param: "bible-background-url", value: clicked_background },
           { param: "bible-background-w", value: clicked_background_w },
-          { param: "bible-background-h", value: clicked_background_h }
-        ]
-      }
+          { param: "bible-background-h", value: clicked_background_h },
+        ],
+      },
     })
   );
 }
@@ -845,9 +785,9 @@ function set_background_both() {
           { param: "song-background-h", value: clicked_background_h },
           { param: "bible-background-url", value: clicked_background },
           { param: "bible-background-w", value: clicked_background_w },
-          { param: "bible-background-h", value: clicked_background_h }
-        ]
-      }
+          { param: "bible-background-h", value: clicked_background_h },
+        ],
+      },
     })
   );
 }
@@ -860,9 +800,9 @@ function remove_song_background() {
         style_params: [
           { param: "song-background-url", value: "none" },
           { param: "song-background-w", value: 1 },
-          { param: "song-background-h", value: 1 }
-        ]
-      }
+          { param: "song-background-h", value: 1 },
+        ],
+      },
     })
   );
 }
@@ -875,9 +815,9 @@ function remove_bible_background() {
         style_params: [
           { param: "bible-background-url", value: "none" },
           { param: "bible-background-w", value: 1 },
-          { param: "bible-background-h", value: 1 }
-        ]
-      }
+          { param: "bible-background-h", value: 1 },
+        ],
+      },
     })
   );
 }
@@ -885,7 +825,7 @@ function remove_bible_background() {
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
-  websocket.onmessage = function(event) {
+  websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     console.log(json_data);
     switch (json_data.action) {
@@ -921,9 +861,7 @@ function start_websocket() {
         update_style_sliders(json_data.params.style);
 
         // Update capture refresh rate slider
-        $("#c_rate")
-          .val(json_data.params["refresh_rate"])
-          .slider("refresh");
+        $("#c_rate").val(json_data.params["refresh_rate"]).slider("refresh");
 
         // Populate service plan list
         service_list = "";
@@ -960,9 +898,7 @@ function start_websocket() {
           current_item = json_data.params.items[json_data.params.item_index];
           display_current_item(current_item, json_data.params.slide_index);
         } else {
-          $("#version_changer")
-            .parent()
-            .css("display", "none");
+          $("#version_changer").parent().css("display", "none");
           $("#video_controls").css("display", "none");
           $("#presentation_controls").css("display", "none");
           $("#current_item_icon").attr("src", icon_dict["song"]);
@@ -1029,9 +965,7 @@ function start_websocket() {
           current_item = json_data.params.current_item;
           display_current_item(current_item, json_data.params.slide_index);
         } else {
-          $("#version_changer")
-            .parent()
-            .css("display", "none");
+          $("#version_changer").parent().css("display", "none");
           $("#video_controls").css("display", "none");
           $("#presentation_controls").css("display", "none");
           $("#current_item_icon").attr("src", icon_dict["song"]);
@@ -1072,9 +1006,7 @@ function start_websocket() {
         break;
 
       case "update.capture-rate":
-        $("#c_rate")
-          .val(json_data.params["refresh_rate"])
-          .slider("refresh");
+        $("#c_rate").val(json_data.params["refresh_rate"]).slider("refresh");
         break;
 
       case "result.all-presentations":
@@ -1137,7 +1069,7 @@ function start_websocket() {
         }
         $("#background_list").html(bg_list);
         $("#background_list").listview("refresh");
-        $("#background_list a.popup-trigger").on("click", function(event, ui) {
+        $("#background_list a.popup-trigger").on("click", function (event, ui) {
           clicked_background = $(this).data("id");
           clicked_background_w = $(this).data("width");
           clicked_background_h = $(this).data("height");
@@ -1163,9 +1095,7 @@ function start_websocket() {
           }
           $("#e_lyrics").val(lyrics);
           $("#e_order").val(full_song["verse-order"].toUpperCase());
-          $("#e_key")
-            .val(full_song["song-key"])
-            .change();
+          $("#e_key").val(full_song["song-key"]).change();
           t_val = full_song["transpose-by"];
           $("#e_transpose")
             .val((t_val + 12) % 12)
@@ -1223,7 +1153,7 @@ function start_websocket() {
         }
         $("#song_list").html(song_list);
         $("#song_list").listview("refresh");
-        $("#song_list a.popup-trigger").on("click", function(event, ui) {
+        $("#song_list a.popup-trigger").on("click", function (event, ui) {
           clicked_song_id = $(this).data("id");
         });
         break;
@@ -1270,9 +1200,7 @@ function start_websocket() {
             );
           }
           $('#load_files_radio input[type="radio"]').checkboxradio();
-          $("#files-0")
-            .prop("checked", true)
-            .checkboxradio("refresh"); // Select item 0
+          $("#files-0").prop("checked", true).checkboxradio("refresh"); // Select item 0
           $("#popup_btn_load_service").removeClass("ui-state-disabled");
         } else {
           $("#load_files_radio div").append(
@@ -1303,9 +1231,7 @@ function start_websocket() {
               "</option>"
           );
         }
-        $("#select_b_version")
-          .val(json_data.params.versions[0])
-          .change();
+        $("#select_b_version").val(json_data.params.versions[0]).change();
         if ($("#current_item_icon")[0].src.indexOf(icon_dict["bible"]) > -1) {
           // Current item is a Bible passage so update version changer
           cur_title = $("#current_item_name")[0].innerHTML;
@@ -1361,15 +1287,11 @@ function start_websocket() {
       case "trigger.stop-video":
         clearInterval(video_interval);
         video_timer = 0;
-        $("#time_seek")
-          .val(video_timer)
-          .slider("refresh");
+        $("#time_seek").val(video_timer).slider("refresh");
         break;
       case "trigger.seek-video":
         video_timer = json_data.params.seconds;
-        $("#time_seek")
-          .val(video_timer)
-          .slider("refresh");
+        $("#time_seek").val(video_timer).slider("refresh");
         break;
 
       case "response.add-video":
@@ -1475,12 +1397,16 @@ function start_websocket() {
       case "response.edit-style-param":
       case "response.edit-style-params":
       case "response.change-capture-rate":
+      case "response.start-countdown":
+      case "trigger.start-countdown":
+      case "response.clear-countdown":
+      case "trigger.clear-countdown":
         break; // No action required;
       default:
         console.error("Unsupported event", json_data);
     }
   };
-  websocket.onclose = function(event) {
+  websocket.onclose = function (event) {
     if (event.wasClean == false) {
       toastr.options = toastr_ws_close_options;
       toastr.error(
@@ -1492,9 +1418,9 @@ function start_websocket() {
   };
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   $("#elements_area").tabs();
-  $(".ui-tabs-anchor").keydown(function(event) {
+  $(".ui-tabs-anchor").keydown(function (event) {
     key_code = event.which ? event.which : event.keyCode;
     var e = $.Event("keydown");
     e.which = key_code;
@@ -1502,40 +1428,40 @@ $(document).ready(function() {
     return false;
   });
   $("#service_list").sortable();
-  $("#service_list").on("sortstart", function(event, ui) {
+  $("#service_list").on("sortstart", function (event, ui) {
     service_sort_start = ui.item.index();
   });
-  $("#service_list").on("sortupdate", function(event, ui) {
+  $("#service_list").on("sortupdate", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.move-item",
         params: {
           "from-index": service_sort_start,
-          "to-index": ui.item.index()
-        }
+          "to-index": ui.item.index(),
+        },
       })
     );
   });
 
-  $("#song_search_div .ui-input-clear").on("click", function(e) {
+  $("#song_search_div .ui-input-clear").on("click", function (e) {
     song_search();
   });
 
-  $("#bible_search_div .ui-input-clear").on("click", function(e) {
+  $("#bible_search_div .ui-input-clear").on("click", function (e) {
     bible_search();
   });
-  $("#bible_search").on("keypress", function(e) {
+  $("#bible_search").on("keypress", function (e) {
     key_code = e.which ? e.which : e.keyCode;
     if (key_code == 13) {
       bible_search();
     }
   });
 
-  $("#version_changer").on("change", function() {
+  $("#version_changer").on("change", function () {
     websocket.send(
       JSON.stringify({
         action: "command.change-bible-version",
-        params: { version: $("#version_changer").val() }
+        params: { version: $("#version_changer").val() },
       })
     );
   });
@@ -1543,172 +1469,191 @@ $(document).ready(function() {
   $("#e_transpose").on("change", update_transpose_slider);
   $("#e_key").on("change", update_transpose_slider);
 
-  $("#time_seek")
-    .parent()
-    .find("a")
-    .css("display", "none");
+  $("#time_seek").parent().find("a").css("display", "none");
 
-  $("#s_width").on("slidestop", function(event, ui) {
+  $("#s_width").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "div-width-vw",
-          value: $("#s_width").val()
-        }
+          value: $("#s_width").val(),
+        },
       })
     );
   });
 
-  $("#s_font_size").on("slidestop", function(event, ui) {
+  $("#s_font_size").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "font-size-vh",
-          value: $("#s_font_size").val()
-        }
+          value: $("#s_font_size").val(),
+        },
       })
     );
   });
 
-  $("#s_lines").on("slidestop", function(event, ui) {
+  $("#s_lines").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "max-lines",
-          value: $("#s_lines").val()
-        }
+          value: $("#s_lines").val(),
+        },
       })
     );
   });
 
-  $("#s_margin").on("slidestop", function(event, ui) {
+  $("#s_margin").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "margin-top-vh",
-          value: $("#s_margin").val()
-        }
+          value: $("#s_margin").val(),
+        },
       })
     );
   });
 
-  $("#c_rate").on("slidestop", function(event, ui) {
+  $("#c_rate").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.change-capture-rate",
         params: {
-          rate: $("#c_rate").val()
-        }
+          rate: $("#c_rate").val(),
+        },
       })
     );
   });
 
-  $("#t_color").on("change", function(event, ui) {
+  $("#t_color").on("change", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "font-color",
-          value: $("#t_color").val()
-        }
+          value: $("#t_color").val(),
+        },
       })
     );
   });
 
-  $("#o_style").on("change", function(event, ui) {
+  $("#o_style").on("change", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "outline-style",
-          value: $("#o_style").val()
-        }
+          value: $("#o_style").val(),
+        },
       })
     );
   });
 
-  $("#d_copyright").on("change", function(event, ui) {
+  $("#cd_size").on("slidestop", function (event, ui) {
+    websocket.send(
+      JSON.stringify({
+        action: "command.edit-style-param",
+        params: {
+          param: "countdown-size-vh",
+          value: $("#cd_size").val(),
+        },
+      })
+    );
+  });
+
+  $("#cd_top").on("slidestop", function (event, ui) {
+    websocket.send(
+      JSON.stringify({
+        action: "command.edit-style-param",
+        params: {
+          param: "countdown-top-vh",
+          value: $("#cd_top").val(),
+        },
+      })
+    );
+  });
+
+  $("#d_copyright").on("change", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "display-copyright",
-          value: $("#d_copyright").prop("checked")
-        }
+          value: $("#d_copyright").prop("checked"),
+        },
       })
     );
   });
 
-  $("#cp_size").on("slidestop", function(event, ui) {
+  $("#cp_size").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "copy-size-vh",
-          value: $("#cp_size").val()
-        }
+          value: $("#cp_size").val(),
+        },
       })
     );
   });
 
-  $("#cp_width").on("slidestop", function(event, ui) {
+  $("#cp_width").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "copy-width-vw",
-          value: $("#cp_width").val()
-        }
+          value: $("#cp_width").val(),
+        },
       })
     );
   });
 
-  $("#d_verseorder").on("change", function(event, ui) {
+  $("#d_verseorder").on("change", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "display-verseorder",
-          value: $("#d_verseorder").prop("checked")
-        }
+          value: $("#d_verseorder").prop("checked"),
+        },
       })
     );
   });
 
-  $("#vo_size").on("slidestop", function(event, ui) {
+  $("#vo_size").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "order-size-vh",
-          value: $("#vo_size").val()
-        }
+          value: $("#vo_size").val(),
+        },
       })
     );
   });
 
-  $("#vo_width").on("slidestop", function(event, ui) {
+  $("#vo_width").on("slidestop", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "order-width-vw",
-          value: $("#vo_width").val()
-        }
+          value: $("#vo_width").val(),
+        },
       })
     );
   });
 
-  $("#select_b_version").on("change", function(event, ui) {
+  $("#select_b_version").on("change", function (event, ui) {
     if (
       $("#passage_list input").length > 0 &&
-      $("#bible_search")
-        .val()
-        .trim() != ""
+      $("#bible_search").val().trim() != ""
     ) {
       // A search has already been performed, so repeat the search with the new version
       bible_search();
@@ -1718,7 +1663,7 @@ $(document).ready(function() {
   start_websocket();
 });
 
-$(window).resize(function() {
+$(window).resize(function () {
   // Size screen_view div and current_item div based on style
   // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
   aspect_padding = 70 / aspect_ratio + "%";
@@ -1728,7 +1673,7 @@ $(window).resize(function() {
   $("#current_item").css("height", window.innerHeight - video_height - 16);
 });
 
-$(document).on("keydown", function(e) {
+$(document).on("keydown", function (e) {
   key_code = e.which ? e.which : e.keyCode;
   let tag = e.target.tagName.toLowerCase();
   if (tag != "input" && tag != "textarea") {

@@ -12,6 +12,13 @@
     url(/html/fonts/Inter-Medium.otf) format("opentype");
 }
 
+@font-face {
+  font-family: "CMG Sans MonoDigits";
+  font-style: normal;
+  src: local("CMGSans-BoldMonoDigits"),
+    url(/html/fonts/CMGSans-BoldMonoDigits.ttf) format("truetype");
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -108,4 +115,18 @@ body {
 sup {
   padding-right: 0.5em;
   font-size: 0.5em;
+}
+
+#countdown_area {
+  position: fixed;
+  top: 0;
+  width: 100vw;
+  font-size: 10vh;
+}
+
+#countdown_area p {
+  margin: 0;
+  text-align: center;
+  color: white;
+  font-family: "CMG Sans MonoDigits";
 }

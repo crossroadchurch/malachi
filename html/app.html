@@ -27,7 +27,7 @@
         <div id="screen_view">
           <iframe id="screen_iframe" src="./screen?muted=true"></iframe>
         </div>
-        <div id="item_header" style="padding-left:1em; padding-right:1em;">
+        <div id="item_header" style="padding-left: 1em; padding-right: 1em">
           <input
             type="checkbox"
             data-role="flipswitch"
@@ -46,32 +46,34 @@
             id="version_changer"
             data-mini="true"
             data-inline="true"
-          >
-          </select>
+          ></select>
         </div>
         <div id="current_item">
           <div
             id="video_controls"
-            style="padding-left:1em; padding-right:1em; display:none;"
+            style="padding-left: 1em; padding-right: 1em; display: none"
           >
+            <!-- prettier-ignore -->
             <button
               id="play_btn"
               onclick="play_video();"
-              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play video-ctrl-btn"
+              class="ui-icon-play ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
             >
               &nbsp;
             </button>
+            <!-- prettier-ignore -->
             <button
               id="pause_btn"
               onclick="pause_video();"
-              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-pause video-ctrl-btn"
+              class="ui-icon-pause ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
             >
               &nbsp;
             </button>
+            <!-- prettier-ignore -->
             <button
               id="stop_btn"
               onclick="stop_video();"
-              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-stop video-ctrl-btn"
+              class="ui-icon-stop ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
             >
               &nbsp;
             </button>
@@ -89,12 +91,15 @@
           </div>
           <div
             id="presentation_controls"
-            style="padding-left:1em; padding-right:1em; display:none;"
+            style="padding-left: 1em; padding-right: 1em; display: none"
           >
             <button
               id="pres_start"
               onclick="start_presentation()"
-              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play video-ctrl-btn"
+              class="
+                ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play
+                video-ctrl-btn
+              "
             >
               &nbsp;
             </button>
@@ -218,11 +223,26 @@
           </div>
           <h3>Service plan</h3>
           <ul id="service_list" data-role="listview" data-inset="true"></ul>
+          <h3>Countdown</h3>
+          <div class="inputless-slider">
+            <input
+              type="range"
+              name="cd_time"
+              id="cd_time"
+              min="1"
+              max="30"
+              value="10"
+              data-highlight="true"
+              data-show-value="true"
+            />
+          </div>
+          <button class="ui-btn ui-corner-all ui-btn-inline" onclick="start_countdown()">Start countdown</button>
+          <button class="ui-btn ui-corner-all ui-btn-inline" onclick="clear_countdown()">Clear countdown</button>
         </div>
 
         <div id="song_element" class="ui-content">
           <div>
-            <div id="song_search_div" style="width:75%; float:left;">
+            <div id="song_search_div" style="width: 75%; float: left">
               <input
                 type="search"
                 id="song_search"
@@ -233,7 +253,7 @@
             </div>
             <div
               id="new_song_btn_div"
-              style="width:20%; padding-left:5%; float:left;"
+              style="width: 20%; padding-left: 5%; float: left"
             >
               <button
                 id="new_song_btn"
@@ -243,17 +263,17 @@
                 Create song
               </button>
             </div>
-            <div style="clear:both;"></div>
+            <div style="clear: both"></div>
           </div>
           <ul id="song_list" data-role="listview" data-inset="true"></ul>
         </div>
 
         <div id="bible_element" class="ui-content">
           <div>
-            <div id="bible_search_div" style="width:75%; float:left;">
+            <div id="bible_search_div" style="width: 75%; float: left">
               <input type="search" id="bible_search" value="" placeholder="" />
             </div>
-            <div style="width:20%; padding-left:5%; float:left;">
+            <div style="width: 20%; padding-left: 5%; float: left">
               <button
                 id="bible_search_btn"
                 class="ui-btn ui-corner-all"
@@ -264,7 +284,7 @@
             </div>
           </div>
           <div>
-            <div style="width: 33.333%; float:left;">
+            <div style="width: 33.333%; float: left">
               <div
                 data-role="controlgroup"
                 data-mini="true"
@@ -288,7 +308,7 @@
                 <select name="select_b_version" id="select_b_version"></select>
               </div>
             </div>
-            <div style="width: 66.666%; float:left;">
+            <div style="width: 66.666%; float: left">
               <div
                 data-role="controlgroup"
                 data-type="horizontal"
@@ -323,21 +343,22 @@
 
         <div id="presentation_element" class="ui-content">
           <div>
-            <div style="width:75%; float:left;">
+            <div style="width: 75%; float: left">
               <h3>Available presentations</h3>
             </div>
-            <div style="width:25%; float:left;">
+            <div style="width: 25%; float: left">
+              <!-- prettier-ignore -->
               <button
                 id="refresh_pres"
                 onclick="refresh_presentations();"
-                style="float:right;"
-                class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
+                style="float: right"
+                class="ui-icon-reload ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
               >
                 &nbsp;
               </button>
             </div>
           </div>
-          <div style="clear: both;"></div>
+          <div style="clear: both"></div>
           <ul
             id="presentation_list"
             data-role="listview"
@@ -347,40 +368,42 @@
 
         <div id="video_element" class="ui-content">
           <div>
-            <div style="width:75%; float:left;">
+            <div style="width: 75%; float: left">
               <h3>Available videos</h3>
             </div>
-            <div style="width:25%; float:left;">
+            <div style="width: 25%; float: left">
+              <!-- prettier-ignore -->
               <button
                 id="refresh_vids"
                 onclick="refresh_videos();"
-                style="float:right;"
+                style="float: right"
                 class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
               >
                 &nbsp;
               </button>
             </div>
           </div>
-          <div style="clear: both;"></div>
+          <div style="clear: both"></div>
           <ul id="video_list" data-role="listview" data-inset="true"></ul>
         </div>
         <div id="backgrounds_element" class="ui-content">
           <div>
-            <div style="width:75%; float:left;">
+            <div style="width: 75%; float: left">
               <h3>Loops</h3>
             </div>
-            <div style="width:25%; float:left;">
+            <div style="width: 25%; float: left">
+              <!-- prettier-ignore -->
               <button
                 id="refresh_loops"
                 onclick="refresh_loops();"
-                style="float:right;"
+                style="float: right"
                 class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
               >
                 &nbsp;
               </button>
             </div>
           </div>
-          <div style="clear: both;"></div>
+          <div style="clear: both"></div>
           <ul id="loop_list" data-role="listview" data-inset="true"></ul>
           <button
             id="cancel_loop_btn"
@@ -389,26 +412,27 @@
           >
             Clear loop
           </button>
-          <div style="width:75%; float:left;">
+          <div style="width: 75%; float: left">
             <h3>Backgrounds</h3>
           </div>
-          <div style="width:25%; float:left;">
+          <div style="width: 25%; float: left">
+            <!-- prettier-ignore -->
             <button
               id="refresh_backgrounds"
               onclick="refresh_backgrounds();"
-              style="float:right;"
+              style="float: right"
               class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
             >
               &nbsp;
             </button>
           </div>
-          <div style="clear: both;"></div>
+          <div style="clear: both"></div>
           <div
-            style="width:45%; float:left; padding-left:3%; padding-right:2%;"
+            style="width: 45%; float: left; padding-left: 3%; padding-right: 2%"
           >
             <ul id="song_bg" data-role="listview" data-inset="true">
               <li data-icon="delete">
-                <a href="#" style="min-height:auto !important;"
+                <a href="#" style="min-height: auto !important"
                   ><img id="song_bg_icon" src="" />Songs</a
                 ><a
                   onclick="remove_song_background();"
@@ -417,10 +441,10 @@
               </li>
             </ul>
           </div>
-          <div style="width:45%; float:left; padding-left:2%;">
+          <div style="width: 45%; float: left; padding-left: 2%">
             <ul id="bible_bg" data-role="listview" data-inset="true">
               <li data-icon="delete">
-                <a href="#" style="min-height:auto !important;"
+                <a href="#" style="min-height: auto !important"
                   ><img id="bible_bg_icon" src="" />Bible</a
                 ><a
                   onclick="remove_bible_background();"
@@ -429,7 +453,7 @@
               </li>
             </ul>
           </div>
-          <div style="clear:both;"></div>
+          <div style="clear: both"></div>
           <ul id="background_list" data-role="listview" data-inset="true"></ul>
         </div>
         <div id="styles_element" class="ui-content">
@@ -502,7 +526,17 @@
               <input
                 name="t_color"
                 id="t_color"
-                class="jscolor {position:'bottom', borderColor:'#FFF #666 #666 #FFF', insetColor:'#666 #FFF #FFF #666', backgroundColor:'#CCC'}"
+                class="
+                  jscolor
+                  {position:'bottom',
+                  borderColor:'#FFF
+                  #666 #666
+                  #FFF',
+                  insetColor:'#666
+                  #FFF #FFF
+                  #666',
+                  backgroundColor:'#CCC'}
+                "
               />
             </div>
             <div id="o_style_picker">
@@ -512,12 +546,45 @@
                 id="o_style"
                 data-mini="true"
                 data-inline="true"
-                style="display:inline-block"
+                style="display: inline-block"
               >
                 <option value="drop-shadow">Drop shadow</option>
                 <option value="text-outline">Outlined</option>
                 <option value="none">None</option>
               </select>
+            </div>
+          </div>
+          <h4 class="style_header">Countdowns</h4>
+          <div class="style_group">
+            <div id="countdown_size_slider" class="inputless-slider">
+              <label for="cd_size"
+                >Countdown font size (% of screen height):</label
+              >
+              <input
+                type="range"
+                name="cd_size"
+                id="cd_size"
+                min="1"
+                max="50"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div id="countdown_top_slider" class="inputless-slider">
+              <label for="cd_top"
+                >Countdown top margin (% of screen height):</label
+              >
+              <input
+                type="range"
+                name="cd_top"
+                id="cd_top"
+                min="0"
+                max="100"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
             </div>
           </div>
           <h4 class="style_header">Copyright area</h4>
@@ -530,7 +597,7 @@
                 data-mini="false"
                 name="d_copyright"
                 id="d_copyright"
-                style="display:inline-block;"
+                style="display: inline-block"
               />
             </div>
             <div id="copy_size_slider" class="inputless-slider">
@@ -567,14 +634,14 @@
           <h4 class="style_header">Verse order area</h4>
           <div class="style_group">
             <div>
-              <span style="padding-right:10px">Display verse order:</span>
+              <span style="padding-right: 10px">Display verse order:</span>
               <input
                 type="checkbox"
                 data-role="flipswitch"
                 data-mini="false"
                 name="d_verseorder"
                 id="d_verseorder"
-                style="display:inline-block"
+                style="display: inline-block"
               />
             </div>
             <div id="order_size_slider" class="inputless-slider">
@@ -933,7 +1000,7 @@
               id="e_lyrics"
               data-autogrow="false"
             ></textarea>
-            <p style="font-size: 0.9rem;">
+            <p style="font-size: 0.9rem">
               Use tags in angle brackets (e.g. <code>&lt;V1&gt;</code>) to
               indicate the start of sections.<br />
               Insert a mandatory line break by placing <code>[br]</code> on a

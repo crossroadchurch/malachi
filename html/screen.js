@@ -7,6 +7,10 @@ var display_copyright = false;
 var display_verseorder = false;
 var song_background = { url: "none", width: 1, height: 1 };
 var bible_background = { url: "none", width: 1, height: 1 };
+var countdown_left = 0;
+var countdown_timer;
+var screen_state = false;
+var video_displayed = false;
 
 function display_current_slide(slide_index) {
   current_slide = current_item.slides[slide_index];
@@ -82,6 +86,7 @@ function update_optional_areas() {
 }
 
 function stop_running_video() {
+  video_displayed = false;
   document.getElementById("video_item").pause();
   $("#loop_video").css("display", "block");
   $("#video_item").css("display", "none");
@@ -141,6 +146,8 @@ function update_from_style(style) {
     $("#slide_area").removeClass("outline");
     $("#slide_area").removeClass("drop_shadow");
   }
+  $("#countdown_area").css("font-size", style["countdown-size-vh"] + "vh");
+  $("#countdown_area").css("margin-top", style["countdown-top-vh"] + "vh");
   display_copyright = style["display-copyright"];
   display_verseorder = style["display-verseorder"];
   $("#copyright_area").css(
@@ -201,12 +208,34 @@ function update_background() {
   }
 }
 
+function decrease_countdown() {
+  countdown_left--;
+  if (countdown_left >= 0) {
+    $("#countdown_p").html(format_time(countdown_left));
+  } else {
+    clearInterval(countdown_timer);
+    $("#countdown_area").css("display", "none");
+  }
+}
+
+function stop_countdown() {
+  $("#countdown_area").css("display", "none");
+  countdown_left = 0; // Interval, if running, will stop on next call to decrease_countdown
+}
+
+function format_time(time_secs) {
+  var mins = Math.floor(time_secs / 60);
+  var secs = time_secs % 60;
+  var time_str = mins + ":" + secs.toString().padStart(2, 0);
+  return time_str;
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket(
     "ws://" + window.location.hostname + ":9001/display"
   );
-  websocket.onmessage = function(event) {
+  websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     console.log(json_data);
     switch (json_data.action) {
@@ -227,9 +256,11 @@ function start_websocket() {
         }
         update_from_style(json_data.params.style);
         if (json_data.params.screen_state == "on") {
+          screen_state = true;
           $("#slide_area").css("display", "block");
           $("#copyright_area").css("display", "block");
         } else {
+          screen_state = false;
           $("#slide_area").css("display", "none");
           $("#copyright_area").css("display", "none");
         }
@@ -245,6 +276,9 @@ function start_websocket() {
 
       case "update.service-overview-update":
       case "update.item-index-update":
+        if (screen_state) {
+          stop_countdown();
+        }
         current_item = json_data.params.current_item;
         update_background();
         if (json_data.params.item_index != -1) {
@@ -255,14 +289,18 @@ function start_websocket() {
         break;
 
       case "update.slide-index-update":
+        stop_countdown();
         display_current_slide(json_data.params.slide_index);
         break;
 
       case "update.display-state":
         if (json_data.params.state == "on") {
+          screen_state = true;
+          stop_countdown();
           $("#slide_area").css("display", "block");
           $("#copyright_area").css("display", "block");
         } else {
+          screen_state = false;
           $("#slide_area").css("display", "none");
           $("#copyright_area").css("display", "none");
         }
@@ -287,9 +325,11 @@ function start_websocket() {
         break;
 
       case "trigger.play-video":
+        stop_countdown();
         $("#video_item").css("display", "block");
         $("#loop_video").css("display", "none");
         document.getElementById("video_item").play();
+        video_displayed = true;
         break;
 
       case "trigger.pause-video":
@@ -297,6 +337,7 @@ function start_websocket() {
         break;
 
       case "trigger.stop-video":
+        video_displayed = false;
         stop_running_video();
         document.getElementById("video_item").currentTime = 0.0;
         break;
@@ -306,18 +347,32 @@ function start_websocket() {
           json_data.params.seconds;
         break;
 
+      case "trigger.start-countdown":
+        if (!screen_state && !video_displayed) {
+          countdown_left = json_data.params.seconds;
+          $("#countdown_area").css("display", "block");
+          $("#countdown_p").html(format_time(countdown_left));
+          clearInterval(countdown_timer);
+          countdown_timer = setInterval(decrease_countdown, 1000);
+        }
+        break;
+
+      case "trigger.clear-countdown":
+        stop_countdown();
+        break;
+
       default:
         console.error("Unsupported event", json_data);
     }
   };
-  websocket.onclose = function(event) {
+  websocket.onclose = function (event) {
     if (event.wasClean == false) {
       setTimeout(start_websocket, 5000);
     }
   };
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   start_websocket();
 
   // Mute foreground video element based on ?muted=true,false parameter, if it exists
@@ -335,7 +390,7 @@ $(document).ready(function() {
   $("#video_item").prop("muted", video_muted);
 });
 
-$(window).resize(function() {
+$(window).resize(function () {
   if (current_item.type == "video") {
     resize_video_item();
   }
