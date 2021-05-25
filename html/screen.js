@@ -146,7 +146,9 @@ function update_from_style(style) {
     $("#slide_area").removeClass("outline");
     $("#slide_area").removeClass("drop_shadow");
   }
-  $("#countdown_area").css("font-size", style["countdown-size-vh"] + "vh");
+  $("#countdown_p").css("font-size", style["countdown-size-vh"] + "vh");
+  $("#countdown_h").css("font-size", style["countdown-h-size-vh"] + "vh");
+  $("#countdown_h").html(style["countdown-h-text"]);
   $("#countdown_area").css("margin-top", style["countdown-top-vh"] + "vh");
   display_copyright = style["display-copyright"];
   display_verseorder = style["display-verseorder"];
@@ -391,7 +393,7 @@ $(document).ready(function () {
 });
 
 $(window).resize(function () {
-  if (current_item.type == "video") {
+  if (current_item !== undefined && current_item.type == "video") {
     resize_video_item();
   }
   resize_loop();

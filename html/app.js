@@ -668,6 +668,8 @@ function update_style_sliders(style) {
   $("#s_lines").val(style["max-lines"]).slider("refresh");
   $("#s_margin").val(style["margin-top-vh"]).slider("refresh");
   $("#o_style").val(style["outline-style"]).selectmenu("refresh");
+  $("#ch_size").val(style["countdown-h-size-vh"]).slider("refresh");
+  $("#cd_text").val(style["countdown-h-text"]);
   $("#cd_size").val(style["countdown-size-vh"]).slider("refresh");
   $("#cd_top").val(style["countdown-top-vh"]).slider("refresh");
   $("#d_copyright")
@@ -683,7 +685,6 @@ function update_style_sliders(style) {
   $("#t_color").val(style["font-color"]);
   // Update background status items
   if (style["song-background-url"] == "none") {
-    console.log(1);
     $("#song_bg_icon").attr("src", "");
   } else {
     console.log(2);
@@ -1549,6 +1550,30 @@ $(document).ready(function () {
         params: {
           param: "outline-style",
           value: $("#o_style").val(),
+        },
+      })
+    );
+  });
+
+  $("#ch_size").on("slidestop", function (event, ui) {
+    websocket.send(
+      JSON.stringify({
+        action: "command.edit-style-param",
+        params: {
+          param: "countdown-h-size-vh",
+          value: $("#ch_size").val(),
+        },
+      })
+    );
+  });
+
+  $("#cd_text").on("input", function (event, ui) {
+    websocket.send(
+      JSON.stringify({
+        action: "command.edit-style-param",
+        params: {
+          param: "countdown-h-text",
+          value: $("#cd_text").val(),
         },
       })
     );

@@ -19,6 +19,13 @@
     url(/html/fonts/CMGSans-BoldMonoDigits.ttf) format("truetype");
 }
 
+@font-face {
+  font-family: "Dancing Script Bold";
+  font-style: normal;
+  src: local("DancingScript-Bold"),
+    url(/html/fonts/DancingScript-Bold.ttf) format("truetype");
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -124,9 +131,16 @@ sup {
   font-size: 10vh;
 }
 
-#countdown_area p {
+#countdown_p {
   margin: 0;
   text-align: center;
   color: white;
   font-family: "CMG Sans MonoDigits";
+}
+
+#countdown_h {
+  margin: 0;
+  text-align: center;
+  color:white;
+  font-family: "Dancing Script Bold";
 }
