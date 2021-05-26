@@ -257,7 +257,7 @@ class MalachiServer():
                 "command.change-capture-monitor": [self.change_capture_monitor, ["monitor"]],
                 "command.change-capture-rate": [self.change_capture_rate, ["rate"]],
                 "command.unlock-socket": [self.unlock_socket, []],
-                "command.start-countdown": [self.start_countdown, ["seconds"]],
+                "command.start-countdown": [self.start_countdown, ["hr", "min"]],
                 "command.clear-countdown": [self.clear_countdown, []],
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
@@ -1040,24 +1040,27 @@ class MalachiServer():
 
     async def start_countdown(self, websocket, params):
         """
-        Send a message to appropriate clients to start a countdown of a specified length.
+        Send a message to appropriate clients to start a countdown to a specified time.
 
         Arguments:
-        params["seconds"] -- the length, in seconds, of the countdown.
+        params["hr"] -- the end hour of the countdown.
+        params["min"] -- the end minute of the countdown.
         """
         status, details = "ok", ""
-        sec = int(params["seconds"])
-        if sec > 0:
+        hrs = int(params["hr"])
+        mins = int(params["min"])
+        if (0 <= mins < 60) and (0 <= hrs < 24):
             for socket in self.MEDIA_SOCKETS:
                 await socket[0].send(json.dumps({
                     "action": "trigger.start-countdown",
                     "params": {
-                        "seconds": int(params["seconds"])
+                        "hr": int(params["hr"]),
+                        "min": int(params["min"])
                     }
                 }))
         else:
             status, details = "invalid-time", "Invalid countdown time: " + \
-                str(params["seconds"])
+                str(params["hr"]) + ":" + str(params["min"])
         await self.server_response(websocket, "response.start-countdown", status, details)
 
 

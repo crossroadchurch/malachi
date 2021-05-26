@@ -351,12 +351,33 @@ function stop_video() {
 }
 
 function start_countdown() {
-  var cd_length = $("#cd_time").val() * 60;
-  websocket.send(JSON.stringify({ action: "command.start-countdown", params: { seconds: cd_length }}))
+  var now = new Date();
+  var target = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    $("#cd_hr").val(),
+    $("#cd_min").val(),
+    0
+  );
+  var cd_length = Math.floor((target.getTime() - now.getTime()) / 1000);
+  if (cd_length > 0) {
+    websocket.send(
+      JSON.stringify({
+        action: "command.start-countdown",
+        params: { hr: $("#cd_hr").val(), min: $("#cd_min").val() },
+      })
+    );
+  } else {
+    toastr.options = toastr_error_options;
+    toastr.error("That time is in the past!", "Invalid countdown");
+  }
 }
 
 function clear_countdown() {
-  websocket.send(JSON.stringify({ action: "command.clear-countdown", params: {}}));
+  websocket.send(
+    JSON.stringify({ action: "command.clear-countdown", params: {} })
+  );
 }
 
 function update_capturing() {
@@ -926,6 +947,33 @@ function start_websocket() {
         websocket.send(
           JSON.stringify({ action: "request.bible-versions", params: {} })
         );
+
+        // Populate countdown hour and minute selects
+        let hr_list = "";
+        for (let hr = 0; hr < 24; hr++) {
+          hr_list +=
+            "<option value=" +
+            hr +
+            ">" +
+            hr.toString().padStart(2, 0) +
+            "</option>";
+        }
+        $("#cd_hr").html(hr_list);
+        $("#cd_hr").select("refresh");
+        $("#cd_hr").val(new Date().getHours()).change();
+
+        let min_list = "";
+        for (let min = 0; min < 60; min++) {
+          min_list +=
+            "<option value=" +
+            min +
+            ">" +
+            min.toString().padStart(2, 0) +
+            "</option>";
+        }
+        $("#cd_min").html(min_list);
+        $("#cd_min").select("refresh");
+        $("#cd_min").val(new Date().getMinutes()).change();
         break;
 
       case "update.service-overview-update":

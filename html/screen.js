@@ -7,8 +7,8 @@ var display_copyright = false;
 var display_verseorder = false;
 var song_background = { url: "none", width: 1, height: 1 };
 var bible_background = { url: "none", width: 1, height: 1 };
-var countdown_left = 0;
-var countdown_timer;
+var countdown_to = new Date();
+var countdown_timer; // Interval reference
 var screen_state = false;
 var video_displayed = false;
 
@@ -211,7 +211,7 @@ function update_background() {
 }
 
 function decrease_countdown() {
-  countdown_left--;
+  var countdown_left = Math.floor((countdown_to.getTime() - new Date().getTime())/1000);
   if (countdown_left >= 0) {
     $("#countdown_p").html(format_time(countdown_left));
   } else {
@@ -222,7 +222,7 @@ function decrease_countdown() {
 
 function stop_countdown() {
   $("#countdown_area").css("display", "none");
-  countdown_left = 0; // Interval, if running, will stop on next call to decrease_countdown
+  countdown_to = new Date(); // Interval, if running, will stop on next call to decrease_countdown
 }
 
 function format_time(time_secs) {
@@ -351,11 +351,15 @@ function start_websocket() {
 
       case "trigger.start-countdown":
         if (!screen_state && !video_displayed) {
-          countdown_left = json_data.params.seconds;
-          $("#countdown_area").css("display", "block");
-          $("#countdown_p").html(format_time(countdown_left));
-          clearInterval(countdown_timer);
-          countdown_timer = setInterval(decrease_countdown, 1000);
+          var now = new Date();
+          countdown_to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), json_data.params.hr, json_data.params.min, 0);
+          var countdown_left = Math.floor((countdown_to.getTime() - now.getTime())/1000);
+          if (countdown_left > 0){
+            $("#countdown_area").css("display", "block");
+            $("#countdown_p").html(format_time(countdown_left));
+            clearInterval(countdown_timer);
+            countdown_timer = setInterval(decrease_countdown, 1000);
+          }
         }
         break;
 

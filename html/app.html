@@ -223,21 +223,44 @@
           </div>
           <h3>Service plan</h3>
           <ul id="service_list" data-role="listview" data-inset="true"></ul>
-          <h3>Countdown</h3>
-          <div class="inputless-slider">
-            <input
-              type="range"
-              name="cd_time"
-              id="cd_time"
-              min="1"
-              max="30"
-              value="10"
-              data-highlight="true"
-              data-show-value="true"
-            />
+          <span style="padding-right: 10px"><strong>Countdown to:</strong></span>
+          <div
+            data-role="controlgroup"
+            data-mini="false"
+            data-type="horizontal"
+            style="padding-right: 10px"
+          >
+            <select
+              name="cd_hr"
+              id="cd_hr"
+              data-mini="false"
+              data-inline="true"
+            ></select>
+            <select
+              name="cd_min"
+              id="cd_min"
+              data-mini="false"
+              data-inline="true"
+            ></select>
           </div>
-          <button class="ui-btn ui-corner-all ui-btn-inline" onclick="start_countdown()">Start countdown</button>
-          <button class="ui-btn ui-corner-all ui-btn-inline" onclick="clear_countdown()">Clear countdown</button>
+          <div
+            data-role="controlgroup"
+            data-mini="false"
+            data-type="horizontal"
+          >
+            <button
+              class="ui-btn ui-corner-all ui-btn-inline"
+              onclick="start_countdown()"
+            >
+              Start countdown
+            </button>
+            <button
+              class="ui-btn ui-corner-all ui-btn-inline"
+              onclick="clear_countdown()"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
 
         <div id="song_element" class="ui-content">
