@@ -1,0 +1,2 @@
+python StartFirefoxWindows.py
+PAUSE
