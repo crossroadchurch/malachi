@@ -47,7 +47,7 @@ def patch_malachi():
     # running this update script
     print("Patching / ...")
     for root_obj in os.listdir(UPDATE_BASE):
-        if os.path.isfile(root_obj) and root_obj not in ['Update Malachi.bat']:
+        if os.path.isfile(UPDATE_BASE + "/" + root_obj) and root_obj not in ['Update Malachi.bat']:
             file_util.copy_file(UPDATE_BASE + "/" + root_obj, './' + root_obj)
 
     # Clear /src and replace with contents of updater_files/malachi-master/src
@@ -62,7 +62,7 @@ def patch_malachi():
 
     # Patch content drop-off directories, keeping user generated files
     for obj in os.listdir(UPDATE_BASE):
-        if os.path.isdir(obj) and obj not in ['data', 'html', 'src']:
+        if os.path.isdir(UPDATE_BASE + "/" + obj) and obj not in ['data', 'html', 'src']:
             print("Patching /" + obj + " ...")
             dir_util.copy_tree(UPDATE_BASE + "/" + obj, './' + obj)
 
