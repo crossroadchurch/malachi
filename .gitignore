@@ -1,6 +1,8 @@
 *.pyc
 /.vscode/*
 /out
+/test_out
+/updater_files
 /presentations/*
 !/presentations/.gitkeep
 /services/*
