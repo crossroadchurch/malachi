@@ -11,8 +11,10 @@ from tqdm import tqdm
 from distutils import dir_util, file_util
 import json
 import os
+import re
 import requests
 import shutil
+import subprocess
 import zipfile
 
 UPDATER_DIR = './updater_files'
@@ -85,15 +87,48 @@ def patch_settings():
     with open('./data/' + GLOBAL_SETTINGS_FILE, "w") as out_settings:
         out_settings.write(json.dumps(new_json_data, indent=2))
 
-result = download_malachi_repo()
-if result:
-    extract_malachi()
-    patch_malachi()
-    patch_settings()
-    # Clean up extracted files
-    print()
-    print("Cleaning up ...")
-    shutil.rmtree(UPDATER_DIR)
-# Clean up downloaded file
-if os.path.exists(MALACHI_ZIP):
-    os.remove(MALACHI_ZIP)
+def store_sha():
+    repo_page = requests.get('https://github.com/crossroadchurch/malachi/commits/master')
+    if repo_page.status_code == 200:
+        latest_sha = re.findall('malachi/commit/[0-9a-f]*', repo_page.text)[0][15:]
+        with open('./sha.txt', 'w') as sha_file:
+            sha_file.write(latest_sha)
+
+def update_needed():
+    repo_page = requests.get('https://github.com/crossroadchurch/malachi/commits/master')
+    if repo_page.status_code == 200:
+        latest_sha = re.findall('malachi/commit/[0-9a-f]*', repo_page.text)[0][15:]
+        old_sha = 0
+        if os.path.isfile('sha.txt'):
+            with open('sha.txt', 'r') as old_sha_file:
+                old_sha = old_sha_file.read()
+        if old_sha == latest_sha:
+            print("The latest version of Malachi is already installed!")
+            return False
+    return True
+
+
+if __name__ == "__main__":
+
+    if update_needed():
+        result = download_malachi_repo()
+
+        if result:
+            extract_malachi()
+            patch_malachi()
+            patch_settings()
+            store_sha()
+            # Clean up extracted files
+            print()
+            print("Cleaning up ...")
+            shutil.rmtree(UPDATER_DIR)
+            # Run pip
+            print()
+            print("Installing new Python modules...")
+            subprocess.call(['python', '-m', 'pip', 'install', '-r', 'requirements.txt'])
+            print()
+            print("Malachi has been successfully updated!")
+
+        # Clean up downloaded file
+        if os.path.exists(MALACHI_ZIP):
+            os.remove(MALACHI_ZIP)

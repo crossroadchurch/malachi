@@ -7,7 +7,10 @@ import asyncio
 import time
 import sys
 import os
+import re
+import requests
 import websockets
+from requests.exceptions import ConnectionError
 
 # Add src directory to path to enable Malachi modules to be found
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "src"))
@@ -20,6 +23,26 @@ from src._version import __version__
 # pylint: enable=C0413
 
 if __name__ == "__main__":
+
+    # Check for updates to Malachi
+    try:
+        repo_page = requests.get('https://github.com/crossroadchurch/malachi/commits/master')
+        if repo_page.status_code == 200:
+            latest_sha = re.findall('malachi/commit/[0-9a-f]*', repo_page.text)[0][15:]
+            old_sha = 0
+            if os.path.isfile('sha.txt'):
+                with open('sha.txt', 'r') as old_sha_file:
+                    old_sha = old_sha_file.read()
+            if old_sha != latest_sha:
+                print("********************************************************")
+                print("*          An update for Malachi is available.         *")
+                print("*  You can install it by running \'Update Malachi.bat\'  *")
+                print("********************************************************")
+                print()
+
+    except ConnectionError as e:
+        pass
+    
     print("Welcome to Malachi v{v}".format(v=__version__))
     # Start web server
     HTTP_SERVER = ThreadedHTTPServer('0.0.0.0', 8000)
