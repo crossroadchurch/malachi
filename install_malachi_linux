@@ -1,0 +1,3 @@
+#!/bin/bash
+sudo python3.6 -m pip install -r linux_requirements.txt
+read -p "Press ENTER to continue"

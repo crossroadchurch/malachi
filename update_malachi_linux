@@ -1,0 +1,5 @@
+#!/bin/bash
+cp ./src/UpdateMalachiLinux.py .
+python3.6 ./UpdateMalachiLinux.py
+rm ./UpdateMalachiLinux.py
+read -p "Press ENTER to continue"
