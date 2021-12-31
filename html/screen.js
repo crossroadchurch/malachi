@@ -64,6 +64,11 @@ function display_current_slide(slide_index) {
   }
   $("#slide_area").html(slide_text);
   $("#verseorder_area").html(verseorder);
+  if (current_item.copyright) {
+    $("#copyright_area").html("<p>" + current_item.copyright + "</p>");
+  } else {
+    $("#copyright_area").html("<p></p>");
+  }
   update_optional_areas();
 }
 
@@ -73,12 +78,12 @@ function clear_current_slide() {
 }
 
 function update_optional_areas() {
-  if (current_item && current_item.type == "song" && display_copyright) {
-    $("#copyright_area").html("<p>" + current_item.copyright + "</p>");
+  if (display_copyright && screen_state) {
+    $("#copyright_area").css("display", "block");
   } else {
-    $("#copyright_area").html("<p></p>");
+    $("#copyright_area").css("display", "none");
   }
-  if (display_verseorder) {
+  if (display_verseorder && screen_state) {
     $("#verseorder_area").css("display", "block");
   } else {
     $("#verseorder_area").css("display", "none");
@@ -151,6 +156,7 @@ function update_from_style(style) {
   $("#countdown_h").html(style["countdown-h-text"]);
   $("#countdown_area").css("margin-top", style["countdown-top-vh"] + "vh");
   display_copyright = style["display-copyright"];
+  console.log(display_copyright, "copyright state")
   display_verseorder = style["display-verseorder"];
   $("#copyright_area").css(
     "font-size",
@@ -260,12 +266,11 @@ function start_websocket() {
         if (json_data.params.screen_state == "on") {
           screen_state = true;
           $("#slide_area").css("display", "block");
-          $("#copyright_area").css("display", "block");
         } else {
           screen_state = false;
           $("#slide_area").css("display", "none");
-          $("#copyright_area").css("display", "none");
         }
+        update_optional_areas();
         current_item = json_data.params.current_item;
         if (json_data.params.item_index != -1) {
           display_current_slide(json_data.params.slide_index);
@@ -300,11 +305,9 @@ function start_websocket() {
           screen_state = true;
           stop_countdown();
           $("#slide_area").css("display", "block");
-          $("#copyright_area").css("display", "block");
         } else {
           screen_state = false;
           $("#slide_area").css("display", "none");
-          $("#copyright_area").css("display", "none");
         }
         update_optional_areas();
         break;

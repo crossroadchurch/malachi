@@ -45,11 +45,11 @@ def extract_malachi():
         zipped.extractall(UPDATER_DIR)
 
 def patch_malachi():
-    # Patch root content with exception of 'update_malachi_linux' which is being executed whilst
+    # Patch root content with exception of 'update_malachi_pi' which is being executed whilst
     # running this update script
     print("Patching / ...")
     for root_obj in os.listdir(UPDATE_BASE):
-        if os.path.isfile(UPDATE_BASE + "/" + root_obj) and root_obj not in ['update_malachi_linux']:
+        if os.path.isfile(UPDATE_BASE + "/" + root_obj) and root_obj not in ['update_malachi_pi']:
             file_util.copy_file(UPDATE_BASE + "/" + root_obj, './' + root_obj)
 
     # Clear /src and replace with contents of updater_files/malachi-master/src
@@ -125,7 +125,7 @@ if __name__ == "__main__":
             # Run pip
             print()
             print("Installing new Python modules...")
-            subprocess.call(['sudo', 'python3.6', '-m', 'pip', 'install', '-r', 'linux_requirements.txt'])
+            subprocess.call(['python3.9', '-m', 'pip', 'install', '-r', 'pi_requirements.txt'])
             print()
             print("Malachi has been successfully updated!")
 

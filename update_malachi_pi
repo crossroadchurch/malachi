@@ -1,0 +1,7 @@
+#!/bin/bash
+cp ./src/UpdateMalachiPi.py .
+python3.9 ./UpdateMalachiPi.py
+rm ./UpdateMalachiPi.py
+chmod +x ./install_malachi_pi
+chmod +x ./run_malachi_pi
+read -p "Press ENTER to continue"
