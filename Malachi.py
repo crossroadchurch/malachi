@@ -34,11 +34,25 @@ if __name__ == "__main__":
                 with open('sha.txt', 'r') as old_sha_file:
                     old_sha = old_sha_file.read()
             if old_sha != latest_sha:
-                print("********************************************************")
-                print("*          An update for Malachi is available.         *")
-                print("*  You can install it by running \'Update Malachi.bat\'  *")
-                print("********************************************************")
-                print()
+                if sys.platform == 'win32':
+                    print("********************************************************")
+                    print("*          An update for Malachi is available.         *")
+                    print("*  You can install it by running \'Update Malachi.bat\'  *")
+                    print("********************************************************")
+                    print()
+                elif sys.platform == 'linux':
+                    if os.uname().nodename == 'raspberrypi':
+                        print("********************************************************")
+                        print("*          An update for Malachi is available.         *")
+                        print("*  You can install it by running \'update_malachi_pi\'   *")
+                        print("********************************************************")
+                        print()
+                    else:
+                        print("**********************************************************")
+                        print("*           An update for Malachi is available.          *")
+                        print("*  You can install it by running \'update_malachi_linux\'  *")
+                        print("**********************************************************")
+                        print()
 
     except ConnectionError as e:
         pass

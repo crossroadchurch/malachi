@@ -1385,6 +1385,8 @@ class MalachiServer():
         """Return a list of all video URLs in the ./loops directory to websocket."""
         urls = ['./loops/' + f for f in os.listdir('./loops')
                 if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
+        if urls:
+            urls.sort()
         await websocket.send(json.dumps({
             "action": "result.all-loops",
             "params": {
@@ -1394,9 +1396,7 @@ class MalachiServer():
 
     async def request_all_backgrounds(self, websocket, params):
         """Return a list of all background URLs in the ./backgrounds directory to websocket."""
-        urls = ['./backgrounds/' + f for f in os.listdir('./backgrounds')
-                if f.endswith('.jpg') or f.endswith('.JPG') or f.endswith('.png')]
-        bgs = [Background(url) for url in urls]
+        bgs = [Background(url) for url in Background.get_all_backgrounds()]
         bg_json = [{"url": './backgrounds/' + bg.title, 
             "width": bg.image_width, "height": bg.image_height} for bg in bgs]
         await websocket.send(json.dumps({

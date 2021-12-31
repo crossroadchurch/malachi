@@ -82,6 +82,8 @@ class Video():
         Video.generate_video_thumbnails()
         urls = ['./videos/' + f for f in os.listdir('./videos')
                 if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
+        if urls:
+            urls.sort()
         return urls
 
     @classmethod

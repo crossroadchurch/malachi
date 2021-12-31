@@ -52,6 +52,8 @@ class Presentation():
         """Return a list of all presentation URLs in the ./presentations directory."""
         urls = ['./presentations/' + f for f in os.listdir('./presentations')
                 if f.endswith('.ppt') or f.endswith('pptx') or f.endswith('odp')]
+        if urls:
+            urls.sort()
         return urls
 
 ### TESTING ONLY ###
