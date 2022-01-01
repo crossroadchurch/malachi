@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Malachi App</title>
+    <link rel="stylesheet" href="/html/app.css" />
+    <link rel="stylesheet" href="/html/libs/jquery-ui.min.css" />
+    <link rel="stylesheet" href="/html/libs/jquery.mobile-1.4.5.min.css" />
+    <link rel="stylesheet" href="/html/libs/toastr.min.css" />
+    <link rel="shortcut icon" href="/html/favicon.png" type="image/ico" />
+    <script
+      type="text/javascript"
+      src="/html/libs/jquery-1.12.4.min.js"
+    ></script>
+    <script type="text/javascript" src="/html/libs/jquery-ui.min.js"></script>
+    <script
+      type="text/javascript"
+      src="/html/libs/jquery.mobile-1.4.5.min.js"
+    ></script>
+    <script type="text/javascript" src="/html/libs/toastr.min.js"></script>
+    <script type="text/javascript" src="/html/libs/jscolor.js"></script>
+    <script type="text/javascript" src="/html/app.js"></script>
+  </head>
+  <body>
+    <div id="main_area">
+      <div id="item_area">
+        <div id="screen_view">
+          <iframe id="screen_iframe" src="./screen_pi?muted=true&videos=false"></iframe>
+        </div>
+        <div id="item_header" style="padding-left: 1em; padding-right: 1em">
+          <input
+            type="checkbox"
+            data-role="flipswitch"
+            data-on-text="Screen ON"
+            data-off-text="Screen OFF"
+            data-wrapper-class="custom-size-flipswitch"
+            name="flip_screen_state"
+            id="flip_screen_state"
+          />
+          <img
+            id="current_item_icon"
+            src="/html/icons/icons8-musical-notes-48.png"
+          /><span id="current_item_name">No current item</span>
+          <select
+            name="version_changer"
+            id="version_changer"
+            data-mini="true"
+            data-inline="true"
+          ></select>
+        </div>
+        <div id="current_item">
+          <div
+            id="video_controls"
+            style="padding-left: 1em; padding-right: 1em; display: none"
+          >
+            <!-- prettier-ignore -->
+            <button
+              id="play_btn"
+              onclick="play_video();"
+              class="ui-icon-play ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
+            >
+              &nbsp;
+            </button>
+            <!-- prettier-ignore -->
+            <button
+              id="pause_btn"
+              onclick="pause_video();"
+              class="ui-icon-pause ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
+            >
+              &nbsp;
+            </button>
+            <!-- prettier-ignore -->
+            <button
+              id="stop_btn"
+              onclick="stop_video();"
+              class="ui-icon-stop ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
+            >
+              &nbsp;
+            </button>
+            <div id="time_seek_area">
+              <label for="time_seek" class="ui-hidden-accessible">Time:</label>
+              <input
+                type="range"
+                data-highlight="true"
+                name="time_seek"
+                id="time_seek"
+                min="0"
+                max="100"
+              />
+            </div>
+          </div>
+          <div
+            id="presentation_controls"
+            style="padding-left: 1em; padding-right: 1em; display: none"
+          >
+            <button
+              id="pres_start"
+              onclick="start_presentation()"
+              class="
+                ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play
+                video-ctrl-btn
+              "
+            >
+              &nbsp;
+            </button>
+            <select
+              name="capture_source_chooser"
+              id="capture_source_chooser"
+              onchange="update_capturing();"
+              data-mini="true"
+              data-inline="true"
+            >
+              <option value="0">No screen capture</option>
+              <option value="1">Capture main monitor</option>
+              <option value="2">Capture extended monitor</option>
+            </select>
+          </div>
+          <div style="padding: 0px 10px 10px 10px">
+            <ul
+              id="current_item_list"
+              data-role="listview"
+              data-inset="true"
+            ></ul>
+          </div>
+        </div>
+      </div>
+      <div id="elements_area" class="ui-content">
+        <ul>
+          <li>
+            <a href="#service_element"
+              ><img
+                class="element_icon"
+                src="/html/icons/icons8-numbered-list-48.png"
+                alt="Service"
+            /></a>
+          </li>
+          <li>
+            <a href="#song_element"
+              ><img
+                class="element_icon"
+                src="/html/icons/icons8-musical-notes-48.png"
+                alt="Songs"
+            /></a>
+          </li>
+          <li>
+            <a href="#bible_element"
+              ><img
+                class="element_icon"
+                src="/html/icons/icons8-literature-48.png"
+                alt="Bibles"
+            /></a>
+          </li>
+          <li>
+            <a href="#presentation_element"
+              ><img
+                class="element_icon"
+                src="/html/icons/icons8-presentation-48.png"
+                alt="Presentations"
+            /></a>
+          </li>
+          <li>
+            <a href="#video_element"
+              ><img
+                class="element_icon"
+                src="/html/icons/icons8-tv-show-48.png"
+                alt="Videos"
+            /></a>
+          </li>
+          <li>
+            <a href="#backgrounds_element"
+              ><img
+                class="element_icon"
+                src="/html/icons/icons8-image-48.png"
+                alt="Backgrounds"
+            /></a>
+          </li>
+          <li>
+            <a href="#styles_element"
+              ><img
+                class="element_icon"
+                src="/html/icons/icons8-services-48.png"
+                alt="Styles"
+            /></a>
+          </li>
+        </ul>
+
+        <div id="service_element">
+          <div id="service_menu">
+            <div
+              data-role="controlgroup"
+              data-mini="false"
+              data-type="horizontal"
+            >
+              <button
+                id="new_service_btn"
+                class="ui-btn ui-corner-all ui-btn-inline"
+                onclick="javascript:new_service(false);"
+              >
+                New
+              </button>
+              <button
+                id="load_service_btn"
+                class="ui-btn ui-corner-all ui-btn-inline"
+                onclick="load_service_preload();"
+              >
+                Load
+              </button>
+              <button
+                id="save_service_btn"
+                class="ui-btn ui-corner-all ui-btn-inline"
+                onclick="save_service('none');"
+              >
+                Save
+              </button>
+              <button
+                id="save_service_as_btn"
+                class="ui-btn ui-corner-all ui-btn-inline"
+                onclick="$('#popup_save_service_as').popup('open');"
+              >
+                Save as
+              </button>
+            </div>
+          </div>
+          <h3>Service plan</h3>
+          <ul id="service_list" data-role="listview" data-inset="true"></ul>
+          <span style="padding-right: 10px"><strong>Countdown to:</strong></span>
+          <div
+            data-role="controlgroup"
+            data-mini="false"
+            data-type="horizontal"
+            style="padding-right: 10px"
+          >
+            <select
+              name="cd_hr"
+              id="cd_hr"
+              data-mini="false"
+              data-inline="true"
+            ></select>
+            <select
+              name="cd_min"
+              id="cd_min"
+              data-mini="false"
+              data-inline="true"
+            ></select>
+          </div>
+          <div
+            data-role="controlgroup"
+            data-mini="false"
+            data-type="horizontal"
+          >
+            <button
+              class="ui-btn ui-corner-all ui-btn-inline"
+              onclick="start_countdown()"
+            >
+              Start countdown
+            </button>
+            <button
+              class="ui-btn ui-corner-all ui-btn-inline"
+              onclick="clear_countdown()"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <div id="song_element" class="ui-content">
+          <div>
+            <div id="song_search_div" style="width: 75%; float: left">
+              <input
+                type="search"
+                id="song_search"
+                value=""
+                placeholder="Lyric or title search"
+                oninput="song_search()"
+              />
+            </div>
+            <div
+              id="new_song_btn_div"
+              style="width: 20%; padding-left: 5%; float: left"
+            >
+              <button
+                id="new_song_btn"
+                class="ui-btn ui-corner-all ui-btn-inline"
+                onclick="create_song()"
+              >
+                Create song
+              </button>
+            </div>
+            <div style="clear: both"></div>
+          </div>
+          <ul id="song_list" data-role="listview" data-inset="true"></ul>
+        </div>
+
+        <div id="bible_element" class="ui-content">
+          <div>
+            <div id="bible_search_div" style="width: 75%; float: left">
+              <input type="search" id="bible_search" value="" placeholder="" />
+            </div>
+            <div style="width: 20%; padding-left: 5%; float: left">
+              <button
+                id="bible_search_btn"
+                class="ui-btn ui-corner-all"
+                onclick="bible_search()"
+              >
+                Search
+              </button>
+            </div>
+          </div>
+          <div>
+            <div style="width: 33.333%; float: left">
+              <div
+                data-role="controlgroup"
+                data-mini="true"
+                data-type="horizontal"
+              >
+                <input
+                  type="radio"
+                  name="b_search_type"
+                  id="b_search_type_ref"
+                  value="on"
+                  checked="checked"
+                />
+                <label for="b_search_type_ref">Ref</label>
+                <input
+                  type="radio"
+                  name="b_search_type"
+                  id="b_search_type_text"
+                  value="off"
+                />
+                <label for="b_search_type_text">Text</label>
+                <select name="select_b_version" id="select_b_version"></select>
+              </div>
+            </div>
+            <div style="width: 66.666%; float: left">
+              <div
+                data-role="controlgroup"
+                data-type="horizontal"
+                data-mini="true"
+              >
+                <button
+                  id="select_all_btn"
+                  class="ui-btn ui-corner-all ui-btn-inline"
+                  onclick="select_all_verses()"
+                >
+                  Select all
+                </button>
+                <button
+                  id="select_none_btn"
+                  class="ui-btn ui-corner-all ui-btn-inline"
+                  onclick="select_none_verses()"
+                >
+                  Select none
+                </button>
+                <button
+                  id="add_passage_btn"
+                  class="ui-btn ui-corner-all"
+                  onclick="add_verses()"
+                >
+                  Add to service
+                </button>
+              </div>
+            </div>
+          </div>
+          <fieldset id="passage_list" data-role="controlgroup"></fieldset>
+        </div>
+
+        <div id="presentation_element" class="ui-content">
+          <div>
+            <div style="width: 75%; float: left">
+              <h3>Available presentations</h3>
+            </div>
+            <div style="width: 25%; float: left">
+              <!-- prettier-ignore -->
+              <button
+                id="refresh_pres"
+                onclick="refresh_presentations();"
+                style="float: right"
+                class="ui-icon-reload ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
+              >
+                &nbsp;
+              </button>
+            </div>
+          </div>
+          <div style="clear: both"></div>
+          <ul
+            id="presentation_list"
+            data-role="listview"
+            data-inset="true"
+          ></ul>
+        </div>
+
+        <div id="video_element" class="ui-content">
+          <div>
+            <div style="width: 75%; float: left">
+              <h3>Available videos</h3>
+            </div>
+            <div style="width: 25%; float: left">
+              <!-- prettier-ignore -->
+              <button
+                id="refresh_vids"
+                onclick="refresh_videos();"
+                style="float: right"
+                class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
+              >
+                &nbsp;
+              </button>
+            </div>
+          </div>
+          <div style="clear: both"></div>
+          <ul id="video_list" data-role="listview" data-inset="true"></ul>
+        </div>
+        <div id="backgrounds_element" class="ui-content">
+          <div>
+            <div style="width: 75%; float: left">
+              <h3>Loops</h3>
+            </div>
+            <div style="width: 25%; float: left">
+              <!-- prettier-ignore -->
+              <button
+                id="refresh_loops"
+                onclick="refresh_loops();"
+                style="float: right"
+                class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
+              >
+                &nbsp;
+              </button>
+            </div>
+          </div>
+          <div style="clear: both"></div>
+          <ul id="loop_list" data-role="listview" data-inset="true"></ul>
+          <button
+            id="cancel_loop_btn"
+            class="ui-btn ui-corner-all"
+            onclick="clear_loop()"
+          >
+            Clear loop
+          </button>
+          <div style="width: 75%; float: left">
+            <h3>Backgrounds</h3>
+          </div>
+          <div style="width: 25%; float: left">
+            <!-- prettier-ignore -->
+            <button
+              id="refresh_backgrounds"
+              onclick="refresh_backgrounds();"
+              style="float: right"
+              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
+            >
+              &nbsp;
+            </button>
+          </div>
+          <div style="clear: both"></div>
+          <div
+            style="width: 45%; float: left; padding-left: 3%; padding-right: 2%"
+          >
+            <ul id="song_bg" data-role="listview" data-inset="true">
+              <li data-icon="delete">
+                <a href="#" style="min-height: auto !important"
+                  ><img id="song_bg_icon" src="" />Songs</a
+                ><a
+                  onclick="remove_song_background();"
+                  href="javascript:void(0);"
+                ></a>
+              </li>
+            </ul>
+          </div>
+          <div style="width: 45%; float: left; padding-left: 2%">
+            <ul id="bible_bg" data-role="listview" data-inset="true">
+              <li data-icon="delete">
+                <a href="#" style="min-height: auto !important"
+                  ><img id="bible_bg_icon" src="" />Bible</a
+                ><a
+                  onclick="remove_bible_background();"
+                  href="javascript:void(0);"
+                ></a>
+              </li>
+            </ul>
+          </div>
+          <div style="clear: both"></div>
+          <ul id="background_list" data-role="listview" data-inset="true"></ul>
+        </div>
+        <div id="styles_element" class="ui-content">
+          <h3>Styling</h3>
+          <h4 class="style_header">Main area</h4>
+          <div class="style_group">
+            <div class="inputless-slider">
+              <label for="s_width">Song area width (% of screen):</label>
+              <input
+                type="range"
+                name="s_width"
+                id="s_width"
+                min="50"
+                max="100"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div class="inputless-slider">
+              <label for="s_font_size">Font size (% of screen height):</label>
+              <input
+                type="range"
+                name="s_font_size"
+                id="s_font_size"
+                min="5"
+                max="20"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div class="inputless-slider">
+              <label for="s_lines">Max lines per slide:</label>
+              <input
+                type="range"
+                name="s_lines"
+                id="s_lines"
+                min="1"
+                max="10"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div class="inputless-slider">
+              <label for="s_margin">Top margin (% of screen height):</label>
+              <input
+                type="range"
+                name="s_margin"
+                id="s_margin"
+                min="0"
+                max="25"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div id="c_rate_slider" class="inputless-slider">
+              <label for="c_rate">Screen capture rate (ms):</label>
+              <input
+                type="range"
+                name="c_rate"
+                id="c_rate"
+                min="200"
+                max="2000"
+                step="50"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div id="t_color_picker">
+              <label for="t_color">Song and Bible text colour:</label>
+              <input
+                name="t_color"
+                id="t_color"
+                class="
+                  jscolor
+                  {position:'bottom',
+                  borderColor:'#FFF
+                  #666 #666
+                  #FFF',
+                  insetColor:'#666
+                  #FFF #FFF
+                  #666',
+                  backgroundColor:'#CCC'}
+                "
+              />
+            </div>
+            <div id="o_style_picker">
+              <span style="padding-right: 10px">Text outline style:</span>
+              <select
+                name="o_style"
+                id="o_style"
+                data-mini="true"
+                data-inline="true"
+                style="display: inline-block"
+              >
+                <option value="drop-shadow">Drop shadow</option>
+                <option value="text-outline">Outlined</option>
+                <option value="none">None</option>
+              </select>
+            </div>
+          </div>
+          <h4 class="style_header">Countdowns</h4>
+          <div class="style_group">
+            <div id="countdown_h_size_slider" class="inputless-slider">
+              <label for="ch_size"
+                >Header font size (% of screen height):</label
+              >
+              <input
+                type="range"
+                name="ch_size"
+                id="ch_size"
+                min="1"
+                max="50"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div id="countdown_h_text_input">
+              <label for="cd_text">Countdown header text:</label>
+              <input type="text" id="cd_text" name="cd_text" />
+            </div>
+            <div id="countdown_size_slider" class="inputless-slider">
+              <label for="cd_size"
+                >Countdown font size (% of screen height):</label
+              >
+              <input
+                type="range"
+                name="cd_size"
+                id="cd_size"
+                min="1"
+                max="50"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div id="countdown_top_slider" class="inputless-slider">
+              <label for="cd_top"
+                >Countdown top margin (% of screen height):</label
+              >
+              <input
+                type="range"
+                name="cd_top"
+                id="cd_top"
+                min="0"
+                max="100"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+          </div>
+          <h4 class="style_header">Copyright area</h4>
+          <div class="style_group">
+            <div>
+              <span style="padding-right: 10px">Display copyright:</span>
+              <input
+                type="checkbox"
+                data-role="flipswitch"
+                data-mini="false"
+                name="d_copyright"
+                id="d_copyright"
+                style="display: inline-block"
+              />
+            </div>
+            <div id="copy_size_slider" class="inputless-slider">
+              <label for="cp_size"
+                >Copyright font size (0.1% of screen height):</label
+              >
+              <input
+                type="range"
+                name="cp_size"
+                id="cp_size"
+                min="10"
+                max="50"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div id="copy_width_slider" class="inputless-slider">
+              <label for="cp_width"
+                >Copyright area width (% of screen width):</label
+              >
+              <input
+                type="range"
+                name="cp_width"
+                id="cp_width"
+                min="20"
+                max="90"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+          </div>
+          <h4 class="style_header">Verse order area</h4>
+          <div class="style_group">
+            <div>
+              <span style="padding-right: 10px">Display verse order:</span>
+              <input
+                type="checkbox"
+                data-role="flipswitch"
+                data-mini="false"
+                name="d_verseorder"
+                id="d_verseorder"
+                style="display: inline-block"
+              />
+            </div>
+            <div id="order_size_slider" class="inputless-slider">
+              <label for="vo_size"
+                >Verse order font size (0.1% of screen height):</label
+              >
+              <input
+                type="range"
+                name="vo_size"
+                id="vo_size"
+                min="10"
+                max="50"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+            <div id="order_width_slider" class="inputless-slider">
+              <label for="vo_width"
+                >Verse order area width (% of screen width):</label
+              >
+              <input
+                type="range"
+                name="vo_width"
+                id="vo_width"
+                min="20"
+                max="90"
+                step="1"
+                data-highlight="true"
+                data-show-value="true"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP: Prompt to save before stating new service -->
+    <div
+      data-role="popup"
+      data-dismissible="false"
+      data-overlay-theme="b"
+      id="popup_new_service"
+    >
+      <div data-role="header">
+        <h1>Save service?</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <p>
+          The current service has been modified.<br />Save these changes before
+          starting a new service?
+        </p>
+        <a
+          onclick="javascript:save_service('new');"
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Save</a
+        >
+        <a
+          onclick="javascript:new_service(true);"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Discard</a
+        >
+        <a
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Cancel</a
+        >
+      </div>
+    </div>
+
+    <!-- POPUP: Prompt to save before loading service -->
+    <div
+      data-role="popup"
+      data-dismissible="false"
+      data-overlay-theme="b"
+      id="popup_save_before_load_service"
+    >
+      <div data-role="header">
+        <h1>Save service?</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <p>
+          The current service has been modified.<br />Save these changes before
+          loading a new service?
+        </p>
+        <a
+          onclick="save_service('load');"
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Save</a
+        >
+        <a
+          onclick="load_service(true);"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Discard</a
+        >
+        <a
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Cancel</a
+        >
+      </div>
+    </div>
+
+    <!-- POPUP: Service item options -->
+    <div
+      data-role="popup"
+      id="popup_service_item_options"
+      data-position-to="origin"
+    >
+      <div class="ui-content">
+        <a
+          onclick="edit_song();"
+          id="btn_popup_edit_song"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Edit</a
+        >
+        <a
+          onclick="delete_item();"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Remove</a
+        >
+        <a
+          onclick="goto_item();"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Display</a
+        >
+      </div>
+    </div>
+
+    <!-- POPUP: Save service as dialog -->
+    <div
+      data-role="popup"
+      data-dismissible="false"
+      data-overlay-theme="b"
+      id="popup_save_service_as"
+    >
+      <div data-role="header">
+        <h1>Save service as...</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <p>Choose filename to save service as:</p>
+        <div class="ui-field-contain">
+          <label for="f_name" class="ui-hidden-accessible"
+            >Service file name:</label
+          >
+          <input
+            id="f_name"
+            name="f_name"
+            type="text"
+            value=""
+            placeholder="service.json"
+          />
+        </div>
+        <a
+          onclick="save_service_as($(this).parent().find('#f_name'));"
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Save</a
+        >
+        <a
+          onclick="$(this).parent().find('#f_name').val('');"
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Cancel</a
+        >
+      </div>
+    </div>
+
+    <!-- POPUP: Load service dialog -->
+    <div
+      data-role="popup"
+      data-dismissible="false"
+      data-overlay-theme="b"
+      id="popup_load_service"
+    >
+      <div data-role="header">
+        <h1>Load service</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <p>Choose service to load:</p>
+        <fieldset
+          id="load_files_radio"
+          data-mini="true"
+          data-role="controlgroup"
+        ></fieldset>
+        <a
+          onclick="load_service(false);"
+          href="#"
+          id="popup_btn_load_service"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Load</a
+        >
+        <a
+          onclick=""
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Cancel</a
+        >
+      </div>
+    </div>
+
+    <!-- POPUP: Song item options -->
+    <div
+      data-role="popup"
+      id="popup_song_item_options"
+      data-position-to="origin"
+    >
+      <div class="ui-content">
+        <a
+          onclick="edit_song();"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Edit</a
+        >
+        <a
+          onclick="add_song();"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Add to Service</a
+        >
+      </div>
+    </div>
+
+    <!-- POPUP: Edit song dialog -->
+    <div
+      data-role="popup"
+      data-dismissible="false"
+      data-overlay-theme="b"
+      id="popup_edit_song"
+    >
+      <div data-role="header" id="edit_song_mode_header">
+        <h1>Edit song</h1>
+      </div>
+      <div data-role="header" id="create_song_mode_header">
+        <h1>Create song</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <div class="ui-grid-a">
+          <div class="ui-block-a edit-song-col-left">
+            <!-- LEFT COLUMN -->
+            <label for="e_title">Song name:</label>
+            <input
+              type="text"
+              name="e_title"
+              id="e_title"
+              data-clear-btn="true"
+            />
+            <label for="e_author">Author:</label>
+            <input
+              type="text"
+              name="e_author"
+              id="e_author"
+              data-clear-btn="true"
+            />
+            <label for="e_copyright">Copyright:</label>
+            <input
+              type="text"
+              name="e_copyright"
+              id="e_copyright"
+              data-clear-btn="true"
+            />
+            <div class="ui-grid-a">
+              <div class="ui-block-a">
+                <label for="e_book">Song book:</label>
+                <input
+                  type="text"
+                  name="e_book"
+                  id="e_book"
+                  data-clear-btn="true"
+                />
+              </div>
+              <div class="ui-block-b">
+                <label for="e_number">Song number:</label>
+                <input
+                  type="text"
+                  name="e_number"
+                  id="e_number"
+                  data-clear-btn="true"
+                />
+              </div>
+            </div>
+            <label for="e_order">Verse order:</label>
+            <input
+              type="text"
+              name="e_order"
+              id="e_order"
+              data-clear-btn="true"
+            />
+            <div class="ui-grid-a">
+              <div class="ui-block-a">
+                <label for="e_key">Key:</label>
+                <select name="e_key" id="e_key">
+                  <option value="C">C</option>
+                  <option value="Db">Db</option>
+                  <option value="D">D</option>
+                  <option value="Eb">Eb</option>
+                  <option value="E">E</option>
+                  <option value="F">F</option>
+                  <option value="F#">F#</option>
+                  <option value="G">G</option>
+                  <option value="Ab">Ab</option>
+                  <option value="A">A</option>
+                  <option value="Bb">Bb</option>
+                  <option value="B">B</option>
+                </select>
+              </div>
+              <div id="e_transpose_div" class="ui-block-b">
+                <label for="e_transpose">Transpose by:</label>
+                <input
+                  type="range"
+                  name="e_transpose"
+                  id="e_transpose"
+                  min="0"
+                  max="11"
+                />
+              </div>
+            </div>
+            <div id="edit_song_popup_buttons">
+              <a
+                onclick="save_song();"
+                href="#"
+                class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+                >Save</a
+              >
+              <a
+                onclick="reset_edit_song_form();"
+                href="#"
+                class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+                data-rel="back"
+                >Cancel</a
+              >
+            </div>
+          </div>
+          <div class="ui-block-b edit-song-col-right">
+            <!-- RIGHT COLUMN -->
+            <label for="e_lyrics">Lyrics:</label>
+            <textarea
+              cols="40"
+              rows="10"
+              name="e_lyrics"
+              id="e_lyrics"
+              data-autogrow="false"
+            ></textarea>
+            <p style="font-size: 0.9rem">
+              Use tags in angle brackets (e.g. <code>&lt;V1&gt;</code>) to
+              indicate the start of sections.<br />
+              Insert a mandatory line break by placing <code>[br]</code> on a
+              line by itself.<br />
+              Place chords on the line before their lyrics and finish chord
+              lines with <code>@</code>.<br />
+              Use <code>#</code> to pad out lyrics so that they line up with
+              their chords.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP: Create song error -->
+    <div
+      data-role="popup"
+      data-dismissible="false"
+      data-overlay-theme="b"
+      id="popup_error_edit_song"
+    >
+      <p>Can't create song without title</p>
+      <a
+        onclick=""
+        href="#"
+        class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+        data-rel="back"
+        >Cancel</a
+      >
+    </div>
+
+    <!-- POPUP: Background image options -->
+    <div
+      data-role="popup"
+      id="popup_background_options"
+      data-position-to="origin"
+    >
+      <div class="ui-content">
+        <a
+          onclick="set_background_songs();"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Set for songs</a
+        >
+        <a
+          onclick="set_background_bible();"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Set for Bible</a
+        >
+        <a
+          onclick="set_background_both();"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Set for both</a
+        >
+      </div>
+    </div>
+  </body>
+</html>

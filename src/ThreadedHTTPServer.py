@@ -37,7 +37,7 @@ class RoutedRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.list_directory(path)
         # Custom routing
         if parts[2] in ["/music", "/music-control", "/singers", \
-            "/test", "/app", "/screen", "/presenter"]:
+            "/test", "/app", "/screen", "/presenter", "/screen_pi", "/app_pi"]:
             keep_len = len(path) - len(parts[2])
             path = path[:keep_len] + "/html/" + path[keep_len+1:] + ".html"
         # End custom routing
