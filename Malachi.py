@@ -22,6 +22,15 @@ from src.ThreadedHTTPServer import ThreadedHTTPServer
 from src._version import __version__
 # pylint: enable=C0413
 
+# https://raspberrypi.stackexchange.com/questions/5100/detect-that-a-python-program-is-running-on-the-pi
+def is_raspberrypi():
+    try:
+        with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
+            if 'raspberry pi' in m.read().lower(): return True
+    except Exception: pass
+    return False
+
+
 if __name__ == "__main__":
 
     # Check for updates to Malachi
@@ -41,7 +50,7 @@ if __name__ == "__main__":
                     print("********************************************************")
                     print()
                 elif sys.platform == 'linux':
-                    if os.uname().nodename == 'raspberrypi':
+                    if is_raspberrypi():
                         print("********************************************************")
                         print("*          An update for Malachi is available.         *")
                         print("*  You can install it by running \'update_malachi_pi\'   *")

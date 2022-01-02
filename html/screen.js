@@ -264,6 +264,9 @@ function start_websocket() {
           loop_width = json_data.params["loop-width"];
           loop_ar = loop_width / loop_height;
           resize_loop();
+          if (play_videos){
+            document.getElementById("loop_video").play();
+          }
         } else {
           if (play_videos){
             $("#loop_video_src").attr("src", "/html/black-frame.mp4");
@@ -337,6 +340,9 @@ function start_websocket() {
           loop_width = json_data.params["loop-width"];
           loop_ar = loop_width / loop_height;
           resize_loop();
+          if (play_videos){
+            document.getElementById("loop_video").play();
+          }
         } else {
           if (play_videos){
             $("#loop_video_src").attr("src", "/html/black-frame.mp4");
