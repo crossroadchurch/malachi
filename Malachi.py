@@ -6,6 +6,7 @@
 import asyncio
 import time
 import sys
+import io
 import os
 import re
 import requests
