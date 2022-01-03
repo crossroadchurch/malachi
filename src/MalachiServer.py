@@ -239,6 +239,7 @@ class MalachiServer():
                 "command.edit-style-params": [self.edit_style_params, ["style_params"]],
                 "command.set-loop": [self.set_loop, ["url"]],
                 "command.clear-loop": [self.clear_loop, []],
+                "command.restore-loop": [self.restore_loop, []],
                 "command.create-song": [self.create_song, ["title", "fields"]],
                 "command.edit-song": [self.edit_song, ["song-id", "fields"]],
                 "command.play-video": [self.play_video, []],
@@ -973,6 +974,16 @@ class MalachiServer():
             }))
         await self.server_response(websocket, "response.clear-loop", status, details)
 
+    async def restore_loop(self, websocket, params):
+        """ Send restore loop trigger to appropriate clients. """
+        status, details = "ok", ""
+        for socket in self.MEDIA_SOCKETS:
+            await socket[0].send(json.dumps({
+                "action": "trigger.restore-loop",
+                "params":  {}
+            }))
+        await self.server_response(websocket, "response.restore-loop", status, details)
+
     async def play_video(self, websocket, params):
         """Send a message to appropriate clients triggering playback of the current Video."""
         status, details = "ok", ""
@@ -1079,6 +1090,13 @@ class MalachiServer():
         """Call LibreOffice to start the presentation of the current service item."""
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Presentation":
+            # Suspend any running loop
+            for socket in self.MEDIA_SOCKETS:
+                await socket[0].send(json.dumps({
+                    "action": "trigger.suspend-loop",
+                    "params": {}
+                }))
+            # Start presentation in LibreOffice
             idx = self.s.item_index
             url = self.s.items[idx].get_url()
             subprocess.Popen(['soffice', '--show', url])
@@ -1093,6 +1111,12 @@ class MalachiServer():
         """
         status, details = "ok", ""
         pyautogui.press('escape')
+        # Restore loop
+        for socket in self.MEDIA_SOCKETS:
+            await socket[0].send(json.dumps({
+                "action": "trigger.restore-loop",
+                "params": {}
+            }))
         await self.server_response(websocket, "response.stop-presentation", status, details)
 
     async def next_presentation_slide(self, websocket, params):

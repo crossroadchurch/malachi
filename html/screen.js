@@ -97,6 +97,7 @@ function update_optional_areas() {
 function stop_running_video() {
   video_displayed = false;
   if (play_videos){
+    document.getElementById('loop_video').play();
     document.getElementById("video_item").pause();
   }
   $("#loop_video").css("display", "block");
@@ -356,11 +357,26 @@ function start_websocket() {
         }
         break;
 
+      case "trigger.suspend-loop":
+        $("#loop_video").css("display", "none");
+        if (play_videos){
+          document.getElementById('loop_video').pause();
+        }
+        break;
+      
+      case "trigger.restore-loop":
+        $("#loop_video").css("display", "block");
+        if (play_videos){
+          document.getElementById('loop_video').play();
+        }
+        break;  
+        
       case "trigger.play-video":
         stop_countdown();
         $("#video_item").css("display", "block");
         $("#loop_video").css("display", "none");
         if (play_videos){
+          document.getElementById('loop_video').pause();
           document.getElementById("video_item").play();
         }
         video_displayed = true;

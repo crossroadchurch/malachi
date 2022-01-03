@@ -404,6 +404,12 @@ function start_presentation() {
   );
 }
 
+function restore_loop() {
+  websocket.send(
+    JSON.stringify({ action: "command.restore-loop", params: {} })
+  );
+}
+
 function create_song() {
   // Empty all fields on popup
   $("#e_title").val("");
@@ -708,7 +714,6 @@ function update_style_sliders(style) {
   if (style["song-background-url"] == "none") {
     $("#song_bg_icon").attr("src", "");
   } else {
-    console.log(2);
     $("#song_bg_icon").attr(
       "src",
       "./backgrounds/thumbnails/" + style["song-background-url"].substr(14)
@@ -1450,6 +1455,8 @@ function start_websocket() {
       case "trigger.start-countdown":
       case "response.clear-countdown":
       case "trigger.clear-countdown":
+      case "trigger.restore-loop":
+      case "response.restore-loop":
         break; // No action required;
       default:
         console.error("Unsupported event", json_data);
