@@ -94,7 +94,7 @@ function change_screen_state_flip() {
 
 function add_verses() {
   verses = $("input[name=v_list]:checked");
-  version = $("#select_b_version").val();
+  version = $("input[name=b_version]:checked").attr("data-bv");
   if (verses.length > 0) {
     let range_start = $(verses[0]).attr("id").substr(2);
     let prev_id = range_start - 1;
