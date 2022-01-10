@@ -236,7 +236,6 @@ class MalachiServer():
                 "command.load-service": [self.load_service, ["filename", "force"]],
                 "command.save-service": [self.save_service, []],
                 "command.save-service-as": [self.save_service_as, ["filename"]],
-                "command.import-service": [self.import_service, ["filename", "force"]],
                 "command.export-service": [self.export_service, ["filename"]],
                 "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
                 "command.edit-style-params": [self.edit_style_params, ["style_params"]],
@@ -870,37 +869,6 @@ class MalachiServer():
         """
         self.s.save_as(params["filename"])
         await self.server_response(websocket, "response.save-service", "ok", "")
-
-    async def import_service(self, websocket, params):
-        """
-        Import a zipped Service and send update to appropriate clients.
-        If the current service has been modified then the action will be blocked and the
-        websocket making the request will be informed that the service is unsaved.  This
-        behaviour cannot be overridden by setting params["force"] to True.
-
-        Arguments:
-        params["filename"] -- the zipped service to load, relative to ./services.
-        params["force"] -- carry out action even if current service is unsaved (boolean).
-        """
-        status, details = "ok", ""
-        if not self.s.modified or params["force"]:
-            try:
-                self.s.import_service(
-                    params["filename"], self.screen_style, self.bible_versions)
-            except InvalidServiceUrlError as e:
-                self.s = Service()
-                status, details = "invalid-url", e.msg
-            except MalformedServiceFileError as e:
-                self.s = Service()
-                status, details = "malformed-json", e.msg
-            except MissingStyleParameterError as e:
-                self.s = Service()
-                status, details = "invalid-style", e.msg
-            finally:
-                await self.server_response(websocket, "response.import-service", status, details)
-                await self.clients_service_items_update()
-        else:
-            await self.server_response(websocket, "response.import-service", "unsaved-service", "")
 
     async def export_service(self, websocket, params):
         """

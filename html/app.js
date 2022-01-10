@@ -1157,6 +1157,14 @@ function start_websocket() {
         }
         break;
 
+      case "response.export-service":
+        json_toast_response(
+          json_data,
+          "Service exported successfully",
+          "Problem exporting service"
+        );
+        break;
+
       case "result.song-titles":
         let song_list = "";
         for (let song in json_data.params.songs) {
