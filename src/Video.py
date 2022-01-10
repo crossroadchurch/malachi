@@ -8,6 +8,9 @@ import math
 import json
 import re
 import cv2
+import binascii
+from datetime import datetime
+from zipfile import ZipFile
 from MalachiExceptions import InvalidVideoUrlError
 
 class Video():
@@ -15,14 +18,13 @@ class Video():
 
     def __init__(self, url):
         # URL is relative to Malachi directory, e.g. "./videos/video.mp4"
-        if os.path.isfile(url):
-            self.url = os.path.split(url)[0] + "/" + \
-                re.sub(r'[^a-zA-Z0-9 \'\-_.,()]', '', os.path.split(url)[1])
-            # Remove invalid characters from url, renaming source file as appropriate
-            if self.url != url:
-                os.rename(os.path.abspath(url), os.path.abspath(self.url))
-        else:
+        if not os.path.isfile(url):
             raise InvalidVideoUrlError(url)
+        self.url = os.path.split(url)[0] + "/" + \
+            re.sub(r'[^a-zA-Z0-9 \'\-_.,()]', '', os.path.split(url)[1])
+        # Remove invalid characters from url, renaming source file as appropriate
+        if self.url != url:
+            os.rename(os.path.abspath(url), os.path.abspath(self.url))
         self.title = os.path.basename(self.url)
         vid = cv2.VideoCapture(self.url)
         self.fps = vid.get(cv2.CAP_PROP_FPS)
@@ -78,6 +80,56 @@ class Video():
     def save_to_JSON(self):
         """Return a JSON object representing this Video for saving in a service plan."""
         return json.dumps({"type": "video", "url": self.url})
+
+    def export_to_JSON(self, export_zip):
+        """
+        Return a JSON object representing this Video for exporting to another
+        instance of Malachi and add the video to export_zip.
+        """
+        with ZipFile(export_zip, 'a') as out_zip:
+            # Test if Video has already been written to out_zip
+            if self.url[2:] not in out_zip.namelist():
+                out_zip.write(self.url)
+        return json.dumps({
+            "type": "video",
+            "url": self.url
+        })
+
+    @classmethod
+    def import_from_JSON(cls, json_data, export_zip):
+        """
+        Return a Video object corresponding to the video stored in json_data,
+        which has been exported (possibly from another instance of Malachi) using the
+        export_to_JSON method.  The video is extracted from export_zip if it doesn't
+        already exist in ./videos.
+
+        Precondition: json_data["type"] == "video"
+        Precondition: json_data["url"][2:] exists in export_zip
+        """
+        url = json_data["url"]
+        # Extract url from export_zip if it doesn't exist in ./videos
+        with ZipFile(export_zip, 'a') as out_zip: # mode must be 'a' in case we need to modify filename in zip
+            if not os.path.exists(url):
+                out_zip.extract(url[2:])
+            else:
+                # A video at url exists.  Use CRC32 to test if it is the same
+                # as the one stored in out_zip
+                idx = [index for index, element in enumerate(out_zip.infolist()) 
+                    if element.filename == url[2:]][0]
+                crc_zip = out_zip.infolist()[idx].CRC
+                disk_pres = open(url, 'rb').read()
+                crc_disk = binascii.crc32(disk_pres)
+                if crc_zip != crc_disk:
+                    # Video on disk is different to one stored in zip file.
+                    # Append timestamp to video in zip file before extracting and
+                    #  update url used in Malachi accordingly
+                    path_parts = os.path.splitext(url)
+                    url = path_parts[0] + datetime.now().strftime('_%Y%m%d_%H%M%S') + path_parts[1]
+                    out_zip.infolist()[idx].filename = url[2:]
+                    out_zip.extract(out_zip.infolist()[idx])
+
+        # Create Video object
+        return Video(url)
 
     @classmethod
     def get_all_videos(cls):

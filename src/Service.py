@@ -8,6 +8,7 @@
 
 import os
 import json
+from zipfile import ZipFile
 from BiblePassage import BiblePassage
 from Song import Song
 from Presentation import Presentation
@@ -75,19 +76,19 @@ class Service():
         """
         if from_index == to_index or not self.items:
             return 0 # No need to move items
-        else:
-            if 0 <= from_index < len(self.items) and 0 <= to_index <= len(self.items):
-                if from_index < to_index:
-                    self.items.insert(to_index + 1, self.items[from_index])
-                    del self.items[from_index]
-                else:
-                    self.items.insert(to_index, self.items[from_index])
-                    del self.items[from_index + 1]
-                self.modified = True
-                self.autosave()
-                return 1
+
+        if 0 <= from_index < len(self.items) and 0 <= to_index <= len(self.items):
+            if from_index < to_index:
+                self.items.insert(to_index + 1, self.items[from_index])
+                del self.items[from_index]
             else:
-                return -1 # Invalid index specified
+                self.items.insert(to_index, self.items[from_index])
+                del self.items[from_index + 1]
+            self.modified = True
+            self.autosave()
+            return 1 # Item successfully moved
+        
+        return -1 # Invalid index specified
 
     def get_current_item_type(self):
         """Return the type of the currently selected item"""
@@ -156,15 +157,12 @@ class Service():
         0 -- could not change to specified slide index as index is out of bounds
         -1 -- could not change to specified slide index as no item is selected in the service plan
         """
-
-        if self.item_index >= 0:
-            if 0 <= index < len(self.items[self.item_index].slides):
-                self.slide_index = index
-                return 1
-            else:
-                return 0
-        else:
+        if self.item_index < 0:
             return -1
+        if index >= len(self.items[self.item_index].slides):
+            return 0
+        self.slide_index = index
+        return 1
 
     def next_slide(self):
         """
@@ -175,14 +173,12 @@ class Service():
         0 -- could not advance to next slide as at last slide already
         -1 -- could not advance to next slide as no item is selected in the service plan
         """
-        if self.item_index >= 0:
-            if (self.slide_index + 1) < len(self.items[self.item_index].slides):
-                self.slide_index += 1
-                return 1
-            else:
-                return 0
-        else:
+        if self.item_index < 0:
             return -1
+        if (self.slide_index + 1) >= len(self.items[self.item_index].slides):
+            return 0
+        self.slide_index += 1
+        return 1
 
     def previous_slide(self):
         """
@@ -193,14 +189,12 @@ class Service():
         0 -- could not advance to previous slide as at first slide already
         -1 -- could not advance to previous slide as no item is selected in the service plan
         """
-        if self.item_index >= 0:
-            if self.slide_index > 0:
-                self.slide_index -= 1
-                return 1
-            else:
-                return 0
-        else:
+        if self.item_index < 0:
             return -1
+        if self.slide_index == 0:
+            return 0
+        self.slide_index -= 1
+        return 1
 
     def to_JSON_simple(self):
         """
@@ -265,52 +259,103 @@ class Service():
         MissingStyleParameterError - raised if one or more style parameters have not been specified.
         """
         # Precondition: fname is a JSON file in the folder ./services
-        if os.path.isfile("./services/" + fname):
-            with open("./services/" + fname) as f:
-                json_data = json.load(f)
-            if "items" not in json_data:
-                raise MalformedServiceFileError("./services/" + fname, "Missing key: 'items'")
-            self.items = []
-            self.file_name = fname
-            for item in json_data["items"]:
-                if "type" in item:
-                    if item["type"] == "bible":
-                        if "version" in item and "start_id" in item and "end_id" in item:
-                            try:
-                                self.add_item(BiblePassage(item["version"], \
-                                    item["start_id"], item["end_id"], cur_style, bible_versions))
-                            except MissingStyleParameterError as style_e:
-                                raise MissingStyleParameterError(style_e.msg[42:]) from style_e
-                        else:
-                            raise MalformedServiceFileError("./services/" + fname, \
-                                "Missing key for Bible passage")
-                    elif item["type"] == "song":
-                        if "song_id" in item:
-                            try:
-                                self.add_item(Song(item["song_id"], cur_style))
-                            except MissingStyleParameterError as style_e:
-                                raise MissingStyleParameterError(style_e.msg[42:]) from style_e
-                        else:
-                            raise MalformedServiceFileError("./services/" + fname, \
-                                "Missing key: 'song_id'")
-                    elif item["type"] == "video":
-                        if "url" in item:
-                            self.add_item(Video(item["url"]))
-                        else:
-                            raise MalformedServiceFileError("./services/" + fname, \
-                                "Missing key: 'url'")
-                    elif item["type"] == "presentation":
-                        if "url" in item:
-                            self.add_item(Presentation(item["url"]))
-                        else:
-                            raise MalformedServiceFileError("./services/" + fname, \
-                                "Missing key: 'url'")
+        full_path = "./services/" + fname
+        if not os.path.isfile(full_path):
+            raise InvalidServiceUrlError(full_path)
+        with open(full_path) as f:
+            json_data = json.load(f)
+        if "items" not in json_data:
+            raise MalformedServiceFileError(full_path, "Missing key: 'items'")
+        self.items = []
+        self.file_name = fname
+        for item in json_data["items"]:
+            if not "type" in item:
+                raise MalformedServiceFileError(full_path, "Missing key: 'type'")
+            if item["type"] == "bible":
+                if "version" in item and "start_id" in item and "end_id" in item:
+                    try:
+                        self.add_item(BiblePassage(item["version"], \
+                            item["start_id"], item["end_id"], cur_style, bible_versions))
+                    except MissingStyleParameterError as style_e:
+                        raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                 else:
-                    raise MalformedServiceFileError("./services/" + fname, "Missing key: 'type'")
-            self.modified = False
-        else:
-            raise InvalidServiceUrlError("./services/" + fname)
+                    raise MalformedServiceFileError(full_path, "Missing key for Bible passage")
+            elif item["type"] == "song":
+                if "song_id" in item:
+                    try:
+                        self.add_item(Song(item["song_id"], cur_style))
+                    except MissingStyleParameterError as style_e:
+                        raise MissingStyleParameterError(style_e.msg[42:]) from style_e
+                else:
+                    raise MalformedServiceFileError(full_path, "Missing key: 'song_id'")
+            elif item["type"] == "video":
+                if "url" in item:
+                    self.add_item(Video(item["url"]))
+                else:
+                    raise MalformedServiceFileError(full_path, "Missing key: 'url'")
+            elif item["type"] == "presentation":
+                if "url" in item:
+                    self.add_item(Presentation(item["url"]))
+                else:
+                    raise MalformedServiceFileError(full_path, "Missing key: 'url'")
+        self.modified = False
 
+    def import_service(self, fname, cur_style, bible_versions):
+        """
+        Import a zipped service plan, paginating items according to the specified style.
+
+        Arguments:
+        fname -- the filename of the zipped service within the ./services directory.
+        cur_style -- the style to use when paginating service items.
+
+        Possible exceptions:
+        MalformedServiceFileError -- raised if the saved service does not have the correct structure
+        InvalidServiceURLError -- raised if fname does not exist in the ./services directory
+        MissingStyleParameterError - raised if one or more style parameters have not been specified.
+        """
+        # Precondition: fname is a zipped archive in the folder ./services
+        full_path = "./services/" + fname
+        if not os.path.isfile(full_path):
+            raise InvalidServiceUrlError(full_path)
+        with ZipFile(full_path, 'r') as z:
+            if not 'manifest.json' in z.namelist():
+                raise MalformedServiceFileError(full_path, "Missing service manifest")
+            json_data = json.loads(z.read('manifest.json').decode('utf-8'))
+        if "items" not in json_data:
+            raise MalformedServiceFileError(full_path, "Missing key: 'items'")
+        self.items = []
+        self.file_name = fname + ".json"
+        for item in json_data["items"]:
+            if not "type" in item:
+                raise MalformedServiceFileError(full_path, "Missing key: 'type'")
+            if item["type"] == "bible":
+                if "version" in item and "ref" in item:
+                    try:
+                        self.add_item(BiblePassage.import_from_JSON(
+                            item, cur_style, bible_versions))
+                    except MissingStyleParameterError as style_e:
+                        raise MissingStyleParameterError(style_e.msg[42:]) from style_e
+                else:
+                    raise MalformedServiceFileError(full_path, "Missing key for Bible passage")
+            elif item["type"] == "song":
+                if "title" in item and "lyrics_chords" in item and "verse_order" in item:
+                    try:
+                        self.add_item(Song.import_from_JSON(item, cur_style))
+                    except MissingStyleParameterError as style_e:
+                        raise MissingStyleParameterError(style_e.msg[42:]) from style_e
+                else:
+                    raise MalformedServiceFileError(full_path, "Missing key(s) for Song")
+            elif item["type"] == "video":
+                if "url" in item:
+                    self.add_item(Video.import_from_JSON(item, full_path))
+                else:
+                    raise MalformedServiceFileError(full_path, "Missing key: 'url'")
+            elif item["type"] == "presentation":
+                if "url" in item:
+                    self.add_item(Presentation.import_from_JSON(item, full_path))
+                else:
+                    raise MalformedServiceFileError(full_path, "Missing key: 'url'")
+        self.modified = False
 
     def save(self):
         """
@@ -321,10 +366,9 @@ class Service():
         """
         if self.file_name is None:
             raise UnspecifiedServiceUrl()
-        else:
-            with open("./services/" + self.file_name, 'w') as json_file:
-                json.dump({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, json_file)
-            self.modified = False
+        with open("./services/" + self.file_name, 'w') as json_file:
+            json.dump({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, json_file)
+        self.modified = False
 
     def save_as(self, fname):
         """
@@ -336,7 +380,6 @@ class Service():
         self.file_name = fname
         self.save()
 
-
     def autosave(self):
         """
         Autosave the current service plan to /services/autosave.json.
@@ -344,11 +387,24 @@ class Service():
         with open("./services/autosave.json", 'w') as json_file:
             json.dump({"items": [json.loads(x.save_to_JSON()) for x in self.items]}, json_file)
 
+    def export_as(self, fname):
+        """
+        Exports the current service plan to the specified zip file.
+
+        Arguments:
+        fname -- the name of the export zip file within the ./services directory.
+        """
+        # x.export_to_JSON calls will add video and presentation resources to the zip file.
+        export_zip = "./services/" + fname
+        exported_service = json.dumps(
+            {"items": [json.loads(x.export_to_JSON(export_zip)) for x in self.items]}, indent=2)
+        with ZipFile(export_zip, 'a') as out_zip:
+            out_zip.writestr('manifest.json', exported_service)
 
     @classmethod
     def get_all_services(cls):
         """Return a list of all saved services within the ./services directory."""
-        fnames = [f for f in os.listdir('./services') if f.endswith('.json')]
+        fnames = [f for f in os.listdir('./services') if f.endswith('.json') or f.endswith('.zip')]
         return fnames
 
 ### TESTING ONLY ###

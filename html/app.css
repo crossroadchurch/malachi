@@ -68,17 +68,6 @@ body {
   width: 16px;
 }
 
-#song_search_div {
-  width: 65%;
-  display: inline-block;
-}
-
-#new_song_btn_div {
-  width: 25%;
-  display: inline-block;
-  padding-left: 5%;
-}
-
 a.i-item {
   padding-top: 3px;
   padding-bottom: 3px;
@@ -196,4 +185,98 @@ a.i-item.selected:hover {
   padding: 20px;
   border: 1px solid #dddddd;
   border-radius: 5px;
+}
+
+div#item_header {
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+div#video_controls, div#presentation_controls {
+  padding-left: 1em;
+  padding-right: 1em;
+  display: none;
+}
+
+div#current_item_list_div {
+  padding: 0px 10px 10px 10px;
+}
+
+.countdown_component {
+  display: inline-block;
+}
+
+.countdown_component button {
+  border-right-width: 1px !important;
+}
+
+.countdown_component input {
+  width: 100px !important; 
+}
+
+div.div_clear {
+  clear: both;
+}
+
+div#lr_radios {
+  margin-top: 3px;
+  padding-left: 5px;
+}
+
+div#b_version_picker {
+  padding-top: 5px;
+  text-align: right;
+}
+
+div#bible_search_div {
+  padding-top: 3px;
+}
+
+div#bible_search_btn_div {
+  width: 22%;
+  padding-left: 3%;
+  float: left;
+}
+
+.float_left_25 {
+  width: 25%;
+  float: left;
+}
+
+.float_left_33 {
+  width: 33%;
+  float: left;
+}
+
+.float_left_67 {
+  width: 67%;
+  float: left;
+}
+
+.float_left_75 {
+  width: 75%;
+  float: left;
+}
+
+.float_right {
+  float: right;
+}
+
+.song_bible_buttons {
+  width: 45%;
+  float: left;
+  padding-left: 2%;
+  padding-right: 2%;
+}
+
+.pad_right_10 {
+  padding-right: 10px;
+}
+
+.song_bible_a {
+  min-height: auto !important;
+}
+
+#popup_save_service_as, #popup_export_service_as {
+  min-width: 400px;
 }

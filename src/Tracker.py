@@ -18,8 +18,7 @@ class Tracker():
         song_id -- the id of the Song to be logged.
         """
         # Only log each song once per day
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Tracker.db_connect()
         cursor.execute('''
             SELECT id
             FROM tracking
@@ -47,8 +46,7 @@ class Tracker():
             s_date, e_date = end_date, start_date
         else:
             s_date, e_date = start_date, end_date
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Tracker.db_connect()
         cursor.execute('''
             SELECT s.title, s.author, s.song_book_name, s.song_number, s.copyright, t.tracked_date
             FROM songs AS s INNER JOIN tracking AS t ON s.id = t.song_id
@@ -78,8 +76,7 @@ class Tracker():
             s_date, e_date = end_date, start_date
         else:
             s_date, e_date = start_date, end_date
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Tracker.db_connect()
         cursor.execute('''
             DELETE
             FROM tracking
@@ -91,13 +88,18 @@ class Tracker():
     @classmethod
     def clear_all_usage(cls):
         """Remove all usage data from songs database."""
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Tracker.db_connect()
         cursor.execute('''
             DELETE FROM tracking
         ''')
         song_db.commit()
         song_db.close()
+
+    @classmethod
+    def db_connect(cls):
+        song_db = sqlite3.connect('./data/songs.sqlite')
+        cursor = song_db.cursor()
+        return song_db, cursor
 
 # TESTING ONLY
 if __name__ == "__main__":

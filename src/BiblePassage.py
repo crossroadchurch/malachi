@@ -28,24 +28,20 @@ class BiblePassage():
     """
 
     def __init__(self, version, start_id, end_id, cur_style, versions):
-        if version in versions:
-            self.version = version
-        else:
+        if not version in versions:
             raise InvalidVersionError(version)
-        if self.is_valid_verse_id(start_id):
-            self.start_id = start_id
-        else:
+        self.version = version
+        if not self.is_valid_verse_id(start_id):
             raise InvalidVerseIdError(start_id, version)
-        if self.is_valid_verse_id(end_id):
-            self.end_id = end_id
-        else:
+        if not self.is_valid_verse_id(end_id):
             raise InvalidVerseIdError(end_id, version)
+        self.start_id = start_id
+        self.end_id = end_id
         if self.start_id > self.end_id:
             temp = self.end_id
             self.end_id = self.start_id
             self.start_id = temp
-        bible_db = sqlite3.connect('./data/' + self.version + '.sqlite')
-        cursor = bible_db.cursor()
+        bible_db, cursor = BiblePassage.db_connect(self.version)
         cursor.execute('''
             SELECT v.text, v.id, v.chapter, v.verse FROM Verse AS v
             WHERE v.id>={s_id} AND v.id<={e_id}
@@ -75,8 +71,7 @@ class BiblePassage():
         Return value:
         Boolean
         """
-        bible_db = sqlite3.connect('./data/' + self.version + '.sqlite')
-        cursor = bible_db.cursor()
+        bible_db, cursor = BiblePassage.db_connect(self.version)
         cursor.execute('''
             SELECT v.id FROM Verse AS v
             WHERE v.id = {v_id}
@@ -85,8 +80,7 @@ class BiblePassage():
         bible_db.close()
         if result == []:
             return False
-        else:
-            return True
+        return True
 
 
     def get_title(self):
@@ -94,8 +88,7 @@ class BiblePassage():
         Return the title of this BiblePassage, consisting of the verse or range of
         verses, followed by the Bible version e.g. John 3:16-17 (NIV)
         """
-        bible_db = sqlite3.connect('./data/' + self.version + '.sqlite')
-        cursor = bible_db.cursor()
+        bible_db, cursor = BiblePassage.db_connect(self.version)
 
         if self.start_id == self.end_id:
             cursor.execute('''
@@ -180,6 +173,32 @@ class BiblePassage():
             "start_id": self.start_id,
             "end_id": self.end_id})
 
+    def export_to_JSON(self, export_zip):
+        """
+        Return a JSON object representing this BiblePassage for exporting to another
+        instance of Malachi.
+        """
+        return json.dumps({
+            "type": "bible",
+            "version": self.version,
+            "ref": self.get_title()[:-(len(self.version)+3)]
+        })
+
+    # TODO: Add exception handling for ref_search call
+    @classmethod
+    def import_from_JSON(cls, json_data, cur_style, versions):
+        """
+        Return a BiblePassage object corresponding to the passage stored in json_data,
+        which has been exported (possibly from another instance of Malachi) using the
+        export_to_JSON method.
+
+        Precondition: json_data["type"] == "bible"
+        """
+        verses = json.loads(BiblePassage.ref_search(json_data["version"], json_data["ref"], versions))
+        start_verse = verses[0][0]
+        end_verse = verses[-1][0]
+        return BiblePassage(json_data["version"], start_verse, end_verse, cur_style, versions)
+
     def paginate_from_style(self, style):
         """Paginate the current BiblePassage based on the specified style.
 
@@ -256,18 +275,16 @@ class BiblePassage():
         Possible exceptions:
         InvalidVersionError -- raised if the specified version is not available.
         """
-        if version in versions:
-            bible_db = sqlite3.connect('./data/' + version + '.sqlite')
-            cursor = bible_db.cursor()
-            cursor.execute('''
-                SELECT b.name FROM book AS b
-                ORDER BY b.id ASC
-            ''')
-            books = cursor.fetchall()
-            bible_db.close()
-            return [x[0] for x in books]
-        else:
+        if not version in versions:
             raise InvalidVersionError(version)
+        bible_db, cursor = BiblePassage.db_connect(version)
+        cursor.execute('''
+            SELECT b.name FROM book AS b
+            ORDER BY b.id ASC
+        ''')
+        books = cursor.fetchall()
+        bible_db.close()
+        return [x[0] for x in books]
 
     @classmethod
     def get_chapter_structure(cls, version, versions):
@@ -282,20 +299,18 @@ class BiblePassage():
         Possible exceptions:
         InvalidVersionError -- raised if the specified version is not available.
         """
-        if version in versions:
-            bible_db = sqlite3.connect('./data/' + version + '.sqlite')
-            cursor = bible_db.cursor()
-            cursor.execute('''
-                SELECT b.name, MAX(v.chapter)
-                FROM book AS b INNER JOIN verse AS v ON v.book_id = b.id
-                GROUP BY b.name
-                ORDER BY b.id ASC
-            ''')
-            books = cursor.fetchall()
-            bible_db.close()
-            return [[x[0], x[1]] for x in books]
-        else:
+        if not version in versions:
             raise InvalidVersionError(version)
+        bible_db, cursor = BiblePassage.db_connect(version)
+        cursor.execute('''
+            SELECT b.name, MAX(v.chapter)
+            FROM book AS b INNER JOIN verse AS v ON v.book_id = b.id
+            GROUP BY b.name
+            ORDER BY b.id ASC
+        ''')
+        books = cursor.fetchall()
+        bible_db.close()
+        return [[x[0], x[1]] for x in books]
 
     @classmethod
     def text_search(cls, version, search_text, versions):
@@ -311,20 +326,18 @@ class BiblePassage():
         Possible exceptions:
         InvalidVersionError -- raised if the specified version is not available.
         """
-        if version in versions:
-            bible_db = sqlite3.connect('./data/' + version + '.sqlite')
-            cursor = bible_db.cursor()
-            cursor.execute('''
-                SELECT v.id, b.name, v.chapter, v.verse, v.text
-                FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
-                WHERE v.text LIKE "%{txt}%"
-                ORDER BY b.id ASC, v.chapter ASC, v.verse ASC
-            '''.format(txt=search_text))
-            verses = cursor.fetchall()
-            bible_db.close()
-            return json.dumps(verses, indent=2)
-        else:
+        if not version in versions:
             raise InvalidVersionError(version)
+        bible_db, cursor = BiblePassage.db_connect(version)
+        cursor.execute('''
+            SELECT v.id, b.name, v.chapter, v.verse, v.text
+            FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
+            WHERE v.text LIKE "%{txt}%"
+            ORDER BY b.id ASC, v.chapter ASC, v.verse ASC
+        '''.format(txt=search_text))
+        verses = cursor.fetchall()
+        bible_db.close()
+        return json.dumps(verses, indent=2)
 
     @classmethod
     def ref_search(cls, version, search_ref, versions):
@@ -341,145 +354,143 @@ class BiblePassage():
         InvalidVersionError -- raised if the specified version is not available.
         MalformedReferenceError -- raised if search_ref is not a valid verse reference.
         """
-        if version in versions:
-            # Determine if this search if for a range of verses or a single verse
-            dash_split = search_ref.split("-")
-            if len(dash_split) > 2:
-                raise MalformedReferenceError(search_ref) # Too many dashes in reference
+        if not version in versions:
+            raise InvalidVersionError(version)
+        # Determine if this search if for a range of verses or a single verse
+        dash_split = search_ref.split("-")
+        if len(dash_split) > 2:
+            raise MalformedReferenceError(search_ref) # Too many dashes in reference
 
-            # Process part of reference before dash
-            # Split into book | (chapter verse)
-            ref1 = ' '.join(re.split(r"\s+", dash_split[0]))
-            word_split = ref1.split(" ")
-            if word_split[0].isdigit() and len(word_split) >= 2:
-                # Book that starts with a digit
-                book = word_split[0] + " " + word_split[1]
-                if len(word_split) == 2:
-                    # Just a book that starts with a digit
-                    where_clause = 'WHERE b.name LIKE "{bk}%"'.format(bk=book) # e.g. 1 John
-                else:
-                    ch_verse_part = (''.join(word_split[2:])).replace(' ', '')
-                    verse_split = ch_verse_part.split(":")
-                    if len(verse_split) == 1 and verse_split[0].isdigit():
-                        where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch}'\
-                            .format(bk=book, ch=verse_split[0]) # e.g. 1 John 2
-                    elif len(verse_split) == 2 and verse_split[0].isdigit() \
-                        and verse_split[1].isdigit():
-                        # e.g. 1 John 2:1
-                        where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
-                            AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse_split[1])
-                    else:
-                        raise MalformedReferenceError(search_ref)
-
-            elif not word_split[0].isdigit():
-                # Book that does not start with a digit
-                book = word_split[0]
-                if len(word_split) == 1:
-                    # Just a book
-                    where_clause = 'WHERE b.name LIKE "{bk}%"'.format(bk=book) # e.g. Acts
-                else:
-                    ch_verse_part = (''.join(word_split[1:])).replace(' ', '')
-                    verse_split = ch_verse_part.split(":")
-                    if len(verse_split) == 1 and verse_split[0].isdigit():
-                        where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch}'\
-                            .format(bk=book, ch=verse_split[0]) # e.g. Acts 2
-                    elif len(verse_split) == 2 and verse_split[0].isdigit() \
-                        and verse_split[1].isdigit():
-                        # e.g. Acts 2:1
-                        where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
-                            AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse_split[1])
-                    else:
-                        raise MalformedReferenceError(search_ref)
+        # Process part of reference before dash
+        # Split into book | (chapter verse)
+        ref1 = ' '.join(re.split(r"\s+", dash_split[0]))
+        word_split = ref1.split(" ")
+        if word_split[0].isdigit() and len(word_split) >= 2:
+            # Book that starts with a digit
+            book = word_split[0] + " " + word_split[1]
+            if len(word_split) == 2:
+                # Just a book that starts with a digit
+                where_clause = 'WHERE b.name LIKE "{bk}%"'.format(bk=book) # e.g. 1 John
             else:
-                # Just digits
-                raise MalformedReferenceError(search_ref)
-
-            where2_clause = ''
-            if len(dash_split) == 2:
-                # Process end of reference and add to where_clause
-                # If specifying a second reference then the first reference
-                #  must be of the form book chapter verse
-                if not("b.name" in where_clause and "v.chapter" in where_clause \
-                    and "v.verse" in where_clause):
+                ch_verse_part = (''.join(word_split[2:])).replace(' ', '')
+                verse_split = ch_verse_part.split(":")
+                if len(verse_split) == 1 and verse_split[0].isdigit():
+                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch}'\
+                        .format(bk=book, ch=verse_split[0]) # e.g. 1 John 2
+                elif len(verse_split) == 2 and verse_split[0].isdigit() \
+                    and verse_split[1].isdigit():
+                    # e.g. 1 John 2:1
+                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
+                        AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse_split[1])
+                else:
                     raise MalformedReferenceError(search_ref)
 
-                # Only allowing references within the same book
-                verse2_split = dash_split[1].replace(' ', '').split(":")
-                if len(verse2_split) == 1 and verse2_split[0].isdigit():
-                    # Second reference is just a verse in the same chapter
-                    if verse2_split[0] > verse_split[1]:
-                        # e.g. (1 )John 2:1-5
-                        where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
-                            AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse2_split[0])
-                    elif verse2_split[0] == verse_split[1]:
-                        where2_clause = '' # e.g. (1 )John 2:1-1
+        elif not word_split[0].isdigit():
+            # Book that does not start with a digit
+            book = word_split[0]
+            if len(word_split) == 1:
+                # Just a book
+                where_clause = 'WHERE b.name LIKE "{bk}%"'.format(bk=book) # e.g. Acts
+            else:
+                ch_verse_part = (''.join(word_split[1:])).replace(' ', '')
+                verse_split = ch_verse_part.split(":")
+                if len(verse_split) == 1 and verse_split[0].isdigit():
+                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch}'\
+                        .format(bk=book, ch=verse_split[0]) # e.g. Acts 2
+                elif len(verse_split) == 2 and verse_split[0].isdigit() \
+                    and verse_split[1].isdigit():
+                    # e.g. Acts 2:1
+                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
+                        AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse_split[1])
+                else:
+                    raise MalformedReferenceError(search_ref)
+        else:
+            # Just digits
+            raise MalformedReferenceError(search_ref)
+
+        where2_clause = ''
+        if len(dash_split) == 2:
+            # Process end of reference and add to where_clause
+            # If specifying a second reference then the first reference
+            #  must be of the form book chapter verse
+            if not("b.name" in where_clause and "v.chapter" in where_clause \
+                and "v.verse" in where_clause):
+                raise MalformedReferenceError(search_ref)
+
+            # Only allowing references within the same book
+            verse2_split = dash_split[1].replace(' ', '').split(":")
+            if len(verse2_split) == 1 and verse2_split[0].isdigit():
+                # Second reference is just a verse in the same chapter
+                if verse2_split[0] > verse_split[1]:
+                    # e.g. (1 )John 2:1-5
+                    where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
+                        AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse2_split[0])
+                elif verse2_split[0] == verse_split[1]:
+                    where2_clause = '' # e.g. (1 )John 2:1-1
+                else:
+                    # Second verse comes before first verse
+                    raise MalformedReferenceError(search_ref)
+            elif len(verse2_split) == 2 and verse2_split[0].isdigit() \
+                and verse2_split[1].isdigit():
+                # Second reference is a chapter and verse
+                if verse2_split[0] > verse_split[0]:
+                    # Second chapter is strictly after first chapter
+                    # e.g. (1 )John 2:1-3:1
+                    where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
+                        v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
+                elif verse2_split[0] == verse_split[0]:
+                    # Second chapter is same as first chapter
+                    if verse2_split[1] > verse_split[1]:
+                        # e.g. (1 )John 2:1-2:5
+                        where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
+                        v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
+                    elif verse2_split[1] == verse_split[1]:
+                        where2_clause = '' # e.g. (1 )John 2:1-2:1
                     else:
                         # Second verse comes before first verse
                         raise MalformedReferenceError(search_ref)
-                elif len(verse2_split) == 2 and verse2_split[0].isdigit() \
-                    and verse2_split[1].isdigit():
-                    # Second reference is a chapter and verse
-                    if verse2_split[0] > verse_split[0]:
-                        # Second chapter is strictly after first chapter
-                        # e.g. (1 )John 2:1-3:1
-                        where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
-                            v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
-                    elif verse2_split[0] == verse_split[0]:
-                        # Second chapter is same as first chapter
-                        if verse2_split[1] > verse_split[1]:
-                            # e.g. (1 )John 2:1-2:5
-                            where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
-                            v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
-                        elif verse2_split[1] == verse_split[1]:
-                            where2_clause = '' # e.g. (1 )John 2:1-2:1
-                        else:
-                            # Second verse comes before first verse
-                            raise MalformedReferenceError(search_ref)
-                    else:
-                        # Second chapter comes before first chapter
-                        raise MalformedReferenceError(search_ref)
                 else:
+                    # Second chapter comes before first chapter
                     raise MalformedReferenceError(search_ref)
-            # Now to do the actual searching!
-            bible_db = sqlite3.connect('./data/' + version + '.sqlite')
-            cursor = bible_db.cursor()
-            if where2_clause == '':
+            else:
+                raise MalformedReferenceError(search_ref)
+        # Now to do the actual searching!
+        bible_db, cursor = BiblePassage.db_connect(version)
+        if where2_clause == '':
+            cursor.execute('''
+                SELECT v.id, b.name, v.chapter, v.verse, v.text
+                FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
+                {where}
+                ORDER BY b.id ASC, v.chapter ASC, v.verse ASC
+            '''.format(where=where_clause))
+            verses = cursor.fetchall()
+            if verses == []:
+                raise UnknownReferenceError(search_ref)
+        else:
+            cursor.execute('''
+                SELECT v.id
+                FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
+                {where}
+            '''.format(where=where_clause))
+            verse1 = cursor.fetchone()
+            cursor.execute('''
+                SELECT v.id
+                FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
+                {where}
+            '''.format(where=where2_clause))
+            verse2 = cursor.fetchone()
+            if (verse1 is None or verse2 is None):
+                raise UnknownReferenceError(search_ref)
+            else:
                 cursor.execute('''
                     SELECT v.id, b.name, v.chapter, v.verse, v.text
                     FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
-                    {where}
+                    WHERE v.id >= {v1} AND v.id <= {v2}
                     ORDER BY b.id ASC, v.chapter ASC, v.verse ASC
-                '''.format(where=where_clause))
+                '''.format(v1=verse1[0], v2=verse2[0]))
                 verses = cursor.fetchall()
-                if verses == []:
-                    raise UnknownReferenceError(search_ref)
-            else:
-                cursor.execute('''
-                    SELECT v.id
-                    FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
-                    {where}
-                '''.format(where=where_clause))
-                verse1 = cursor.fetchone()
-                cursor.execute('''
-                    SELECT v.id
-                    FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
-                    {where}
-                '''.format(where=where2_clause))
-                verse2 = cursor.fetchone()
-                if (verse1 is None or verse2 is None):
-                    raise UnknownReferenceError(search_ref)
-                else:
-                    cursor.execute('''
-                        SELECT v.id, b.name, v.chapter, v.verse, v.text
-                        FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
-                        WHERE v.id >= {v1} AND v.id <= {v2}
-                        ORDER BY b.id ASC, v.chapter ASC, v.verse ASC
-                    '''.format(v1=verse1[0], v2=verse2[0]))
-                    verses = cursor.fetchall()
-            bible_db.close()
-            return json.dumps(verses, indent=2)
-        else:
-            raise InvalidVersionError(version)
+        bible_db.close()
+        return json.dumps(verses, indent=2)
 
     @classmethod
     def translate_verse_id(cls, src_id, src_version, dest_version, bible_versions):
@@ -501,8 +512,7 @@ class BiblePassage():
             raise InvalidVersionError(src_version)
         if dest_version not in bible_versions:
             raise InvalidVersionError(dest_version)
-        bible_db = sqlite3.connect('./data/' + src_version + '.sqlite')
-        cursor = bible_db.cursor()
+        bible_db, cursor = BiblePassage.db_connect(src_version)
         cursor.execute('''
             SELECT v.id, v.book_id, v.chapter, v.verse
             FROM verse AS v
@@ -512,8 +522,7 @@ class BiblePassage():
         if not old_verse:
             raise InvalidVerseIdError(src_id, src_version)
         bible_db.close()
-        bible_db = sqlite3.connect('./data/' + dest_version + '.sqlite')
-        cursor = bible_db.cursor()
+        bible_db, cursor = BiblePassage.db_connect(dest_version)
         cursor.execute('''
             SELECT v.id
             FROM verse AS v
@@ -524,6 +533,12 @@ class BiblePassage():
             raise MatchingVerseIdError(src_id, src_version, dest_version)
         bible_db.close()
         return new_result[0]
+
+    @classmethod
+    def db_connect(cls, version):
+        bible_db = sqlite3.connect('./data/' + version + '.sqlite')
+        cursor = bible_db.cursor()
+        return bible_db, cursor
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

@@ -50,6 +50,7 @@ class MalachiServer():
 
     def __init__(self):
         try:
+            Song.update_schema() # Check song database has up to date schema
             self.bible_versions = []  # Loaded within check_data_files()
             self.screen_style = []
             self.capture_refresh_rate = 1000
@@ -235,6 +236,8 @@ class MalachiServer():
                 "command.load-service": [self.load_service, ["filename", "force"]],
                 "command.save-service": [self.save_service, []],
                 "command.save-service-as": [self.save_service_as, ["filename"]],
+                "command.import-service": [self.import_service, ["filename", "force"]],
+                "command.export-service": [self.export_service, ["filename"]],
                 "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
                 "command.edit-style-params": [self.edit_style_params, ["style_params"]],
                 "command.set-loop": [self.set_loop, ["url"]],
@@ -263,7 +266,7 @@ class MalachiServer():
                 "client.set-capo": [self.set_capo, ["capo"]],
                 "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
                 "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
-                "query.song-by-text": [self.song_text_query, ["search-text"]],
+                "query.song-by-text": [self.song_text_query, ["search-text", "remote"]],
                 "request.full-song": [self.request_full_song, ["song-id"]],
                 "request.bible-versions": [self.request_bible_versions, []],
                 "request.bible-books": [self.request_bible_books, ["version"]],
@@ -818,14 +821,21 @@ class MalachiServer():
         behaviour cannot be overridden by setting params["force"] to True.
 
         Arguments:
-        params["filename"] -- the service to load, specified relative to the Malachi root.
+        params["filename"] -- the service to load relative to ./services.
         params["force"] -- carry out action even if current service is unsaved (boolean).
         """
         status, details = "ok", ""
         if not self.s.modified or params["force"]:
             try:
-                self.s.load_service(
-                    params["filename"], self.screen_style, self.bible_versions)
+                if params["filename"][-4:] == "json":
+                    self.s.load_service(
+                        params["filename"], self.screen_style, self.bible_versions)
+                elif params["filename"][-3:] == "zip":
+                    self.s.import_service(
+                        params["filename"], self.screen_style, self.bible_versions)
+                else:
+                    self.s = Service()
+                    status, details = "invalid-url", "Could not find a service file at the url {url}".format(url=params["filename"])
             except InvalidServiceUrlError as e:
                 self.s = Service()
                 status, details = "invalid-url", e.msg
@@ -860,6 +870,47 @@ class MalachiServer():
         """
         self.s.save_as(params["filename"])
         await self.server_response(websocket, "response.save-service", "ok", "")
+
+    async def import_service(self, websocket, params):
+        """
+        Import a zipped Service and send update to appropriate clients.
+        If the current service has been modified then the action will be blocked and the
+        websocket making the request will be informed that the service is unsaved.  This
+        behaviour cannot be overridden by setting params["force"] to True.
+
+        Arguments:
+        params["filename"] -- the zipped service to load, relative to ./services.
+        params["force"] -- carry out action even if current service is unsaved (boolean).
+        """
+        status, details = "ok", ""
+        if not self.s.modified or params["force"]:
+            try:
+                self.s.import_service(
+                    params["filename"], self.screen_style, self.bible_versions)
+            except InvalidServiceUrlError as e:
+                self.s = Service()
+                status, details = "invalid-url", e.msg
+            except MalformedServiceFileError as e:
+                self.s = Service()
+                status, details = "malformed-json", e.msg
+            except MissingStyleParameterError as e:
+                self.s = Service()
+                status, details = "invalid-style", e.msg
+            finally:
+                await self.server_response(websocket, "response.import-service", status, details)
+                await self.clients_service_items_update()
+        else:
+            await self.server_response(websocket, "response.import-service", "unsaved-service", "")
+
+    async def export_service(self, websocket, params):
+        """
+        Export the current service to a specified zip file.
+
+        Arguments:
+        params["filename"] -- the name of the export zip file, within the ./services directory.
+        """
+        self.s.export_as(params["filename"])
+        await self.server_response(websocket, "response.export-service", "ok", "")
 
     async def edit_style_param(self, websocket, params):
         """
@@ -1309,8 +1360,9 @@ class MalachiServer():
         Arguments:
         params["search-text"] -- the text to search for, in either the
         Song title or lyrics
+        params["remote"] -- 0 = search local songs, 1 = search remote songs
         """
-        result = Song.text_search(params["search-text"])
+        result = Song.text_search(params["search-text"], params["remote"])
         await websocket.send(json.dumps({
             "action": "result.song-titles",
             "params": {

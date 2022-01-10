@@ -15,14 +15,13 @@ class Background():
 
     def __init__(self, url):
         # URL is relative to Malachi directory, e.g. "./backgrounds/image.jpg"
-        if os.path.isfile(url):
-            self.url = os.path.split(url)[0] + "/" + \
-                re.sub(r'[^a-zA-Z0-9 \'\-_.,()]', '', os.path.split(url)[1])
-            # Remove invalid characters from url, renaming source file as appropriate
-            if self.url != url:
-                os.rename(os.path.abspath(url), os.path.abspath(self.url))
-        else:
+        if not os.path.isfile(url):
             raise InvalidBackgroundUrlError(url)
+        self.url = os.path.split(url)[0] + "/" + \
+            re.sub(r'[^a-zA-Z0-9 \'\-_.,()]', '', os.path.split(url)[1])
+        # Remove invalid characters from url, renaming source file as appropriate
+        if self.url != url:
+            os.rename(os.path.abspath(url), os.path.abspath(self.url))
         self.title = os.path.basename(self.url)
         img = cv2.imread(self.url)
         self.image_width = img.shape[1]

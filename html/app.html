@@ -27,7 +27,7 @@
         <div id="screen_view">
           <iframe id="screen_iframe" src="./screen?muted=true"></iframe>
         </div>
-        <div id="item_header" style="padding-left: 1em; padding-right: 1em">
+        <div id="item_header">
           <input
             type="checkbox"
             data-role="flipswitch"
@@ -41,18 +41,9 @@
             id="current_item_icon"
             src="/html/icons/icons8-musical-notes-48.png"
           /><span id="current_item_name">No current item</span>
-          <select
-            name="version_changer"
-            id="version_changer"
-            data-mini="true"
-            data-inline="true"
-          ></select>
         </div>
         <div id="current_item">
-          <div
-            id="video_controls"
-            style="padding-left: 1em; padding-right: 1em; display: none"
-          >
+          <div id="video_controls">
             <!-- prettier-ignore -->
             <button
               id="play_btn"
@@ -89,42 +80,23 @@
               />
             </div>
           </div>
-          <div
-            id="presentation_controls"
-            style="padding-left: 1em; padding-right: 1em; display: none"
-          >
+          <div id="presentation_controls">
             <button
               id="pres_start"
               onclick="start_presentation()"
-              class="
-                ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play
-                video-ctrl-btn
-              "
+              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-play video-ctrl-btn"
             >
               &nbsp;
             </button>
             <button
               id="pres_start"
               onclick="restore_loop()"
-              class="
-                ui-btn ui-corner-all ui-btn-inline
-              "
+              class="ui-btn ui-corner-all ui-btn-inline"
             >
               Restore loop
             </button>
-            <select
-              name="capture_source_chooser"
-              id="capture_source_chooser"
-              onchange="update_capturing();"
-              data-mini="true"
-              data-inline="true"
-            >
-              <option value="0">No screen capture</option>
-              <option value="1">Capture main monitor</option>
-              <option value="2">Capture extended monitor</option>
-            </select>
           </div>
-          <div style="padding: 0px 10px 10px 10px">
+          <div id="current_item_list_div">
             <ul
               id="current_item_list"
               data-role="listview"
@@ -228,53 +200,50 @@
               >
                 Save as
               </button>
+              <button
+                id="export_service_as_btn"
+                class="ui-btn ui-corner-all ui-btn-inline"
+                onclick="$('#popup_export_service_as').popup('open');"
+              >
+                Export
+              </button>
             </div>
           </div>
           <h3>Service plan</h3>
           <ul id="service_list" data-role="listview" data-inset="true"></ul>
-          <span style="padding-right: 10px"><strong>Countdown to:</strong></span>
-          <div
-            data-role="controlgroup"
-            data-mini="false"
-            data-type="horizontal"
-            style="padding-right: 10px"
-          >
-            <select
-              name="cd_hr"
-              id="cd_hr"
-              data-mini="false"
-              data-inline="true"
-            ></select>
-            <select
-              name="cd_min"
-              id="cd_min"
-              data-mini="false"
-              data-inline="true"
-            ></select>
-          </div>
-          <div
-            data-role="controlgroup"
-            data-mini="false"
-            data-type="horizontal"
-          >
-            <button
-              class="ui-btn ui-corner-all ui-btn-inline"
-              onclick="start_countdown()"
-            >
-              Start countdown
-            </button>
-            <button
-              class="ui-btn ui-corner-all ui-btn-inline"
-              onclick="clear_countdown()"
-            >
-              Cancel
-            </button>
+          <div data-role="controlgroup" data-type="horizontal" data-mini="true">
+            <div class="countdown_component">
+              <button onclick="start_countdown()">
+                Start countdown to:
+              </button>
+            </div>
+            <div class="countdown_component">
+              <input data-corners="false" type="time" id="cd_time" name="cd_time"/>
+            </div>
+            <div class="countdown_component">
+              <button onclick="clear_countdown()">Cancel countdown</button>
+            </div>
           </div>
         </div>
 
         <div id="song_element" class="ui-content">
           <div>
-            <div id="song_search_div" style="width: 75%; float: left">
+            <div class="float_left_75">
+              <h3>Songs</h3>
+            </div>
+            <div class="float_left_25">
+              <button
+                id="new_song_btn"
+                class="ui-btn ui-corner-all ui-btn-inline ui-icon-plus ui-btn-icon-left"
+                onclick="create_song()"
+              >
+                Create song
+              </button>
+            </div>
+          </div>
+          <div class="div_clear"></div>
+          <div class="ui-grid-a">
+            <div class="ui-block-a">
               <input
                 type="search"
                 id="song_search"
@@ -283,40 +252,65 @@
                 oninput="song_search()"
               />
             </div>
-            <div
-              id="new_song_btn_div"
-              style="width: 20%; padding-left: 5%; float: left"
-            >
-              <button
-                id="new_song_btn"
-                class="ui-btn ui-corner-all ui-btn-inline"
-                onclick="create_song()"
+            <div id="lr_radios" class="ui-block-b">
+              <div
+                data-role="controlgroup"
+                data-type="horizontal"
+                data-mini="true"
               >
-                Create song
-              </button>
+                <input
+                  type="radio"
+                  name="lr_search"
+                  id="lr_search_0"
+                  data-lrs="0"
+                />
+                <label for="lr_search_0">Local songs</label>
+                <input
+                  type="radio"
+                  name="lr_search"
+                  id="lr_search_1"
+                  data-lrs="1"
+                />
+                <label for="lr_search_1">Remote songs</label>
+              </div>
             </div>
-            <div style="clear: both"></div>
           </div>
           <ul id="song_list" data-role="listview" data-inset="true"></ul>
         </div>
 
         <div id="bible_element" class="ui-content">
           <div>
-            <div id="bible_search_div" style="width: 75%; float: left">
+            <div class="float_left_25">
+              <h3>Bible</h3>
+            </div>
+            <div class="float_left_75" id="b_version_picker">
+              <fieldset
+                id="b_version_radios"
+                data-role="controlgroup"
+                data-type="horizontal"
+                data-mini="true"
+              ></fieldset>
+            </div>
+          </div>
+          <div class="div_clear"></div>
+          <div>
+            <div class="float_left_75" id="bible_search_div">
               <input type="search" id="bible_search" value="" placeholder="" />
             </div>
-            <div style="width: 20%; padding-left: 5%; float: left">
+            <div id="bible_search_btn_div">
               <button
                 id="bible_search_btn"
-                class="ui-btn ui-corner-all"
+                class="ui-btn ui-corner-all ui-icon-search ui-btn-icon-left"
                 onclick="bible_search()"
               >
                 Search
               </button>
             </div>
           </div>
+
           <div>
-            <div style="width: 33.333%; float: left">
+            <div class="float_left_33">
+              <span>Search by:</span>
               <div
                 data-role="controlgroup"
                 data-mini="true"
@@ -337,10 +331,9 @@
                   value="off"
                 />
                 <label for="b_search_type_text">Text</label>
-                <select name="select_b_version" id="select_b_version"></select>
               </div>
             </div>
-            <div style="width: 66.666%; float: left">
+            <div class="float_left_67">
               <div
                 data-role="controlgroup"
                 data-type="horizontal"
@@ -375,22 +368,21 @@
 
         <div id="presentation_element" class="ui-content">
           <div>
-            <div style="width: 75%; float: left">
-              <h3>Available presentations</h3>
+            <div class="float_left_75">
+              <h3>Presentations</h3>
             </div>
-            <div style="width: 25%; float: left">
+            <div class="float_left_25">
               <!-- prettier-ignore -->
               <button
                 id="refresh_pres"
                 onclick="refresh_presentations();"
-                style="float: right"
-                class="ui-icon-reload ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn"
+                class="ui-icon-reload ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left video-ctrl-btn float_right"
               >
                 &nbsp;
               </button>
             </div>
           </div>
-          <div style="clear: both"></div>
+          <div class="div_clear"></div>
           <ul
             id="presentation_list"
             data-role="listview"
@@ -400,42 +392,41 @@
 
         <div id="video_element" class="ui-content">
           <div>
-            <div style="width: 75%; float: left">
-              <h3>Available videos</h3>
+            <div class="float_left_75">
+              <h3>Videos</h3>
             </div>
-            <div style="width: 25%; float: left">
+            <div class="float_left_25">
               <!-- prettier-ignore -->
               <button
                 id="refresh_vids"
                 onclick="refresh_videos();"
-                style="float: right"
-                class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
+                class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn float_right"
               >
                 &nbsp;
               </button>
             </div>
           </div>
-          <div style="clear: both"></div>
+          <div class="div_clear"></div>
           <ul id="video_list" data-role="listview" data-inset="true"></ul>
         </div>
+
         <div id="backgrounds_element" class="ui-content">
           <div>
-            <div style="width: 75%; float: left">
+            <div class="float_left_75">
               <h3>Loops</h3>
             </div>
-            <div style="width: 25%; float: left">
+            <div class="float_left_25">
               <!-- prettier-ignore -->
               <button
                 id="refresh_loops"
                 onclick="refresh_loops();"
-                style="float: right"
-                class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
+                class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn float_right"
               >
                 &nbsp;
               </button>
             </div>
           </div>
-          <div style="clear: both"></div>
+          <div class="div_clear"></div>
           <ul id="loop_list" data-role="listview" data-inset="true"></ul>
           <button
             id="cancel_loop_btn"
@@ -444,27 +435,24 @@
           >
             Clear loop
           </button>
-          <div style="width: 75%; float: left">
+          <div class="float_left_75">
             <h3>Backgrounds</h3>
           </div>
-          <div style="width: 25%; float: left">
+          <div class="float_left_25">
             <!-- prettier-ignore -->
             <button
               id="refresh_backgrounds"
               onclick="refresh_backgrounds();"
-              style="float: right"
-              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn"
+              class="ui-btn ui-corner-all ui-btn-inline ui-btn-icon-left ui-icon-reload video-ctrl-btn float_right"
             >
               &nbsp;
             </button>
           </div>
-          <div style="clear: both"></div>
-          <div
-            style="width: 45%; float: left; padding-left: 3%; padding-right: 2%"
-          >
+          <div class="div_clear"></div>
+          <div class="song_bible_buttons">
             <ul id="song_bg" data-role="listview" data-inset="true">
               <li data-icon="delete">
-                <a href="#" style="min-height: auto !important"
+                <a href="#" class="song_bible_a"
                   ><img id="song_bg_icon" src="" />Songs</a
                 ><a
                   onclick="remove_song_background();"
@@ -473,10 +461,10 @@
               </li>
             </ul>
           </div>
-          <div style="width: 45%; float: left; padding-left: 2%">
+          <div class="song_bible_buttons">
             <ul id="bible_bg" data-role="listview" data-inset="true">
               <li data-icon="delete">
-                <a href="#" style="min-height: auto !important"
+                <a href="#" class="song_bible_a"
                   ><img id="bible_bg_icon" src="" />Bible</a
                 ><a
                   onclick="remove_bible_background();"
@@ -485,11 +473,11 @@
               </li>
             </ul>
           </div>
-          <div style="clear: both"></div>
+          <div class="div_clear"></div>
           <ul id="background_list" data-role="listview" data-inset="true"></ul>
         </div>
         <div id="styles_element" class="ui-content">
-          <h3>Styling</h3>
+          <h3>Settings</h3>
           <h4 class="style_header">Main area</h4>
           <div class="style_group">
             <div class="inputless-slider">
@@ -540,50 +528,39 @@
                 data-show-value="true"
               />
             </div>
-            <div id="c_rate_slider" class="inputless-slider">
-              <label for="c_rate">Screen capture rate (ms):</label>
-              <input
-                type="range"
-                name="c_rate"
-                id="c_rate"
-                min="200"
-                max="2000"
-                step="50"
-                data-highlight="true"
-                data-show-value="true"
-              />
-            </div>
             <div id="t_color_picker">
               <label for="t_color">Song and Bible text colour:</label>
               <input
                 name="t_color"
                 id="t_color"
-                class="
-                  jscolor
-                  {position:'bottom',
-                  borderColor:'#FFF
-                  #666 #666
-                  #FFF',
-                  insetColor:'#666
-                  #FFF #FFF
-                  #666',
-                  backgroundColor:'#CCC'}
-                "
+                class="jscolor {position:'bottom', borderColor:'#FFF #666 #666 #FFF', insetColor:'#666 #FFF #FFF #666', backgroundColor:'#CCC'}"
               />
             </div>
             <div id="o_style_picker">
-              <span style="padding-right: 10px">Text outline style:</span>
-              <select
-                name="o_style"
-                id="o_style"
-                data-mini="true"
-                data-inline="true"
-                style="display: inline-block"
-              >
-                <option value="drop-shadow">Drop shadow</option>
-                <option value="text-outline">Outlined</option>
-                <option value="none">None</option>
-              </select>
+              <span class="pad_right_10">Text outline style:</span>
+              <div data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <input
+                  type="radio"
+                  name="o_style"
+                  id="o_style_1"
+                  data-ol="drop-shadow"
+                />
+                <label for="o_style_1">Drop shadow</label>
+                <input
+                  type="radio"
+                  name="o_style"
+                  id="o_style_2"
+                  data-ol="text-outline"
+                />
+                <label for="o_style_2">Outlined</label>
+                <input
+                  type="radio"
+                  name="o_style"
+                  id="o_style_3"
+                  data-ol="none"
+                />
+                <label for="o_style_3">None</label>
+              </div>
             </div>
           </div>
           <h4 class="style_header">Countdowns</h4>
@@ -641,7 +618,7 @@
           <h4 class="style_header">Copyright area</h4>
           <div class="style_group">
             <div>
-              <span style="padding-right: 10px">Display copyright:</span>
+              <span class="pad_right_10">Display copyright:</span>
               <input
                 type="checkbox"
                 data-role="flipswitch"
@@ -685,7 +662,7 @@
           <h4 class="style_header">Verse order area</h4>
           <div class="style_group">
             <div>
-              <span style="padding-right: 10px">Display verse order:</span>
+              <span class="pad_right_10">Display verse order:</span>
               <input
                 type="checkbox"
                 data-role="flipswitch"
@@ -726,6 +703,19 @@
               />
             </div>
           </div>
+          <h4 class="style_header">About Malachi</h4>
+          <p>
+            Malachi is open-source software, released under a
+            <a
+              href="https://www.gnu.org/licenses/gpl-3.0-standalone.html"
+              target="_blank"
+              >GPL3 license</a
+            >.
+          </p>
+          <p>
+            Some icons in Malachi are provided by
+            <a href="https://icons8.com" target="_blank">Icons8</a>.
+          </p>
         </div>
       </div>
     </div>
@@ -874,6 +864,47 @@
       </div>
     </div>
 
+    <!-- POPUP: Export service as dialog -->
+    <div
+      data-role="popup"
+      data-dismissible="false"
+      data-overlay-theme="b"
+      id="popup_export_service_as"
+    >
+      <div data-role="header">
+        <h1>Export service as...</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <p>Choose filename to export service as:</p>
+        <div class="ui-field-contain">
+          <label for="f_name" class="ui-hidden-accessible"
+            >Service zip file name:</label
+          >
+          <input
+            id="f_name"
+            name="f_name"
+            type="text"
+            value=""
+            placeholder="service.zip"
+          />
+        </div>
+        <a
+          onclick="export_service_as($(this).parent().find('#f_name'));"
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Export</a
+        >
+        <a
+          onclick="$(this).parent().find('#f_name').val('');"
+          href="#"
+          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+          data-rel="back"
+          >Cancel</a
+        >
+      </div>
+    </div>
+
     <!-- POPUP: Load service dialog -->
     <div
       data-role="popup"
@@ -890,6 +921,7 @@
           id="load_files_radio"
           data-mini="true"
           data-role="controlgroup"
+          style="max-height: 250px; overflow-y: auto"
         ></fieldset>
         <a
           onclick="load_service(false);"
@@ -955,13 +987,42 @@
               id="e_title"
               data-clear-btn="true"
             />
-            <label for="e_author">Author:</label>
-            <input
-              type="text"
-              name="e_author"
-              id="e_author"
-              data-clear-btn="true"
-            />
+            <div class="ui-grid-a">
+              <div class="ui-block-a">
+                <label for="e_author">Author:</label>
+                <input
+                  type="text"
+                  name="e_author"
+                  id="e_author"
+                  data-clear-btn="true"
+                />
+              </div>
+              <div
+                class="ui-block-b"
+                style="text-align: right; margin-top: 20px"
+              >
+                <div
+                  data-role="controlgroup"
+                  data-type="horizontal"
+                  data-mini="true"
+                >
+                  <input
+                    type="radio"
+                    name="e_remote"
+                    id="e_remote_0"
+                    data-lr="0"
+                  />
+                  <label for="e_remote_0">Local</label>
+                  <input
+                    type="radio"
+                    name="e_remote"
+                    id="e_remote_1"
+                    data-lr="1"
+                  />
+                  <label for="e_remote_1">Remote</label>
+                </div>
+              </div>
+            </div>
             <label for="e_copyright">Copyright:</label>
             <input
               type="text"
@@ -996,25 +1057,41 @@
               id="e_order"
               data-clear-btn="true"
             />
-            <div class="ui-grid-a">
-              <div class="ui-block-a">
-                <label for="e_key">Key:</label>
-                <select name="e_key" id="e_key">
-                  <option value="C">C</option>
-                  <option value="Db">Db</option>
-                  <option value="D">D</option>
-                  <option value="Eb">Eb</option>
-                  <option value="E">E</option>
-                  <option value="F">F</option>
-                  <option value="F#">F#</option>
-                  <option value="G">G</option>
-                  <option value="Ab">Ab</option>
-                  <option value="A">A</option>
-                  <option value="Bb">Bb</option>
-                  <option value="B">B</option>
-                </select>
+            <div>
+              <span>Key:</span>
+              <div
+                data-role="controlgroup"
+                data-type="horizontal"
+                data-mini="true"
+              >
+                <input type="radio" name="e_key" id="e_key_1" data-ek="C" />
+                <label for="e_key_1">C</label>
+                <input type="radio" name="e_key" id="e_key_2" data-ek="Db" />
+                <label for="e_key_2">Db</label>
+                <input type="radio" name="e_key" id="e_key_3" data-ek="D" />
+                <label for="e_key_3">D</label>
+                <input type="radio" name="e_key" id="e_key_4" data-ek="Eb" />
+                <label for="e_key_4">Eb</label>
+                <input type="radio" name="e_key" id="e_key_5" data-ek="E" />
+                <label for="e_key_5">E</label>
+                <input type="radio" name="e_key" id="e_key_6" data-ek="F" />
+                <label for="e_key_6">F</label>
+                <input type="radio" name="e_key" id="e_key_7" data-ek="F#" />
+                <label for="e_key_7">F#</label>
+                <input type="radio" name="e_key" id="e_key_8" data-ek="G" />
+                <label for="e_key_8">G</label>
+                <input type="radio" name="e_key" id="e_key_9" data-ek="Ab" />
+                <label for="e_key_9">Ab</label>
+                <input type="radio" name="e_key" id="e_key_10" data-ek="A" />
+                <label for="e_key_10">A</label>
+                <input type="radio" name="e_key" id="e_key_11" data-ek="Bb" />
+                <label for="e_key_11">Bb</label>
+                <input type="radio" name="e_key" id="e_key_12" data-ek="B" />
+                <label for="e_key_12">B</label>
               </div>
-              <div id="e_transpose_div" class="ui-block-b">
+            </div>
+            <div class="ui-grid-a">
+              <div id="e_transpose_div" class="ui-block-a">
                 <label for="e_transpose">Transpose by:</label>
                 <input
                   type="range"
@@ -1024,21 +1101,25 @@
                   max="11"
                 />
               </div>
-            </div>
-            <div id="edit_song_popup_buttons">
-              <a
-                onclick="save_song();"
-                href="#"
-                class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-                >Save</a
+              <div
+                class="ui-block-b"
+                id="edit_song_popup_buttons"
+                style="text-align: center; margin-top: 10px"
               >
-              <a
-                onclick="reset_edit_song_form();"
-                href="#"
-                class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-                data-rel="back"
-                >Cancel</a
-              >
+                <a
+                  onclick="save_song();"
+                  href="#"
+                  class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+                  >Save</a
+                >
+                <a
+                  onclick="reset_edit_song_form();"
+                  href="#"
+                  class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+                  data-rel="back"
+                  >Cancel</a
+                >
+              </div>
             </div>
           </div>
           <div class="ui-block-b edit-song-col-right">

@@ -23,7 +23,7 @@ class Song():
 
     STR_FIELDS = ['song_book_name', 'title', 'author', 'song_key',
                   'verse_order', 'copyright', 'song_number', 'search_title']
-    INT_FIELDS = ['transpose_by']
+    INT_FIELDS = ['transpose_by', 'remote']
 
     def __init__(self, song_id, cur_style):
         """Initiate a Song object.
@@ -60,8 +60,7 @@ class Song():
         Return value:
         Boolean
         """
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Song.db_connect()
         cursor.execute('''
             SELECT s.id FROM songs AS s
             WHERE s.id = {s_id}
@@ -72,10 +71,9 @@ class Song():
 
     def get_nonslide_data(self):
         """Retrieve non-lyric Song data from the songs database."""
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Song.db_connect()
         cursor.execute('''
-            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number
+            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number, s.remote
             FROM songs AS s
             WHERE s.id={s_id}
         '''.format(s_id=self.song_id))
@@ -96,6 +94,7 @@ class Song():
         self.copyright = result[4]
         self.song_book_name = result[5]
         self.song_number = result[6]
+        self.remote = result[7]
 
     def get_title(self):
         """Return the title of this Song."""
@@ -160,7 +159,8 @@ class Song():
             "song-id": self.song_id, "title": self.title, "author": self.author,
             "song-key": self.song_key, "transpose-by": self.transpose_by,
             "parts": tr_parts, "verse-order": self.verse_order, "copyright": self.copyright,
-            "song-book-name": self.song_book_name, "song-number": self.song_number})
+            "song-book-name": self.song_book_name, "song-number": self.song_number,
+            "remote": self.remote})
 
     def __str__(self):
         return self.get_title()
@@ -168,6 +168,86 @@ class Song():
     def save_to_JSON(self):
         """Return a JSON object representing this Song for saving in a service plan."""
         return json.dumps({"type": "song", "song_id": self.song_id})
+
+    def export_to_JSON(self, export_zip):
+        """
+        Return a JSON object representing this Song for exporting to another
+        instance of Malachi.
+        """
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            SELECT s.lyrics_chords, s.verse_order, s.search_title, s.search_lyrics
+            FROM songs AS s
+            WHERE s.id={s_id}
+        '''.format(s_id=self.song_id))
+        result = cursor.fetchone()
+        song_db.close()
+        return json.dumps({
+            "type": "song",
+            "id": self.song_id,
+            "title": self.title,
+            "author": self.author,
+            "song_key": self.song_key,
+            "transpose_by": self.transpose_by,
+            "copyright": self.copyright,
+            "song_book_name": self.song_book_name,
+            "song_number": self.song_number,
+            "lyrics_chords": result[0],
+            "verse_order": result[1],
+            "search_title": result[2],
+            "search_lyrics": result[3]
+        })
+
+    @classmethod
+    def import_from_JSON(cls, json_data, cur_style):
+        """
+        Return a Song object corresponding to the song stored in json_data, which
+        has been exported (possibly from another instance of Malachi) using the
+        export_to_JSON method.
+
+        Precondition: json_data["type"] == "song"
+        """
+        # See whether the song exists in the songs database (based on lyrics and chords)
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            SELECT s.id, s.lyrics_chords, s.verse_order, s.transpose_by
+            FROM songs AS s
+            WHERE s.lyrics_chords = ?
+        ''', [json_data["lyrics_chords"]])
+        result = cursor.fetchone()
+        if result:
+            # Song match found in database
+            s_id = result[0]
+            # Update verse_order and transpose_by based on values in json_data
+            cursor.execute('''
+                UPDATE songs
+                SET verse_order = ?, transpose_by = ?
+                WHERE id = ? 
+            ''', (json_data["verse_order"], json_data["transpose_by"], s_id))
+            song_db.commit()
+        else:
+            # Song match not found, create remote song in database
+            cursor.execute('''
+                INSERT INTO songs(title, author, song_key, transpose_by, copyright, song_book_name, song_number, lyrics_chords, verse_order, search_title, search_lyrics, remote)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                json_data["title"], 
+                json_data["author"], 
+                json_data["song_key"], 
+                json_data["transpose_by"],
+                json_data["copyright"],
+                json_data["song_book_name"],
+                json_data["song_number"],
+                json_data["lyrics_chords"],
+                json_data["verse_order"],
+                json_data["search_title"],
+                json_data["search_lyrics"],
+                1))
+            song_db.commit()
+            s_id = cursor.lastrowid
+        song_db.close()
+        return Song(s_id, cur_style)
+
 
     def paginate_from_style(self, style):
         """Paginate the current Song based on the specified style.
@@ -209,8 +289,7 @@ class Song():
         font = ImageFont.truetype(font_file, math.ceil(font_size_px))
 
         # Need to track chords along with words, but not include chords in width calculations
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Song.db_connect()
         cursor.execute('''
             SELECT s.lyrics_chords, s.verse_order FROM songs AS s
             WHERE s.id={s_id}
@@ -296,21 +375,22 @@ class Song():
         song_db.close()
 
     @classmethod
-    def text_search(cls, search_text):
+    def text_search(cls, search_text, remote):
         """Perform a text search on the Song database.
         Return all matching Songs (id and title) in a JSON array.
 
         Arguments:
         search_text -- the text to search for, in either the song's title and/or lyrics.
+        remote -- 0 = search local songs, 1 = search remote songs
         """
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Song.db_connect()
         cursor.execute('''
             SELECT s.id, s.title
             FROM songs AS s
-            WHERE s.search_title LIKE "%{txt}%" OR s.search_lyrics LIKE "%{txt}%"
+            WHERE (s.search_title LIKE "%{txt}%" OR s.search_lyrics LIKE "%{txt}%")
+            AND (s.remote = {rem})
             ORDER BY s.title ASC
-        '''.format(txt=search_text))
+        '''.format(txt=search_text, rem=remote))
         songs = cursor.fetchall()
         song_db.close()
         return json.dumps(songs, indent=2)
@@ -326,8 +406,7 @@ class Song():
         Possible exceptions:
         InvalidSongFieldError - raised if validation checks on the Song's fields fail.
         """
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Song.db_connect()
         cursor.execute('''
             INSERT INTO songs(song_book_name, title, author, song_key, transpose_by, lyrics_chords, verse_order, copyright, song_number, search_title, search_lyrics)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -341,8 +420,7 @@ class Song():
             Song.edit_song(song_id, fields)
         except InvalidSongFieldError as song_error:
             # Revert changes by deleting Song(song_id)
-            song_db = sqlite3.connect('./data/songs.sqlite')
-            cursor = song_db.cursor()
+            song_db, cursor = Song.db_connect()
             cursor.execute('''
                 DELETE FROM songs
                 WHERE id = {id}
@@ -373,8 +451,7 @@ class Song():
         InvalidSongIdError - raised if Song doesn't exist in the songs database.
         InvalidSongFieldError - raised if validation checks on the song's fields fail.
         """
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Song.db_connect()
         cursor.execute('''
             SELECT s.id, s.song_key FROM songs AS s
             WHERE s.id = {s_id}
@@ -511,8 +588,7 @@ class Song():
             if field in Song.STR_FIELDS + Song.INT_FIELDS:
                 update_str = update_str + field + " = ?, "
                 query_params.append(fields[field])
-        song_db = sqlite3.connect('./data/songs.sqlite')
-        cursor = song_db.cursor()
+        song_db, cursor = Song.db_connect()
         if len(update_str) > 17:
             if update_str[-2] == ",":
                 # Remove trailing comma, if it exists
@@ -532,6 +608,27 @@ class Song():
             song_db.commit()
         song_db.close()
 
+    @classmethod
+    def db_connect(cls):
+        song_db = sqlite3.connect('./data/songs.sqlite')
+        cursor = song_db.cursor()
+        return song_db, cursor
+
+    @classmethod
+    def update_schema(cls):
+        """
+        Check schema of songs.sqlite and add additional columns if necessary
+        """
+        song_db, cursor = Song.db_connect()
+        cursor.execute('PRAGMA table_info("songs")')
+        song_rows = cursor.fetchall()
+        
+        if(len([x for x in song_rows if x[1]=='remote']) == 0):
+            # Add remote song column to songs table
+            cursor.execute('ALTER TABLE songs ADD COLUMN remote INTEGER DEFAULT 0')
+
+        cursor.close()
+        song_db.close()
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

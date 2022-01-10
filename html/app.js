@@ -94,7 +94,7 @@ function change_screen_state_flip() {
 
 function add_verses() {
   verses = $("input[name=v_list]:checked");
-  version = $("#select_b_version").val();
+  version = $("input[name=b_version]:checked").attr("data-bv");
   if (verses.length > 0) {
     let range_start = $(verses[0]).attr("id").substr(2);
     let prev_id = range_start - 1;
@@ -180,6 +180,23 @@ function save_service_as(elt) {
   $(elt).val("");
 }
 
+function export_service_as(elt) {
+  f_name = $(elt).val();
+  // Replace invalid characters to avoid errors and prevent file being saved in other directories
+  clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
+  if (clean_name.endsWith(".zip") == false) {
+    clean_name += ".zip";
+  }
+  websocket.send(
+    JSON.stringify({
+      action: "command.export-service",
+      params: { filename: clean_name },
+    })
+  );
+  // Reset input for next time
+  $(elt).val("");
+}
+
 function save_service(action_after) {
   action_after_save = action_after;
   websocket.send(
@@ -236,12 +253,14 @@ function song_search() {
     .val()
     .replace(/[^0-9a-z ]/gi, "")
     .trim();
+  remote_val = parseInt($("input[name=lr_search]:checked").attr("data-lrs"));
   if (song_val !== "") {
     websocket.send(
       JSON.stringify({
         action: "query.song-by-text",
         params: {
           "search-text": song_val,
+          "remote": remote_val,
         },
       })
     );
@@ -259,7 +278,7 @@ function bible_search() {
         JSON.stringify({
           action: "query.bible-by-ref",
           params: {
-            version: $("#select_b_version").val(),
+            version: $("input[name=b_version]:checked").attr("data-bv"),
             "search-ref": $("#bible_search").val(),
           },
         })
@@ -273,7 +292,7 @@ function bible_search() {
         JSON.stringify({
           action: "query.bible-by-text",
           params: {
-            version: $("#select_b_version").val(),
+            version: $("input[name=b_version]:checked").attr("data-bv"),
             "search-text": $("#bible_search").val(),
           },
         })
@@ -356,8 +375,8 @@ function start_countdown() {
     now.getFullYear(),
     now.getMonth(),
     now.getDate(),
-    $("#cd_hr").val(),
-    $("#cd_min").val(),
+    $("#cd_time").val().split(":")[0],
+    $("#cd_time").val().split(":")[1],
     0
   );
   var cd_length = Math.floor((target.getTime() - now.getTime()) / 1000);
@@ -365,7 +384,10 @@ function start_countdown() {
     websocket.send(
       JSON.stringify({
         action: "command.start-countdown",
-        params: { hr: $("#cd_hr").val(), min: $("#cd_min").val() },
+        params: {
+          hr: $("#cd_time").val().split(":")[0],
+          min: $("#cd_time").val().split(":")[1],
+        },
       })
     );
   } else {
@@ -378,24 +400,6 @@ function clear_countdown() {
   websocket.send(
     JSON.stringify({ action: "command.clear-countdown", params: {} })
   );
-}
-
-function update_capturing() {
-  mon = $("#capture_source_chooser")[0].value;
-  if (mon == 0) {
-    // Stop capturing
-    websocket.send(
-      JSON.stringify({ action: "command.stop-capture", params: {} })
-    );
-  } else {
-    // Start capturing from specified monitor
-    websocket.send(
-      JSON.stringify({
-        action: "command.start-capture",
-        params: { monitor: parseInt(mon) },
-      })
-    );
-  }
 }
 
 function start_presentation() {
@@ -420,7 +424,9 @@ function create_song() {
   $("#e_copyright").val("");
   $("#e_lyrics").val("<V1>\n");
   $("#e_order").val("");
-  $("#e_key").val("").change();
+  $("input[name='e_key']").prop("checked", false).checkboxradio("refresh");
+  $("input[data-lr='0']").prop("checked", true).checkboxradio("refresh");
+  $("input[data-lr='1']").prop("checked", false).checkboxradio("refresh");
   $("#e_transpose").val(0);
   $("#e_transpose_div a").html("");
   // Switch into create song mode
@@ -483,9 +489,11 @@ function save_song() {
       copyright: $("#e_copyright").val(),
     };
     // Deal with optional field
-    if ($("#e_key").val() != null) {
-      fields["song_key"] = $("#e_key").val();
+    if ($("input[name=e_key]:checked").attr("data-ek") != null) {
+      fields["song_key"] = $("input[name=e_key]:checked").attr("data-ek");
     }
+
+    fields["remote"] = parseInt($("input[name=e_remote]:checked").attr("data-lr"));
 
     if ($("#edit_song_mode_header").css("display") == "block") {
       fields["title"] = $("#e_title").val();
@@ -575,11 +583,6 @@ function display_current_item(current_item, slide_index) {
   video_timer = 0;
   $("#time_seek").val(video_timer).slider("refresh");
 
-  // Reset capture source, stopping any running capture sessions
-  if ($("#capture_source_chooser")[0].value !== "0") {
-    $("#capture_source_chooser").val("0").change();
-  }
-
   if (current_item.type == "song") {
     min_verse_order = current_item["verse-order"].split(" ");
     part_counts = current_item["part-counts"];
@@ -589,18 +592,6 @@ function display_current_item(current_item, slide_index) {
         max_verse_order.push(min_verse_order[i].toUpperCase());
       }
     }
-  }
-
-  if (current_item.type == "bible") {
-    cur_title = current_item.title;
-    v_start = cur_title.indexOf("(") + 1;
-    v_end = cur_title.indexOf(")");
-    $("#version_changer").parent().css("display", "inline-block");
-    $("#version_changer")
-      .val(cur_title.substr(v_start, v_end - v_start))
-      .selectmenu("refresh");
-  } else {
-    $("#version_changer").parent().css("display", "none");
   }
 
   if (current_item.type == "video") {
@@ -694,7 +685,10 @@ function update_style_sliders(style) {
   $("#s_font_size").val(style["font-size-vh"]).slider("refresh");
   $("#s_lines").val(style["max-lines"]).slider("refresh");
   $("#s_margin").val(style["margin-top-vh"]).slider("refresh");
-  $("#o_style").val(style["outline-style"]).selectmenu("refresh");
+  $("input[name='o_style']").prop("checked", false).checkboxradio("refresh");
+  $("input[data-ol='" + style["outline-style"] + "']")
+    .prop("checked", true)
+    .checkboxradio("refresh");
   $("#ch_size").val(style["countdown-h-size-vh"]).slider("refresh");
   $("#cd_text").val(style["countdown-h-text"]);
   $("#cd_size").val(style["countdown-size-vh"]).slider("refresh");
@@ -763,10 +757,11 @@ function setup_service_list_handlers() {
 }
 
 function update_transpose_slider() {
-  if ($("#e_key").prop("selectedIndex") > -1) {
-    e_key = $("#e_key").prop("selectedIndex");
-    t_val = parseInt($("#e_transpose").val(), 10);
-    t_key = valid_keys[(e_key + t_val) % 12];
+  if ($("input[name=e_key]:checked").attr("data-ek") != null) {
+    e_val = $("input[name=e_key]:checked").attr("data-ek");
+    e_idx = valid_keys.findIndex((element) => element == e_val)
+    t_idx = parseInt($("#e_transpose").val(), 10);
+    t_key = valid_keys[(e_idx + t_idx) % 12];
     $("#e_transpose_div a").html(t_key);
   }
 }
@@ -887,9 +882,6 @@ function start_websocket() {
         // Display style parameters in style tab
         update_style_sliders(json_data.params.style);
 
-        // Update capture refresh rate slider
-        $("#c_rate").val(json_data.params["refresh_rate"]).slider("refresh");
-
         // Populate service plan list
         service_list = "";
         for (let item in json_data.params.items) {
@@ -925,7 +917,6 @@ function start_websocket() {
           current_item = json_data.params.items[json_data.params.item_index];
           display_current_item(current_item, json_data.params.slide_index);
         } else {
-          $("#version_changer").parent().css("display", "none");
           $("#video_controls").css("display", "none");
           $("#presentation_controls").css("display", "none");
           $("#current_item_icon").attr("src", icon_dict["song"]);
@@ -952,33 +943,6 @@ function start_websocket() {
         websocket.send(
           JSON.stringify({ action: "request.bible-versions", params: {} })
         );
-
-        // Populate countdown hour and minute selects
-        let hr_list = "";
-        for (let hr = 0; hr < 24; hr++) {
-          hr_list +=
-            "<option value=" +
-            hr +
-            ">" +
-            hr.toString().padStart(2, 0) +
-            "</option>";
-        }
-        $("#cd_hr").html(hr_list);
-        $("#cd_hr").select("refresh");
-        $("#cd_hr").val(new Date().getHours()).change();
-
-        let min_list = "";
-        for (let min = 0; min < 60; min++) {
-          min_list +=
-            "<option value=" +
-            min +
-            ">" +
-            min.toString().padStart(2, 0) +
-            "</option>";
-        }
-        $("#cd_min").html(min_list);
-        $("#cd_min").select("refresh");
-        $("#cd_min").val(new Date().getMinutes()).change();
         break;
 
       case "update.service-overview-update":
@@ -1019,7 +983,6 @@ function start_websocket() {
           current_item = json_data.params.current_item;
           display_current_item(current_item, json_data.params.slide_index);
         } else {
-          $("#version_changer").parent().css("display", "none");
           $("#video_controls").css("display", "none");
           $("#presentation_controls").css("display", "none");
           $("#current_item_icon").attr("src", icon_dict["song"]);
@@ -1057,10 +1020,6 @@ function start_websocket() {
 
       case "update.style-update":
         update_style_sliders(json_data.params.style);
-        break;
-
-      case "update.capture-rate":
-        $("#c_rate").val(json_data.params["refresh_rate"]).slider("refresh");
         break;
 
       case "result.all-presentations":
@@ -1139,6 +1098,10 @@ function start_websocket() {
           $("#e_number").val(full_song["song-number"]);
           $("#e_book").val(full_song["song-book-name"]);
           $("#e_copyright").val(full_song["copyright"]);
+          $("input[name='e_remote']").prop("checked", false).checkboxradio("refresh");
+          $("input[data-lr='" + full_song["remote"] + "']")
+            .prop("checked", true)
+            .checkboxradio("refresh");
           lyrics = "";
           for (i in full_song["parts"]) {
             lyrics += "<" + full_song["parts"][i]["part"].toUpperCase() + ">\n";
@@ -1149,14 +1112,17 @@ function start_websocket() {
           }
           $("#e_lyrics").val(lyrics);
           $("#e_order").val(full_song["verse-order"].toUpperCase());
-          $("#e_key").val(full_song["song-key"]).change();
-          t_val = full_song["transpose-by"];
+          $("input[name='e_key']").prop("checked", false).checkboxradio("refresh");
+          $("input[data-ek='" + full_song["song-key"] + "']")
+            .prop("checked", true)
+            .checkboxradio("refresh");
+          t_idx = full_song["transpose-by"];
           $("#e_transpose")
-            .val((t_val + 12) % 12)
+            .val((t_idx + 12) % 12)
             .slider("refresh"); // +12 needed to ensure remainder is in [0, 12)
-          if ($("#e_key").prop("selectedIndex") > -1) {
-            t_key =
-              valid_keys[($("#e_key").prop("selectedIndex") + t_val) % 12];
+          if ($("input[name=e_key]:checked").attr("data-ek") != null) {
+            e_idx = valid_keys.findIndex((element) => element == full_song["song-key"])
+            t_key = valid_keys[(e_idx + t_idx) % 12];
             $("#e_transpose_div a").html(t_key);
           }
           // Ensure that we are in edit song mode, rather than create song mode
@@ -1267,34 +1233,32 @@ function start_websocket() {
         break;
 
       case "result.bible-versions":
-        $("#select_b_version").html("");
-        $("#version_changer").html("");
-        for (let v in json_data.params.versions) {
-          $("#select_b_version").append(
-            '<option value="' +
-              json_data.params.versions[v] +
-              '">' +
-              json_data.params.versions[v] +
-              "</option>"
+        $("#b_version_radios div").html("");
+        json_data.params.versions.forEach(function (value, i) {
+          $("#b_version_radios div").append(
+            '<input type="radio" name="b_version" id="b_version_' +
+              i +
+              '" data-bv="' +
+              value +
+              '" />'
           );
-          $("#version_changer").append(
-            '<option value="' +
-              json_data.params.versions[v] +
-              '">' +
-              json_data.params.versions[v] +
-              "</option>"
+          $("#b_version_radios div").append(
+            '<label for="b_version_' + i + '">' + value + "</label>"
           );
-        }
-        $("#select_b_version").val(json_data.params.versions[0]).change();
-        if ($("#current_item_icon")[0].src.indexOf(icon_dict["bible"]) > -1) {
-          // Current item is a Bible passage so update version changer
-          cur_title = $("#current_item_name")[0].innerHTML;
-          v_start = cur_title.indexOf("(") + 1;
-          v_end = cur_title.indexOf(")");
-          $("#version_changer")
-            .val(cur_title.substr(v_start, v_end - v_start))
-            .selectmenu("refresh");
-        }
+        });
+        $("input[name='b_version']").checkboxradio();
+        $("input[name='b_version']:first").prop("checked", true).checkboxradio("refresh");
+        $("#b_version_radios").controlgroup("refresh");
+        // Attach event listener
+        $("input[name='b_version']").on("change", function (event, ui) {
+          if (
+            $("#passage_list input").length > 0 &&
+            $("#bible_search").val().trim() != ""
+          ) {
+            // A search has already been performed, so repeat the search with the new version
+            bible_search();
+          }
+        });
         break;
 
       case "result.bible-verses":
@@ -1503,6 +1467,10 @@ $(document).ready(function () {
     song_search();
   });
 
+  $("input[name='lr_search']").prop("checked", false).checkboxradio("refresh");
+  $("input[data-lrs='0']").prop("checked", true).checkboxradio("refresh");
+  $("input[name='lr_search']").on("change", song_search);
+
   $("#bible_search_div .ui-input-clear").on("click", function (e) {
     bible_search();
   });
@@ -1513,17 +1481,8 @@ $(document).ready(function () {
     }
   });
 
-  $("#version_changer").on("change", function () {
-    websocket.send(
-      JSON.stringify({
-        action: "command.change-bible-version",
-        params: { version: $("#version_changer").val() },
-      })
-    );
-  });
-
   $("#e_transpose").on("change", update_transpose_slider);
-  $("#e_key").on("change", update_transpose_slider);
+  $("input[name='e_key']").on("change", update_transpose_slider);
 
   $("#time_seek").parent().find("a").css("display", "none");
 
@@ -1575,17 +1534,6 @@ $(document).ready(function () {
     );
   });
 
-  $("#c_rate").on("slidestop", function (event, ui) {
-    websocket.send(
-      JSON.stringify({
-        action: "command.change-capture-rate",
-        params: {
-          rate: $("#c_rate").val(),
-        },
-      })
-    );
-  });
-
   $("#t_color").on("change", function (event, ui) {
     websocket.send(
       JSON.stringify({
@@ -1598,13 +1546,13 @@ $(document).ready(function () {
     );
   });
 
-  $("#o_style").on("change", function (event, ui) {
+  $("input[name='o_style']").on("change", function (event, ui) {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
         params: {
           param: "outline-style",
-          value: $("#o_style").val(),
+          value: $(this).attr("data-ol"),
         },
       })
     );
@@ -1730,15 +1678,7 @@ $(document).ready(function () {
     );
   });
 
-  $("#select_b_version").on("change", function (event, ui) {
-    if (
-      $("#passage_list input").length > 0 &&
-      $("#bible_search").val().trim() != ""
-    ) {
-      // A search has already been performed, so repeat the search with the new version
-      bible_search();
-    }
-  });
+  $("#cd_time").val(String((new Date().getHours() + 1) % 24).padStart(2, '0') + ":00");
 
   start_websocket();
 });
