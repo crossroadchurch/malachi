@@ -640,8 +640,6 @@ function start_websocket() {
       case "response.stop-presentation":
       case "response.goto-slide":
       case "response.goto-item":
-      case "response.transpose-up":
-      case "response.transpose-down":
       case "response.transpose-by":
       case "response.unlock-socket":
         console.log(

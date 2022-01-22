@@ -73,6 +73,7 @@
               <input
                 type="range"
                 data-highlight="true"
+                disabled
                 name="time_seek"
                 id="time_seek"
                 min="0"
@@ -456,7 +457,7 @@
                   ><img id="song_bg_icon" src="" />Songs</a
                 ><a
                   onclick="remove_song_background();"
-                  href="javascript:void(0);"
+                  href="#"
                 ></a>
               </li>
             </ul>
@@ -468,7 +469,7 @@
                   ><img id="bible_bg_icon" src="" />Bible</a
                 ><a
                   onclick="remove_bible_background();"
-                  href="javascript:void(0);"
+                  href="#"
                 ></a>
               </li>
             </ul>
@@ -794,35 +795,6 @@
       </div>
     </div>
 
-    <!-- POPUP: Service item options -->
-    <div
-      data-role="popup"
-      id="popup_service_item_options"
-      data-position-to="origin"
-    >
-      <div class="ui-content">
-        <a
-          onclick="edit_song();"
-          id="btn_popup_edit_song"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Edit</a
-        >
-        <a
-          onclick="delete_item();"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Remove</a
-        >
-        <a
-          onclick="goto_item();"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Display</a
-        >
-      </div>
-    </div>
-
     <!-- POPUP: Save service as dialog -->
     <div
       data-role="popup"
@@ -937,28 +909,6 @@
           class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
           data-rel="back"
           >Cancel</a
-        >
-      </div>
-    </div>
-
-    <!-- POPUP: Song item options -->
-    <div
-      data-role="popup"
-      id="popup_song_item_options"
-      data-position-to="origin"
-    >
-      <div class="ui-content">
-        <a
-          onclick="edit_song();"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Edit</a
-        >
-        <a
-          onclick="add_song();"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Add to Service</a
         >
       </div>
     </div>
@@ -1164,32 +1114,5 @@
       >
     </div>
 
-    <!-- POPUP: Background image options -->
-    <div
-      data-role="popup"
-      id="popup_background_options"
-      data-position-to="origin"
-    >
-      <div class="ui-content">
-        <a
-          onclick="set_background_songs();"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Set for songs</a
-        >
-        <a
-          onclick="set_background_bible();"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Set for Bible</a
-        >
-        <a
-          onclick="set_background_both();"
-          class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
-          data-rel="back"
-          >Set for both</a
-        >
-      </div>
-    </div>
   </body>
 </html>

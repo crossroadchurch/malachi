@@ -4,8 +4,7 @@ const MAX_VERSE_ITEMS = 2500;
 const SELECTED_COLOR = "gold";
 let service_list;
 let service_sort_start;
-let clicked_service_item, clicked_song_id;
-let clicked_background, clicked_background_w, clicked_background_h;
+let editing_song_id;
 let action_after_save;
 let screen_state;
 let icon_dict = {};
@@ -27,6 +26,21 @@ let valid_keys = [
   "Bb",
   "B",
 ];
+
+const PLUS_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-plus-48.png\"); " +
+  "background-repeat: no-repeat; " +
+  "background-position: 50% 50%; " + 
+  "background-size: 24px 24px;' "
+
+const MINUS_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-minus-48.png\"); " +
+  "background-repeat: no-repeat; " +
+  "background-position: 50% 50%; " + 
+  "background-size: 24px 24px;' "
+
+const PLAY_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-circled-play-48.png\"); " +
+  "background-repeat: no-repeat; " +
+  "background-position: 50% 50%; " + 
+  "background-size: 24px 24px;' "
 
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
 icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
@@ -204,11 +218,11 @@ function save_service(action_after) {
   );
 }
 
-function delete_item() {
+function delete_item(idx) {
   websocket.send(
     JSON.stringify({
       action: "command.remove-item",
-      params: { index: clicked_service_item },
+      params: { index: idx },
     })
   );
 }
@@ -223,11 +237,11 @@ function previous_item() {
   );
 }
 
-function goto_item() {
+function goto_item(idx) {
   websocket.send(
     JSON.stringify({
       action: "command.goto-item",
-      params: { index: clicked_service_item },
+      params: { index: idx },
     })
   );
 }
@@ -312,20 +326,20 @@ function new_service(force) {
   );
 }
 
-function add_song() {
+function add_song(s_id) {
   websocket.send(
     JSON.stringify({
       action: "command.add-song-item",
-      params: { "song-id": clicked_song_id },
+      params: { "song-id": s_id },
     })
   );
 }
 
-function edit_song() {
+function edit_song(s_id) {
   websocket.send(
     JSON.stringify({
       action: "request.full-song",
-      params: { "song-id": clicked_song_id },
+      params: { "song-id": s_id },
     })
   );
 }
@@ -454,22 +468,22 @@ function save_song() {
     let current_part = "";
     let current_lines = [];
     let parts = []; // parts = [ {part: "v1", lines: [line1, ..., line_n]}, ...]
-    for (i in lyric_lines) {
-      if (lyric_lines[i][0] == "<") {
+    for (const line of lyric_lines) {
+      if (line[0] == "<") {
         // New part, do we need to close out previous one?
         if (current_lines.length != 0) {
           part_obj = { part: current_part, lines: current_lines };
           parts.push(part_obj);
         }
         // Start new part
-        current_part = lyric_lines[i]
-          .substr(1, lyric_lines[i].length - 2)
+        current_part = line
+          .substr(1, line.length - 2)
           .toLowerCase();
         current_lines = [];
       } else {
-        if (lyric_lines[i] != "") {
+        if (line != "") {
           // Skip completely blank lines
-          current_lines.push(lyric_lines[i].replace(/\s+$/, "")); // Trim trailing whitespace only
+          current_lines.push(line.replace(/\s+$/, "")); // Trim trailing whitespace only
         }
       }
     }
@@ -501,7 +515,7 @@ function save_song() {
         JSON.stringify({
           action: "command.edit-song",
           params: {
-            "song-id": clicked_song_id,
+            "song-id": editing_song_id,
             fields: fields,
           },
         })
@@ -608,28 +622,27 @@ function display_current_item(current_item, slide_index) {
   }
 
   let item_list = "";
-  for (let slide in current_item.slides) {
+  for (const [idx, slide] of current_item.slides.entries()) {
     if (current_item.type == "song") {
-      slide_lines = current_item.slides[slide].split(/\n/);
+      slide_lines = slide.split(/\n/);
       slide_text =
         "<p style='padding-left: 2em; white-space:normal;'><span style='margin-left:-2em; display:block; float:left; width:2em;'><strong>" +
-        max_verse_order[slide] +
+        max_verse_order[idx] +
         "</strong></span>";
-      for (line in slide_lines) {
-        line_segments = slide_lines[line].split(/\[[\w\+#\/"='' ]*\]/);
-        for (let segment = 0; segment < line_segments.length; segment++) {
-          slide_text += line_segments[segment];
+      for (const line of slide_lines) {
+        line_segments = line.split(/\[[\w\+#\/"='' ]*\]/);
+        for (const segment of line_segments) {
+          slide_text += segment;
         }
         slide_text += "<br />";
       }
       slide_text += "</p>";
     } else {
-      slide_text =
-        "<p style='white-space:normal;'>" + current_item.slides[slide] + "</p>";
+      slide_text = "<p style='white-space:normal;'>" + slide + "</p>";
     }
     item_list +=
       "<li data-icon='false'><a class='i-item' data-id=" +
-      slide +
+      idx +
       " href='#'>" +
       slide_text +
       "</a></li>";
@@ -739,20 +752,8 @@ function json_toast_response(json_data, success_message, error_message) {
 }
 
 function setup_service_list_handlers() {
-  $("#service_list a.popup-trigger").on("click", function (event, ui) {
-    if ($(this).parent().children().first().data("songid") !== undefined) {
-      $("#btn_popup_edit_song").css("display", "inline-block");
-      clicked_song_id = parseInt(
-        $(this).parent().children().first().data("songid")
-      );
-    } else {
-      $("#btn_popup_edit_song").css("display", "none");
-    }
-    clicked_service_item = $(this).data("id");
-  });
-  $("#service_list a.s-item").on("dblclick", function (event, ui) {
-    clicked_service_item = $(this).data("id");
-    goto_item();
+  $("#service_list a.s-item").on("dblclick", function (event, ui) { 
+    goto_item($(this).data("id"));
   });
 }
 
@@ -766,48 +767,30 @@ function update_transpose_slider() {
   }
 }
 
-function set_background_songs() {
+function set_background_songs(bg_url, bg_w, bg_h) {
   websocket.send(
     JSON.stringify({
       action: "command.edit-style-params",
       params: {
         style_params: [
-          { param: "song-background-url", value: clicked_background },
-          { param: "song-background-w", value: clicked_background_w },
-          { param: "song-background-h", value: clicked_background_h },
+          { param: "song-background-url", value: bg_url },
+          { param: "song-background-w", value: bg_w },
+          { param: "song-background-h", value: bg_h },
         ],
       },
     })
   );
 }
 
-function set_background_bible() {
+function set_background_bible(bg_url, bg_w, bg_h) {
   websocket.send(
     JSON.stringify({
       action: "command.edit-style-params",
       params: {
         style_params: [
-          { param: "bible-background-url", value: clicked_background },
-          { param: "bible-background-w", value: clicked_background_w },
-          { param: "bible-background-h", value: clicked_background_h },
-        ],
-      },
-    })
-  );
-}
-
-function set_background_both() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.edit-style-params",
-      params: {
-        style_params: [
-          { param: "song-background-url", value: clicked_background },
-          { param: "song-background-w", value: clicked_background_w },
-          { param: "song-background-h", value: clicked_background_h },
-          { param: "bible-background-url", value: clicked_background },
-          { param: "bible-background-w", value: clicked_background_w },
-          { param: "bible-background-h", value: clicked_background_h },
+          { param: "bible-background-url", value: bg_url },
+          { param: "bible-background-w", value: bg_w },
+          { param: "bible-background-h", value: bg_h },
         ],
       },
     })
@@ -884,27 +867,29 @@ function start_websocket() {
 
         // Populate service plan list
         service_list = "";
-        for (let item in json_data.params.items) {
-          if (json_data.params.items[item].type == "song") {
-            service_list +=
-              "<li><a class='s-item' data-id=" +
-              item +
-              " data-songid=" +
-              json_data.params.items[item]["song-id"] +
-              " href='#'>";
+        for (const[idx, item] of json_data.params.items.entries()){
+          service_list += "<li data-icon='none'>"
+          service_list += "<a class='s-item' data-id=" + idx
+          if (item.type == "song") {
+            service_list += " style='margin-right:5em; padding-left: 3.5em; min-height:1.25em;>"
           } else {
-            service_list +=
-              "<li><a class='s-item' data-id=" + item + " href='#'>";
+            service_list += " style='margin-right:2.5em; padding-left: 3.5em; min-height:1.25em;>"
           }
-          service_list +=
-            "<img class='ui-li-icon' src='" +
-            icon_dict[json_data.params.items[item].type] +
-            "' />";
-          service_list += json_data.params.items[item].title + "</a>";
-          service_list +=
-            "<a class='popup-trigger' href='#popup_service_item_options' data-id=" +
-            item +
-            " data-rel='popup'></li>";
+          service_list += "<img class='ui-li-icon' src='" + icon_dict[item.type] + "' />"
+          service_list += item.title + "</a>"
+          service_list += "<a href='#' onclick='goto_item(" + idx + ")' class='ui-btn' "
+          service_list += "style='position:absolute; left: 0; border-right-width:1px; border-radius:0px'>"
+          service_list += "<img src='/html/icons/icons8-go-back-48.png' alt='Display item' "
+          service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>" 
+          if (item.type == "song"){
+            service_list += "<a href='#' onclick='edit_song(" + item["song-id"] + ")' class='ui-btn' "
+            service_list += "style='position:absolute; right:2.5em; border-right-width:0px; border-radius:0px'>"
+            service_list += "<img src='/html/icons/icons8-amendment-48.png' alt='Edit song' "
+            service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+          }
+          service_list += "<a href='#' class='ui-btn ui-nodisc-icon' style=" + MINUS_BUTTON_STYLE
+          service_list += "onclick='delete_item(" + idx + ")'>"
+          service_list += "</li>"
         }
         $("#service_list").html(service_list);
         $("#service_list").listview("refresh");
@@ -948,29 +933,30 @@ function start_websocket() {
       case "update.service-overview-update":
         // Populate service plan list
         service_list = "";
-        for (let idx in json_data.params.items) {
+        for (const[idx, item] of json_data.params.items.entries()){
+          service_list += "<li data-icon='none'>"
+          service_list += "<a class='s-item' data-id=" + idx
           if (json_data.params.types[idx].substr(0, 4) == "song") {
-            service_list +=
-              "<li><a class='s-item' href='#' data-id=" +
-              idx +
-              " data-songid=" +
-              json_data.params.types[idx].substr(5) +
-              ">";
-            service_list +=
-              "<img class='ui-li-icon' src='" + icon_dict["song"] + "' />";
+            service_list += " style='margin-right:5em; padding-left: 3.5em; min-height:1.25em;>"
+            service_list += "<img class='ui-li-icon' src='" + icon_dict["song"] + "' />"
           } else {
-            service_list +=
-              "<li><a class='s-item' href='#' data-id=" + idx + ">";
-            service_list +=
-              "<img class='ui-li-icon' src='" +
-              icon_dict[json_data.params.types[idx]] +
-              "' />";
+            service_list += " style='margin-right:2.5em; padding-left: 3.5em; min-height:1.25em;>"
+            service_list += "<img class='ui-li-icon' src='" + icon_dict[json_data.params.types[idx]] + "' />"
           }
-          service_list += json_data.params.items[idx] + "</a>";
-          service_list +=
-            "<a class='popup-trigger' href='#popup_service_item_options' data-id=" +
-            idx +
-            " data-rel='popup'></li>";
+          service_list += item + "</a>"
+          service_list += "<a href='#' onclick='goto_item(" + idx + ")' class='ui-btn' "
+          service_list += "style='position:absolute; left: 0; border-right-width:1px; border-radius:0px'>"
+          service_list += "<img src='/html/icons/icons8-go-back-48.png' alt='Display item' "
+          service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+          if (json_data.params.types[idx].substr(0, 4) == "song"){
+            service_list += "<a href='#' onclick='edit_song(" + json_data.params.types[idx].substr(5) + ")' class='ui-btn' "
+            service_list += "style='position:absolute; right:2.5em; border-right-width:0px; border-radius:0px'>"
+            service_list += "<img src='/html/icons/icons8-amendment-48.png' alt='Edit song' "
+            service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+          }
+          service_list += "<a href='#' class='ui-btn ui-nodisc-icon' style=" + MINUS_BUTTON_STYLE
+          service_list += "onclick='delete_item(" + idx + ")'>"
+          service_list += "</li>"
         }
         $("#service_list").html(service_list);
         $("#service_list").listview("refresh");
@@ -1024,13 +1010,11 @@ function start_websocket() {
 
       case "result.all-presentations":
         let pres_list = "";
-        for (let url in json_data.params.urls) {
-          pres_list +=
-            "<li data-icon='plus'><a href='#'>" +
-            json_data.params.urls[url].substring(16) +
-            "</a>";
-          pres_list +=
-            "<a onclick='add_presentation($(this).parent());' href='javascript:void(0);'></li>";
+        for (const url of json_data.params.urls) {
+          pres_list += "<li data-icon='none'><a href='#'>" + url.substring(16) + "</a>";
+          pres_list += "<a href='#' class='ui-btn ui-nodisc-icon' "
+          pres_list += "style=" + PLUS_BUTTON_STYLE
+          pres_list += "onclick='add_presentation($(this).parent());'></li>"
         }
         $("#presentation_list").html(pres_list);
         $("#presentation_list").listview("refresh");
@@ -1038,13 +1022,14 @@ function start_websocket() {
 
       case "result.all-videos":
         let vid_list = "";
-        for (let url in json_data.params.urls) {
+        for (const url of json_data.params.urls) {
           vid_list +=
-            "<li data-icon='plus'><a href='#' style='min-height:auto !important;'>";
-          vid_list += "<img src='" + json_data.params.urls[url] + ".jpg' />";
-          vid_list += "" + json_data.params.urls[url].substring(9) + "</a>";
-          vid_list +=
-            "<a onclick='add_video($(this).parent());' href='javascript:void(0);'></li>";
+            "<li data-icon='none'><a href='#' style='min-height:auto !important;'>";
+          vid_list += "<img src='" + url + ".jpg' />";
+          vid_list += url.substring(9) + "</a>";
+          vid_list += "<a href='#' class='ui-btn ui-nodisc-icon' "
+          vid_list += "style=" + PLUS_BUTTON_STYLE
+          vid_list += "onclick='add_video($(this).parent());'></li>";
         }
         $("#video_list").html(vid_list);
         $("#video_list").listview("refresh");
@@ -1052,13 +1037,14 @@ function start_websocket() {
 
       case "result.all-loops":
         let loop_list = "";
-        for (let url in json_data.params.urls) {
-          short_url = json_data.params.urls[url].substr(8);
-          loop_list += "<li><a href='#' style='min-height:auto !important;'>";
-          loop_list += "<img src='" + json_data.params.urls[url] + ".jpg' />";
-          loop_list += "" + short_url + "</a>";
-          loop_list +=
-            "<a onclick='set_loop($(this).parent());' href='javascript:void(0);'></li>";
+        for (const url of json_data.params.urls) {
+          short_url = url.substr(8);
+          loop_list += "<li data-icon='none'><a href='#' style='min-height:auto !important;'>";
+          loop_list += "<img src='" + url + ".jpg' />";
+          loop_list += short_url + "</a>";
+          loop_list += "<a href='#' class='ui-btn ui-nodisc-icon' "
+          loop_list += "style=" + PLAY_BUTTON_STYLE
+          loop_list += "onclick='set_loop($(this).parent());'></li>";
         }
         $("#loop_list").html(loop_list);
         $("#loop_list").listview("refresh");
@@ -1066,27 +1052,26 @@ function start_websocket() {
 
       case "result.all-backgrounds":
         let bg_list = "";
-        for (let bg in json_data.params.bg_data) {
-          short_url = json_data.params.bg_data[bg]["url"].substr(14);
-          bg_list += "<li><a href='#' style='min-height:auto !important;'>";
+        for (const bg of json_data.params.bg_data) {
+          short_url = bg["url"].substr(14);
+          fn_params = "'" + bg["url"] + "', " + bg["width"] + ", " + bg["height"]
+          bg_list += "<li data-icon='none'><a href='#' ";
+          bg_list += "style='min-height:auto !important; margin-right:5em;'>";
           bg_list += "<img src='./backgrounds/thumbnails/" + short_url + "' />";
           bg_list += "" + short_url + "</a>";
-          bg_list +=
-            "<a class='popup-trigger' href='#popup_background_options' data-id=" +
-            json_data.params.bg_data[bg]["url"] +
-            " data-width=" +
-            json_data.params.bg_data[bg]["width"] +
-            " data-height=" +
-            json_data.params.bg_data[bg]["height"] +
-            " data-rel='popup'></li>";
+          bg_list += "<a href='#' class='ui-btn' onclick=\"set_background_songs(" + fn_params + ");\" "
+          bg_list += "style='position:absolute; right:2.5em; border-right-width:0px; border-radius: 0px'>"
+          bg_list += "<img src='/html/icons/icons8-musical-notes-48.png' "
+          bg_list += "style='width:24px; height:24px; top:calc(1.25em - 11px); left:calc(1.25em - 13px);'/></a>"
+          bg_list += "<a class='ui-btn ui-nodisc-icon' "
+          bg_list += "style='background-image:url(\"/html/icons/icons8-literature-48.png\"); "
+          bg_list += "background-repeat: no-repeat; "
+          bg_list += "background-position: 50% 50%; "
+          bg_list += "background-size: 24px 24px;' "
+          bg_list += "onclick=\"set_background_bible(" + fn_params + ");\"></li>"
         }
         $("#background_list").html(bg_list);
         $("#background_list").listview("refresh");
-        $("#background_list a.popup-trigger").on("click", function (event, ui) {
-          clicked_background = $(this).data("id");
-          clicked_background_w = $(this).data("width");
-          clicked_background_h = $(this).data("height");
-        });
         break;
 
       case "result.song-details":
@@ -1103,9 +1088,9 @@ function start_websocket() {
             .prop("checked", true)
             .checkboxradio("refresh");
           lyrics = "";
-          for (i in full_song["parts"]) {
-            lyrics += "<" + full_song["parts"][i]["part"].toUpperCase() + ">\n";
-            lyrics += full_song["parts"][i]["data"];
+          for (const part of full_song["parts"]) {
+            lyrics += "<" + part["part"].toUpperCase() + ">\n";
+            lyrics += part["data"];
           }
           if (lyrics == "") {
             lyrics = "<V1>\n";
@@ -1130,6 +1115,7 @@ function start_websocket() {
           $("#create_song_mode_header").css("display", "none");
           $("#popup_edit_song").css("width", window.innerWidth * 0.95);
           $("#popup_edit_song").popup("open");
+          editing_song_id = full_song["song-id"];
         }
         break;
 
@@ -1167,23 +1153,25 @@ function start_websocket() {
 
       case "result.song-titles":
         let song_list = "";
-        for (let song in json_data.params.songs) {
-          if (song == MAX_LIST_ITEMS) {
-            song_list += "<li>There are more items...</li>";
+        for (const [idx, song] of json_data.params.songs.entries()) {
+          if (idx < MAX_LIST_ITEMS) {
+            song_list += "<li data-icon='none'>";
+            song_list += "<a href='#' style='margin-right:5em; padding-left: 1em; min-height:1.25em;'>";
+            song_list += song[1] + "</a>";
+            song_list += "<a href='#' onclick='edit_song(" + song[0] + ")' class='ui-btn' "
+            song_list += "style='position:absolute; right:2.5em; border-right-width:0px;border-top-right-radius:0px'>"
+            song_list += "<img src='/html/icons/icons8-amendment-48.png' alt='Edit song' "
+            song_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+            song_list += "<a href='#' class='ui-btn ui-nodisc-icon' "
+            song_list += "style=" + PLUS_BUTTON_STYLE
+            song_list += "onclick='add_song(" + song[0] + ")'></li>"
+          } else {
+            // song_list += "<li>There are more items...</li>";
             break;
           }
-          song_list +=
-            "<li><a href='#'>" + json_data.params.songs[song][1] + "</a>";
-          song_list +=
-            "<a class='popup-trigger' href='#popup_song_item_options' data-id=" +
-            json_data.params.songs[song][0] +
-            " data-rel='popup'></li>";
         }
         $("#song_list").html(song_list);
         $("#song_list").listview("refresh");
-        $("#song_list a.popup-trigger").on("click", function (event, ui) {
-          clicked_song_id = $(this).data("id");
-        });
         break;
 
       case "response.save-service":
@@ -1215,16 +1203,12 @@ function start_websocket() {
       case "result.all-services":
         $("#load_files_radio div").html("");
         if (json_data.params.filenames.length != 0) {
-          for (let file in json_data.params.filenames) {
+          for (const [idx, file] of json_data.params.filenames.entries()) {
             $("#load_files_radio div").append(
-              '<input type="radio" name="files" id="files-' + file + '">'
+              '<input type="radio" name="files" id="files-' + idx + '">'
             );
             $("#load_files_radio div").append(
-              '<label for="files-' +
-                file +
-                '">' +
-                json_data.params.filenames[file] +
-                "</label>"
+              '<label for="files-' + idx + '">' + file + "</label>"
             );
           }
           $('#load_files_radio input[type="radio"]').checkboxradio();
@@ -1242,18 +1226,15 @@ function start_websocket() {
 
       case "result.bible-versions":
         $("#b_version_radios div").html("");
-        json_data.params.versions.forEach(function (value, i) {
+        for (const [idx, version] of json_data.params.versions.entries()){
           $("#b_version_radios div").append(
             '<input type="radio" name="b_version" id="b_version_' +
-              i +
-              '" data-bv="' +
-              value +
-              '" />'
+              idx + '" data-bv="' + version + '" />'
           );
           $("#b_version_radios div").append(
-            '<label for="b_version_' + i + '">' + value + "</label>"
+            '<label for="b_version_' + idx + '">' + version + "</label>"
           );
-        });
+        }
         $("input[name='b_version']").checkboxradio();
         $("input[name='b_version']:first").prop("checked", true).checkboxradio("refresh");
         $("#b_version_radios").controlgroup("refresh");
@@ -1278,26 +1259,17 @@ function start_websocket() {
             "Problem performing Bible search (" + json_data.params.status + ")"
           );
         }
-        for (let v in json_data.params.verses) {
-          if (v == MAX_VERSE_ITEMS) {
-            break;
+        for (const [idx, verse] of json_data.params.verses.entries()) {
+          if (idx < MAX_VERSE_ITEMS) {
+            bible_ref = verse[1] + " " + verse[2] + ":" + verse[3];
+            $("#passage_list div").append(
+              '<input type="checkbox" data-mini="true" checked="checked" name="v_list" id="v-' +
+                verse[0] + '">'
+            );
+            $("#passage_list div").append(
+              '<label for="v-' + verse[0] + '">' + bible_ref + ": " + verse[4] + "</label>"
+            );
           }
-          verse = json_data.params.verses[v];
-          bible_ref = verse[1] + " " + verse[2] + ":" + verse[3];
-          $("#passage_list div").append(
-            '<input type="checkbox" data-mini="true" checked="checked" name="v_list" id="v-' +
-              verse[0] +
-              '">'
-          );
-          $("#passage_list div").append(
-            '<label for="v-' +
-              verse[0] +
-              '">' +
-              bible_ref +
-              ": " +
-              verse[4] +
-              "</label>"
-          );
         }
 
         $('#passage_list input[type="checkbox"]').checkboxradio();
@@ -1429,6 +1401,7 @@ function start_websocket() {
       case "trigger.clear-countdown":
       case "trigger.restore-loop":
       case "response.restore-loop":
+      case "trigger.suspend-loop":
         break; // No action required;
       default:
         console.error("Unsupported event", json_data);

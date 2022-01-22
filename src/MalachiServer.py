@@ -252,8 +252,6 @@ class MalachiServer():
                 "command.stop-presentation": [self.stop_presentation, []],
                 "command.next-presentation-slide": [self.next_presentation_slide, []],
                 "command.prev-presentation-slide": [self.prev_presentation_slide, []],
-                "command.transpose-up": [self.transpose_up, []],
-                "command.transpose-down": [self.transpose_down, []],
                 "command.transpose-by": [self.transpose_by, ["amount"]],
                 "command.start-capture": [self.start_capture, ["monitor"]],
                 "command.stop-capture": [self.stop_capture, []],
@@ -282,11 +280,9 @@ class MalachiServer():
                     try:
                         json_data = json.loads(message)
                         # Check json_data has action and params keys
-                        k_check = MalachiServer.key_check(
-                            json_data, ["action", "params"])
+                        k_check = MalachiServer.key_check(json_data, ["action", "params"])
                         if k_check == "":
-                            command_item = command_switcher.get(
-                                json_data["action"])
+                            command_item = command_switcher.get(json_data["action"])
                             if command_item is not None:
                                 # Check that all required parameters have been supplied
                                 p_check = MalachiServer.key_check(json_data["params"],
@@ -323,14 +319,10 @@ class MalachiServer():
         Send an update message to all sockets following a change to the value
         of the currently selected slide index in the service.
         """
-        for socket in self.SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "update.slide-index-update",
-                "params": {
-                    "item_index": self.s.item_index,
-                    "slide_index": self.s.slide_index
-                }
-            }))
+        await self.broadcast(self.SOCKETS, "update.slide-index-update", {
+            "item_index": self.s.item_index,
+            "slide_index": self.s.slide_index
+        })
 
     async def clients_item_index_update(self):
         """
@@ -381,11 +373,7 @@ class MalachiServer():
         """Stop any active screen captures and inform any monitor clients."""
         status, details = "ok", ""
         self.scap.stop()
-        for socket in self.MONITOR_SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "update.stop-capture",
-                "params": {}
-            }))
+        await self.broadcast(self.MONITOR_SOCKETS, "update.stop-capture", {})
         await self.server_response(websocket, "response.stop-capture", status, details)
 
     async def change_capture_monitor(self, websocket, params):
@@ -411,13 +399,9 @@ class MalachiServer():
         if 200 <= rate <= 5000:
             self.capture_refresh_rate = rate
             self.save_settings()
-            for socket in self.APP_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "update.capture-rate",
-                    "params": {
-                        "refresh_rate": self.capture_refresh_rate
-                    }
-                }))
+            await self.broadcast(self.APP_SOCKETS, "update.capture-rate", {
+                "refresh_rate": self.capture_refresh_rate
+            })
         else:
             status, details = "invalid-rate", "Capture rate must be in the range [200, 5000]"
         await self.server_response(websocket, "response.change-capture-rate", status, details)
@@ -441,23 +425,18 @@ class MalachiServer():
         capture_src -- the new capture image as a base64 URI.
         """
         self.last_cap = capture_src
-        for socket in self.MONITOR_SOCKETS:
-            if not socket[0] in self.LOCKED_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "update.capture-ready",
-                    "params": {}
-                }))
+        await self.broadcast(self.MONITOR_SOCKETS, "update.capture-ready", {})
 
     async def capture_update(self, websocket, params):
         """
         Send current captured image as a base64 URI to the specified websocket.
         """
         self.LOCKED_SOCKETS.add(websocket)
-        await websocket.send(json.dumps({
-            "action": "result.capture-update",
-            "params": {"capture_src": self.last_cap,
-                       "width": self.scap.mon_w, "height": self.scap.mon_h}
-        }))
+        await self.send_message(websocket, "result.capture-update", {
+            "capture_src": self.last_cap,
+            "width": self.scap.mon_w,
+            "height": self.scap.mon_h
+        })
 
     async def create_song(self, websocket, params):
         """
@@ -785,13 +764,9 @@ class MalachiServer():
         params["state"] -- the new display state, can be "on" or "off".
         """
         self.screen_state = params["state"]
-        for socket in self.DISPLAY_STATE_SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "update.display-state",
-                "params": {
-                    "state": self.screen_state
-                }
-            }))
+        await self.broadcast(self.DISPLAY_STATE_SOCKETS, "update.display-state", {
+            "state": self.screen_state
+        })
         await self.server_response(websocket, "response.set-display-state", "ok", "")
 
     async def new_service(self, websocket, params):
@@ -900,13 +875,9 @@ class MalachiServer():
                     self.s.items[i].paginate_from_style(self.screen_style)
             await self.clients_service_items_update()
             self.save_settings()
-            for socket in self.STYLE_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "update.style-update",
-                    "params": {
-                        "style": self.screen_style
-                    }
-                }))
+            await self.broadcast(self.STYLE_STATE_SOCKETS, "update.style-update", {
+                "style": self.screen_style
+            })
         else:
             status, details = "invalid-param", "Invalid style parameter: " + \
                 params["param"]
@@ -937,13 +908,9 @@ class MalachiServer():
                     self.s.items[i].paginate_from_style(self.screen_style)
             await self.clients_service_items_update()
             self.save_settings()
-            for socket in self.STYLE_STATE_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "update.style-update",
-                    "params": {
-                        "style": self.screen_style
-                    }
-                }))
+            await self.broadcast(self.STYLE_STATE_SOCKETS, "update.style-update", {
+                "style": self.screen_style
+            })
         else:
             status, details = "invalid-params", "Invalid style parameters: " + \
                 ', '.join(invalid_params)
@@ -964,15 +931,11 @@ class MalachiServer():
             vid = cv2.VideoCapture(url)
             self.loop_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
             self.loop_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            for socket in self.MEDIA_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "update.video-loop",
-                    "params":  {
-                        "url": self.video_loop,
-                        "loop-width": self.loop_width,
-                        "loop-height": self.loop_height
-                    }
-                }))
+            await self.broadcast(self.MEDIA_SOCKETS, "update.video-loop", {
+                "url": self.video_loop,
+                "loop-width": self.loop_width,
+                "loop-height": self.loop_height
+            })
         else:
             status, details = "invalid-url", "Specified url doesn't exist or is not a video"
         await self.server_response(websocket, "response.set-loop", status, details)
@@ -982,36 +945,24 @@ class MalachiServer():
         status, details = "ok", ""
         self.video_loop = ""
         self.loop_width, self.loop_height = 0, 0
-        for socket in self.MEDIA_SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "update.video-loop",
-                "params":  {
-                    "url": self.video_loop,
-                    "loop-width": self.loop_width,
-                    "loop-height": self.loop_height
-                }
-            }))
+        await self.broadcast(self.MEDIA_SOCKETS, "update.video-loop", {
+            "url": self.video_loop,
+            "loop-width": self.loop_width,
+            "loop-height": self.loop_height
+        })
         await self.server_response(websocket, "response.clear-loop", status, details)
 
     async def restore_loop(self, websocket, params):
         """ Send restore loop trigger to appropriate clients. """
         status, details = "ok", ""
-        for socket in self.MEDIA_SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "trigger.restore-loop",
-                "params":  {}
-            }))
+        await self.broadcast(self.MEDIA_SOCKETS, "trigger.restore-loop", {})
         await self.server_response(websocket, "response.restore-loop", status, details)
 
     async def play_video(self, websocket, params):
         """Send a message to appropriate clients triggering playback of the current Video."""
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Video":
-            for socket in self.MEDIA_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "trigger.play-video",
-                    "params": {}
-                }))
+            await self.broadcast(self.MEDIA_SOCKETS, "trigger.play-video", {})
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.play-video", status, details)
@@ -1020,11 +971,7 @@ class MalachiServer():
         """Send a message to appropriate clients pausing playback of the current Video."""
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Video":
-            for socket in self.MEDIA_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "trigger.pause-video",
-                    "params": {}
-                }))
+            await self.broadcast(self.MEDIA_SOCKETS, "trigger.pause-video", {})
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.pause-video", status, details)
@@ -1033,11 +980,7 @@ class MalachiServer():
         """Send a message to appropriate clients stopping playback of the current Video."""
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Video":
-            for socket in self.MEDIA_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "trigger.stop-video",
-                    "params": {}
-                }))
+            await self.broadcast(self.MEDIA_SOCKETS, "trigger.stop-video", {})
         else:
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.stop-video", status, details)
@@ -1053,13 +996,9 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Video":
             sec = int(params["seconds"])
             if 0 <= sec <= self.s.items[self.s.item_index].get_duration():
-                for socket in self.MEDIA_SOCKETS:
-                    await socket[0].send(json.dumps({
-                        "action": "trigger.seek-video",
-                        "params": {
-                            "seconds": int(params["seconds"])
-                        }
-                    }))
+                await self.broadcast(self.MEDIA_SOCKETS, "trigger.seek-video", {
+                    "seconds": int(params["seconds"])
+                })
             else:
                 status, details = "invalid-time", "Invalid seek time: " + \
                     str(params["seconds"])
@@ -1080,14 +1019,10 @@ class MalachiServer():
         hrs = int(params["hr"])
         mins = int(params["min"])
         if (0 <= mins < 60) and (0 <= hrs < 24):
-            for socket in self.MEDIA_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "trigger.start-countdown",
-                    "params": {
-                        "hr": int(params["hr"]),
-                        "min": int(params["min"])
-                    }
-                }))
+            await self.broadcast(self.MEDIA_SOCKETS, "trigger.start-countdown", {
+                "hr": int(params["hr"]),
+                "min": int(params["min"])
+            })
         else:
             status, details = "invalid-time", "Invalid countdown time: " + \
                 str(params["hr"]) + ":" + str(params["min"])
@@ -1097,11 +1032,7 @@ class MalachiServer():
     async def clear_countdown(self, websocket, params):
         """Send a message to clear any running countdown."""
         status, details = "ok", ""
-        for socket in self.MEDIA_SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "trigger.clear-countdown",
-                "params": {}
-            }))
+        await self.broadcast(self.MEDIA_SOCKETS, "trigger.clear-countdown", {})
         await self.server_response(websocket, "response.clear-countdown", status, details)
 
 
@@ -1110,14 +1041,9 @@ class MalachiServer():
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Presentation":
             # Suspend any running loop
-            for socket in self.MEDIA_SOCKETS:
-                await socket[0].send(json.dumps({
-                    "action": "trigger.suspend-loop",
-                    "params": {}
-                }))
+            await self.broadcast(self.MEDIA_SOCKETS, "trigger.suspend-loop", {})
             # Start presentation in LibreOffice
-            idx = self.s.item_index
-            url = self.s.items[idx].get_url()
+            url = self.s.items[self.s.item_index].get_url()
             subprocess.Popen(['soffice', '--show', url])
         else:
             status, details = "invalid-item", "Current service item is not a presentation"
@@ -1131,11 +1057,7 @@ class MalachiServer():
         status, details = "ok", ""
         pyautogui.press('escape')
         # Restore loop
-        for socket in self.MEDIA_SOCKETS:
-            await socket[0].send(json.dumps({
-                "action": "trigger.restore-loop",
-                "params": {}
-            }))
+        await self.broadcast(self.MEDIA_SOCKETS, "trigger.restore-loop", {})
         await self.server_response(websocket, "response.stop-presentation", status, details)
 
     async def next_presentation_slide(self, websocket, params):
@@ -1158,40 +1080,6 @@ class MalachiServer():
         pyautogui.press('pageup')
         await self.server_response(websocket, "response.prev-presentation-slide", status, details)
 
-    async def transpose_up(self, websocket, params):
-        """Transpose the current song up by one semitone and update appropriate clients."""
-        status, details = "ok", ""
-        if self.s.get_current_item_type() == "Song":
-            idx = self.s.item_index
-            new_transpose = (self.s.items[idx].transpose_by + 1) % 12
-            Song.edit_song(self.s.items[idx].song_id, {
-                           "transpose_by": new_transpose})
-            # Refresh song in service
-            self.s.items[idx].get_nonslide_data()
-            self.s.items[idx].paginate_from_style(self.screen_style)
-            # Update all clients
-            await self.clients_item_index_update()
-        else:
-            status, details = "invalid-item", "Current service item is not a song"
-        await self.server_response(websocket, "response.transpose-up", status, details)
-
-    async def transpose_down(self, websocket, params):
-        """Transpose the current song down by one semitone and update appropriate clients."""
-        status, details = "ok", ""
-        if self.s.get_current_item_type() == "Song":
-            idx = self.s.item_index
-            new_transpose = (self.s.items[idx].transpose_by - 1) % 12
-            Song.edit_song(self.s.items[idx].song_id, {
-                           "transpose_by": new_transpose})
-            # Refresh song in service
-            self.s.items[idx].get_nonslide_data()
-            self.s.items[idx].paginate_from_style(self.screen_style)
-            # Update all clients
-            await self.clients_item_index_update()
-        else:
-            status, details = "invalid-item", "Current service item is not a song"
-        await self.server_response(websocket, "response.transpose-down", status, details)
-
     async def transpose_by(self, websocket, params):
         """
         Transpose the current song up by a specified number of semitones and update
@@ -1203,10 +1091,8 @@ class MalachiServer():
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Song":
             idx = self.s.item_index
-            new_transpose = (
-                self.s.items[idx].transpose_by + int(params["amount"])) % 12
-            Song.edit_song(self.s.items[idx].song_id, {
-                           "transpose_by": new_transpose})
+            new_transpose = (self.s.items[idx].transpose_by + int(params["amount"])) % 12
+            Song.edit_song(self.s.items[idx].song_id, {"transpose_by": new_transpose})
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
             self.s.items[idx].paginate_from_style(self.screen_style)
@@ -1240,6 +1126,16 @@ class MalachiServer():
             }
         }))
 
+    # Server broadcast functions
+    async def broadcast(self, sockets, action, params):
+        """Broadcast a message to a set of websocket clients."""
+        for socket in sockets:
+            await socket[0].send(json.dumps({"action": action, "params": params}))
+
+    async def send_message(self, socket, action, params):
+        """Broadcast a message to a single websocket client."""
+        await socket.send(json.dumps({"action": action, "params": params}))
+
     # Client functions - response to client only
     async def set_capo(self, websocket, params):
         """
@@ -1254,14 +1150,11 @@ class MalachiServer():
         else:
             cur_item = json.loads(
                 self.s.items[self.s.item_index].to_JSON(self.CAPOS[websocket]))
-        await websocket.send(json.dumps({
-            "action": "update.item-index-update",
-            "params": {
+        await self.send_message(websocket, "update.item-index-update", {
                 "item_index": self.s.item_index,
                 "slide_index": self.s.slide_index,
                 "current_item": cur_item
-            }
-        }))
+        })
 
     # Query functions - response to client only
     async def bible_text_query(self, websocket, params):
@@ -1283,12 +1176,10 @@ class MalachiServer():
         except MalformedReferenceError:
             status = "invalid-reference"
         finally:
-            await websocket.send(json.dumps({
-                "action": "result.bible-verses",
-                "params": {
-                    "status": status,
-                    "verses": verses
-                }}))
+            await self.send_message(websocket, "result.bible-verses", {
+                "status": status,
+                "verses": verses
+            })
 
     async def bible_ref_query(self, websocket, params):
         """
@@ -1311,13 +1202,11 @@ class MalachiServer():
         except UnknownReferenceError as search_e:
             status, details = "unknown-reference", search_e.msg
         finally:
-            await websocket.send(json.dumps({
-                "action": "result.bible-verses",
-                "params": {
-                    "status": status,
-                    "details": details,
-                    "verses": verses
-                }}))
+            await self.send_message(websocket, "result.bible-verses", {
+                "status": status,
+                "details": details,
+                "verses": verses
+            })
 
     async def song_text_query(self, websocket, params):
         """
@@ -1331,11 +1220,9 @@ class MalachiServer():
         params["remote"] -- 0 = search local songs, 1 = search remote songs
         """
         result = Song.text_search(params["search-text"], params["remote"])
-        await websocket.send(json.dumps({
-            "action": "result.song-titles",
-            "params": {
+        await self.send_message(websocket, "result.song-titles", {
                 "songs": json.loads(result)
-            }}))
+        })
 
     # Other client requests
     async def request_full_song(self, websocket, params):
@@ -1352,22 +1239,16 @@ class MalachiServer():
         except InvalidSongIdError:
             status = "invalid-id"
         finally:
-            await websocket.send(json.dumps({
-                "action": "result.song-details",
-                "params": {
-                    "status": status,
-                    "song-data": data
-                }
-            }))
+            await self.send_message(websocket, "result.song-details", {
+                "status": status,
+                "song-data": data
+            })
 
     async def request_bible_versions(self, websocket, params):
         """Return a list of all supported Bible versions to websocket."""
-        await websocket.send(json.dumps({
-            "action": "result.bible-versions",
-            "params": {
-                "versions": self.bible_versions
-            }
-        }))
+        await self.send_message(websocket, "result.bible-versions", {
+            "versions": self.bible_versions
+        })
 
     async def request_bible_books(self, websocket, params):
         """
@@ -1383,13 +1264,10 @@ class MalachiServer():
         except InvalidVersionError:
             status = "invalid-version"
         finally:
-            await websocket.send(json.dumps({
-                "action": "result.bible-books",
-                "params": {
-                    "status": status,
-                    "books": books
-                }
-            }))
+            await self.send_message(websocket, "result.bible-books", {
+                "status": status,
+                "books": books
+            })
 
     async def request_chapter_structure(self, websocket, params):
         """
@@ -1407,23 +1285,15 @@ class MalachiServer():
         except InvalidVersionError:
             status = "invalid-version"
         finally:
-            await websocket.send(json.dumps({
-                "action": "result.chapter-structure",
-                "params": {
-                    "status": status,
-                    "chapter-structure": chapters
-                }
-            }))
+            await self.send_message(websocket, "result.chapter-structure", {
+                "status": status,
+                "chapter-structure": chapters
+            })
 
     async def request_all_videos(self, websocket, params):
         """Return a list of all video URLs in the ./videos directory to websocket."""
         urls = Video.get_all_videos()
-        await websocket.send(json.dumps({
-            "action": "result.all-videos",
-            "params": {
-                "urls": urls
-            }
-        }))
+        await self.send_message(websocket, "result.all-videos", {"urls": urls})
 
     async def request_all_loops(self, websocket, params):
         """Return a list of all video URLs in the ./loops directory to websocket."""
@@ -1431,44 +1301,24 @@ class MalachiServer():
                 if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
         if urls:
             urls.sort()
-        await websocket.send(json.dumps({
-            "action": "result.all-loops",
-            "params": {
-                "urls": urls
-            }
-        }))
+        await self.send_message(websocket, "result.all-loops", {"urls": urls})
 
     async def request_all_backgrounds(self, websocket, params):
         """Return a list of all background URLs in the ./backgrounds directory to websocket."""
         bgs = [Background(url) for url in Background.get_all_backgrounds()]
         bg_json = [{"url": './backgrounds/' + bg.title, 
             "width": bg.image_width, "height": bg.image_height} for bg in bgs]
-        await websocket.send(json.dumps({
-            "action": "result.all-backgrounds",
-            "params": {
-                "bg_data": bg_json
-            }
-        }))
+        await self.send_message(websocket, "result.all-backgrounds", {"bg_data": bg_json})
 
     async def request_all_services(self, websocket, params):
         """Return a list of all services in the ./services directory to websocket."""
         fnames = Service.get_all_services()
-        await websocket.send(json.dumps({
-            "action": "result.all-services",
-            "params": {
-                "filenames": fnames
-            }
-        }))
+        await self.send_message(websocket, "result.all-services", {"filenames": fnames})
 
     async def request_all_presentations(self, websocket, params):
         """Return a list of all presentations in the ./presentations directory to websocket."""
         fnames = Presentation.get_all_presentations()
-        await websocket.send(json.dumps({
-            "action": "result.all-presentations",
-            "params": {
-                "urls": fnames
-            }
-        }))
+        await self.send_message(websocket, "result.all-presentations", {"urls": fnames})
 
     # Song usage tracking
     def track_usage(self):
