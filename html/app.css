@@ -75,22 +75,18 @@ a.i-item {
 
 .ui-icon-play::after {
   background-image: url("/html/icons/icons8-play-48.png");
-  background-position: 3px 3px;
 }
 
 .ui-icon-pause::after {
   background-image: url("/html/icons/icons8-pause-48.png");
-  background-position: 3px 3px;
 }
 
 .ui-icon-stop::after {
   background-image: url("/html/icons/icons8-stop-48.png");
-  background-position: 3px 3px;
 }
 
 .ui-icon-reload::after {
   background-image: url("/html/icons/icons8-synchronize-24.png");
-  background-position: 3px 3px;
 }
 
 .video-ctrl-btn::after {

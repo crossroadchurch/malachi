@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <title>Malachi App</title>
-    <link rel="stylesheet" href="/html/app.css" />
     <link rel="stylesheet" href="/html/libs/jquery-ui.min.css" />
     <link rel="stylesheet" href="/html/libs/jquery.mobile-1.4.5.min.css" />
     <link rel="stylesheet" href="/html/libs/toastr.min.css" />
+    <link rel="stylesheet" href="/html/app.css" />
     <link rel="shortcut icon" href="/html/favicon.png" type="image/ico" />
     <script
       type="text/javascript"
@@ -71,6 +71,12 @@
             >
               &nbsp;
             </button>
+            <button
+              onclick="restore_loop()"
+              class="ui-btn ui-corner-all ui-btn-inline"
+            >
+              Restore loop
+            </button>
             <div id="time_seek_area">
               <label for="time_seek" class="ui-hidden-accessible">Time:</label>
               <input
@@ -93,7 +99,6 @@
               &nbsp;
             </button>
             <button
-              id="pres_start"
               onclick="restore_loop()"
               class="ui-btn ui-corner-all ui-btn-inline"
             >

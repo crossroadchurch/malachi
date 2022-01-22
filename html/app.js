@@ -27,20 +27,17 @@ let valid_keys = [
   "B",
 ];
 
-const PLUS_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-plus-48.png\"); " +
+const PLUS_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-plus-24.png\"); " +
   "background-repeat: no-repeat; " +
-  "background-position: 50% 50%; " + 
-  "background-size: 24px 24px;' "
+  "background-position: 50% 50%;' "
 
-const MINUS_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-minus-48.png\"); " +
+const MINUS_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-minus-24.png\"); " +
   "background-repeat: no-repeat; " +
-  "background-position: 50% 50%; " + 
-  "background-size: 24px 24px;' "
+  "background-position: 50% 50%;' "
 
-const PLAY_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-circled-play-48.png\"); " +
+const PLAY_BUTTON_STYLE =  "'background-image:url(\"/html/icons/icons8-circled-play-24.png\"); " +
   "background-repeat: no-repeat; " +
-  "background-position: 50% 50%; " + 
-  "background-size: 24px 24px;' "
+  "background-position: 50% 50%;' "
 
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
 icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
@@ -879,13 +876,13 @@ function start_websocket() {
           service_list += item.title + "</a>"
           service_list += "<a href='#' onclick='goto_item(" + idx + ")' class='ui-btn' "
           service_list += "style='position:absolute; left: 0; border-right-width:1px; border-radius:0px'>"
-          service_list += "<img src='/html/icons/icons8-go-back-48.png' alt='Display item' "
-          service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>" 
+          service_list += "<img src='/html/icons/icons8-go-back-32.png' alt='Display item' "
+          service_list += "style='top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>" 
           if (item.type == "song"){
             service_list += "<a href='#' onclick='edit_song(" + item["song-id"] + ")' class='ui-btn' "
             service_list += "style='position:absolute; right:2.5em; border-right-width:0px; border-radius:0px'>"
-            service_list += "<img src='/html/icons/icons8-amendment-48.png' alt='Edit song' "
-            service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+            service_list += "<img src='/html/icons/icons8-amendment-32.png' alt='Edit song' "
+            service_list += "style='top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
           }
           service_list += "<a href='#' class='ui-btn ui-nodisc-icon' style=" + MINUS_BUTTON_STYLE
           service_list += "onclick='delete_item(" + idx + ")'>"
@@ -946,13 +943,13 @@ function start_websocket() {
           service_list += item + "</a>"
           service_list += "<a href='#' onclick='goto_item(" + idx + ")' class='ui-btn' "
           service_list += "style='position:absolute; left: 0; border-right-width:1px; border-radius:0px'>"
-          service_list += "<img src='/html/icons/icons8-go-back-48.png' alt='Display item' "
-          service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+          service_list += "<img src='/html/icons/icons8-go-back-32.png' alt='Display item' "
+          service_list += "style='top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
           if (json_data.params.types[idx].substr(0, 4) == "song"){
             service_list += "<a href='#' onclick='edit_song(" + json_data.params.types[idx].substr(5) + ")' class='ui-btn' "
             service_list += "style='position:absolute; right:2.5em; border-right-width:0px; border-radius:0px'>"
-            service_list += "<img src='/html/icons/icons8-amendment-48.png' alt='Edit song' "
-            service_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+            service_list += "<img src='/html/icons/icons8-amendment-32.png' alt='Edit song' "
+            service_list += "style='top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
           }
           service_list += "<a href='#' class='ui-btn ui-nodisc-icon' style=" + MINUS_BUTTON_STYLE
           service_list += "onclick='delete_item(" + idx + ")'>"
@@ -1061,13 +1058,12 @@ function start_websocket() {
           bg_list += "" + short_url + "</a>";
           bg_list += "<a href='#' class='ui-btn' onclick=\"set_background_songs(" + fn_params + ");\" "
           bg_list += "style='position:absolute; right:2.5em; border-right-width:0px; border-radius: 0px'>"
-          bg_list += "<img src='/html/icons/icons8-musical-notes-48.png' "
-          bg_list += "style='width:24px; height:24px; top:calc(1.25em - 11px); left:calc(1.25em - 13px);'/></a>"
+          bg_list += "<img src='/html/icons/icons8-musical-notes-24.png' "
+          bg_list += "style='top:calc(1.25em - 11px); left:calc(1.25em - 13px);'/></a>"
           bg_list += "<a class='ui-btn ui-nodisc-icon' "
-          bg_list += "style='background-image:url(\"/html/icons/icons8-literature-48.png\"); "
+          bg_list += "style='background-image:url(\"/html/icons/icons8-literature-24.png\"); "
           bg_list += "background-repeat: no-repeat; "
-          bg_list += "background-position: 50% 50%; "
-          bg_list += "background-size: 24px 24px;' "
+          bg_list += "background-position: 50% 50%;' "
           bg_list += "onclick=\"set_background_bible(" + fn_params + ");\"></li>"
         }
         $("#background_list").html(bg_list);
@@ -1160,8 +1156,8 @@ function start_websocket() {
             song_list += song[1] + "</a>";
             song_list += "<a href='#' onclick='edit_song(" + song[0] + ")' class='ui-btn' "
             song_list += "style='position:absolute; right:2.5em; border-right-width:0px;border-top-right-radius:0px'>"
-            song_list += "<img src='/html/icons/icons8-amendment-48.png' alt='Edit song' "
-            song_list += "style='width:32px; height:32px; top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
+            song_list += "<img src='/html/icons/icons8-amendment-32.png' alt='Edit song' "
+            song_list += "style='top: calc(1.25em - 15px); left: calc(1.25em - 17px);'/></a>"
             song_list += "<a href='#' class='ui-btn ui-nodisc-icon' "
             song_list += "style=" + PLUS_BUTTON_STYLE
             song_list += "onclick='add_song(" + song[0] + ")'></li>"
