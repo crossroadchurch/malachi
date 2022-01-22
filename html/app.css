@@ -234,6 +234,11 @@ div#bible_search_btn_div {
   float: left;
 }
 
+.float_left_20 {
+  width: 20%;
+  float: left;
+}
+
 .float_left_25 {
   width: 25%;
   float: left;
@@ -251,6 +256,11 @@ div#bible_search_btn_div {
 
 .float_left_75 {
   width: 75%;
+  float: left;
+}
+
+.float_left_50 {
+  width: 50%;
   float: left;
 }
 

@@ -1443,6 +1443,12 @@ $(document).ready(function () {
   $("#song_search_div .ui-input-clear").on("click", function (e) {
     song_search();
   });
+  $("#song_search").on("keypress", function (e) {
+    key_code = e.which ? e.which : e.keyCode;
+    if (key_code == 13) {
+      song_search();
+    }
+  });
 
   $("input[name='lr_search']").prop("checked", false).checkboxradio("refresh");
   $("input[data-lrs='0']").prop("checked", true).checkboxradio("refresh");

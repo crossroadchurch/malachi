@@ -251,39 +251,47 @@
             </div>
           </div>
           <div class="div_clear"></div>
-          <div class="ui-grid-a">
-            <div class="ui-block-a">
+          <div class="float_left_50">
+            <input
+              type="search"
+              id="song_search"
+              value=""
+              placeholder="Lyric or title search"
+            />
+          </div>
+          <div class="float_left_20" data-role="controlgroup" data-mini="true">
+            <button
+              id="song_search_btn"
+              class="ui-btn ui-mini ui-corner-all ui-icon-search ui-btn-icon-left"
+              style="margin-top: 3px;"
+              onclick="song_search()"
+            >
+              Search
+            </button>
+          </div>
+          <div class="float_left_25" style="margin-top: 3px;">
+            <div
+              data-role="controlgroup"
+              data-type="horizontal"
+              data-mini="true"
+            >
               <input
-                type="search"
-                id="song_search"
-                value=""
-                placeholder="Lyric or title search"
-                oninput="song_search()"
-              />
-            </div>
-            <div id="lr_radios" class="ui-block-b">
-              <div
-                data-role="controlgroup"
-                data-type="horizontal"
-                data-mini="true"
-              >
-                <input
-                  type="radio"
-                  name="lr_search"
-                  id="lr_search_0"
-                  data-lrs="0"
-                />
-                <label for="lr_search_0">Local songs</label>
-                <input
                 type="radio"
                 name="lr_search"
-                id="lr_search_1"
-                data-lrs="1"
-                />
-                <label for="lr_search_1">Remote songs</label>
-              </div>
+                id="lr_search_0"
+                data-lrs="0"
+              />
+              <label for="lr_search_0">Local</label>
+              <input
+              type="radio"
+              name="lr_search"
+              id="lr_search_1"
+              data-lrs="1"
+              />
+              <label for="lr_search_1">Remote</label>
             </div>
           </div>
+          <div class="div_clear"></div>
           <ul id="song_list" data-role="listview" data-inset="true"></ul>
         </div>
 
@@ -298,24 +306,24 @@
                 data-role="controlgroup"
                 data-type="horizontal"
                 data-mini="true"
-            ></fieldset>
+              ></fieldset>
+            </div>
           </div>
-        </div>
-        <div class="div_clear"></div>
-        <div>
-          <div class="float_left_75" id="bible_search_div">
-            <input type="search" id="bible_search" value="" placeholder="" />
+          <div class="div_clear"></div>
+          <div>
+            <div class="float_left_75" id="bible_search_div">
+              <input type="search" id="bible_search" value="" placeholder="" />
+            </div>
+            <div id="bible_search_btn_div">
+              <button
+                id="bible_search_btn"
+                class="ui-btn ui-corner-all ui-icon-search ui-btn-icon-left"
+                onclick="bible_search()"
+              >
+                Search
+              </button>
+            </div>
           </div>
-          <div id="bible_search_btn_div">
-            <button
-              id="bible_search_btn"
-              class="ui-btn ui-corner-all ui-icon-search ui-btn-icon-left"
-              onclick="bible_search()"
-            >
-              Search
-            </button>
-          </div>
-        </div>
 
           <div>
             <div class="float_left_33">
