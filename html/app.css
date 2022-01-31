@@ -346,7 +346,6 @@ p.ml_bibleverse {
   content: "";
   background-repeat: no-repeat;
   background-position: 50% 50%;
-  position: absolute;
   display: block;
   width: 2.5em;
   height: 2.75em;
@@ -847,12 +846,10 @@ p.ml_bibleverse {
   align-items: center;
   font-weight: 700;
   text-shadow: 0 1px 0 #eee;
-  flex-grow: 1;
 }
 
 .popup_h_content {
   display: flex;
-  flex-grow: 1;
 }
 
 .popup_panel {
