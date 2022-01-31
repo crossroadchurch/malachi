@@ -9,235 +9,239 @@ var slide_index = -1;
 var websocket;
 
 function update_music() {
-  $("#playedkey").html(played_key);
+  document.getElementById("playedkey").innerHTML = played_key;
   verse_control_list = "<ul>";
   verse_list = "";
 
-  if (slide_type == "song"){
-    $('#capoarea').css('display', 'inline');
+  if (slide_type == "song") {
+    document.getElementById("capoarea").style.display = "inline";
     verse_list = verse_order.split(" ");
-    part_counts_sum = 0
-    for (i=0; i < verse_list.length; i++){
-      if ((slide_index >= part_counts_sum) && (slide_index < (part_counts_sum + part_counts[i]))) {
-        verse_control_list = verse_control_list + 
-        "<li><span class='current-verse'>" + verse_list[i].toUpperCase() + "</span></li>";
+    part_counts_sum = 0;
+    for (i = 0; i < verse_list.length; i++) {
+      if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[i]) {
+        verse_control_list =
+          verse_control_list +
+          "<li><span class='current-verse'>" +
+          verse_list[i].toUpperCase() +
+          "</span></li>";
       } else {
-        verse_control_list = verse_control_list + 
-          "<li>" + verse_list[i].toUpperCase() + "</li>";
+        verse_control_list = verse_control_list + "<li>" + verse_list[i].toUpperCase() + "</li>";
       }
       part_counts_sum = part_counts_sum + part_counts[i];
     }
     verse_control_list = verse_control_list + "</ul>";
   } else if (slide_type != undefined) {
     verse_control_list = "<ul><li>" + current_title + "</li></ul>";
-    $('#capoarea').css('display', 'none');
+    document.getElementById("capoarea").style.display = "none";
   } else {
-    $('#capoarea').css('display', 'none');
+    document.getElementById("capoarea").style.display = "none";
   }
-  $("#verseorder").html(verse_control_list);
+  document.getElementById("verseorder").innerHTML = verse_control_list;
 
-  if (slide_type == "song"){
-
+  if (slide_type == "song") {
     current_slide_lines = current_slides[slide_index].split(/(\n)/);
-    current_text = '';
+    current_text = "";
 
-    for (line in current_slide_lines){
-      if (current_slide_lines[line] == "\n"){
-        current_text = current_text + '<br />';
+    for (line in current_slide_lines) {
+      if (current_slide_lines[line] == "\n") {
+        current_text += "<br />";
       } else {
         current_line_segments = current_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
-        if (current_line_segments[0] != '') {
+        if (current_line_segments[0] != "") {
           // Process head of line
-          current_text = current_text + '<span class="lyric-chord-block"><span class="lyric-chunk">' + current_line_segments[0] + '</span></span>';
+          current_text +=
+            '<span class="lyric-chord-block"><span class="lyric-chunk">' +
+            current_line_segments[0] +
+            "</span></span>";
         }
         // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
         prev_chunk_is_chord = false;
         hanging_lyric_pos = -1;
-        for (segment=1; segment < current_line_segments.length; segment++){
+        for (segment = 1; segment < current_line_segments.length; segment++) {
           cur_seg = current_line_segments[segment];
-          if (cur_seg.charAt(0) == "["){
+          if (cur_seg.charAt(0) == "[") {
             // Current is chord
             cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="chord-chunk">');
             cur_seg = cur_seg.replace(/[\s]?\]/, "</span>");
             if (prev_chunk_is_chord == true) {
-              current_text = current_text + '</span><span class="lyric-chord-block">' + cur_seg;
+              current_text += '</span><span class="lyric-chord-block">' + cur_seg;
             } else {
-              current_text = current_text + '<span class="lyric-chord-block">' + cur_seg;
+              current_text += '<span class="lyric-chord-block">' + cur_seg;
             }
             prev_chunk_is_chord = true;
           } else {
             // Current is lyric
-            if ((hanging_lyric_pos > 0) && (cur_seg.charAt(0).match(/[a-z]/i))) {
-              current_text = current_text.slice(0, hanging_lyric_pos+1) + " midword" + current_text.slice(hanging_lyric_pos+1);
+            if (hanging_lyric_pos > 0 && cur_seg.charAt(0).match(/[a-z]/i)) {
+              current_text =
+                current_text.slice(0, hanging_lyric_pos + 1) +
+                " midword" +
+                current_text.slice(hanging_lyric_pos + 1);
             }
             // recalc hanging_lyric_pos based on current_text length + offset
             hanging_lyric_pos = current_text.length + 23;
-            current_text = current_text + '<span class="lyric-chunk">' + cur_seg + '</span></span>';
+            current_text += '<span class="lyric-chunk">' + cur_seg + "</span></span>";
             prev_chunk_is_chord = false;
-            if (!cur_seg.slice(-1).match(/[a-z]/i)){
+            if (!cur_seg.slice(-1).match(/[a-z]/i)) {
               hanging_lyric_pos = -1;
             }
           }
         }
-        if (prev_chunk_is_chord == true){
-          current_text = current_text + '</span>';
+        if (prev_chunk_is_chord == true) {
+          current_text += "</span>";
         }
       }
     }
-    $("#currentslide").html(current_text);
+    document.getElementById("currentslide").innerHTML = current_text;
 
-    if (slide_index < (current_slides.length - 1)){
+    if (slide_index < current_slides.length - 1) {
       next_slide_lines = current_slides[slide_index + 1].split(/(\n)/);
     } else {
       next_slide_lines = [];
     }
-    next_text = '';
+    next_text = "";
 
-    for (line in next_slide_lines){
-      if (next_slide_lines[line] == "\n"){
-        next_text = next_text + '<br />';
+    for (line in next_slide_lines) {
+      if (next_slide_lines[line] == "\n") {
+        next_text += "<br />";
       } else {
         next_line_segments = next_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
-        if (next_line_segments[0] != '') {
+        if (next_line_segments[0] != "") {
           // Process head of line
-          next_text = next_text + '<span class="next-lyric-chord-block"><span class="next-lyric-chunk">' + next_line_segments[0] + '</span></span>';
+          next_text +=
+            '<span class="next-lyric-chord-block"><span class="next-lyric-chunk">' +
+            next_line_segments[0] +
+            "</span></span>";
         }
         // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
         prev_chunk_is_chord = false;
         hanging_lyric_pos = -1;
-        for (segment=1; segment < next_line_segments.length; segment++){
+        for (segment = 1; segment < next_line_segments.length; segment++) {
           cur_seg = next_line_segments[segment];
-          if (cur_seg.charAt(0) == "["){
+          if (cur_seg.charAt(0) == "[") {
             // Current is chord
             cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="next-chord-chunk">');
             cur_seg = cur_seg.replace(/[\s]?\]/, "</span>");
             if (prev_chunk_is_chord == true) {
-              next_text = next_text + '</span><span class="next-lyric-chord-block">' + cur_seg;
+              next_text += '</span><span class="next-lyric-chord-block">' + cur_seg;
             } else {
-              next_text = next_text + '<span class="next-lyric-chord-block">' + cur_seg;
+              next_text += '<span class="next-lyric-chord-block">' + cur_seg;
             }
             prev_chunk_is_chord = true;
           } else {
             // Current is lyric
-            if ((hanging_lyric_pos > 0) && (cur_seg.charAt(0).match(/[a-z]/i))) {
-              next_text = next_text.slice(0, hanging_lyric_pos+1) + " midword" + next_text.slice(hanging_lyric_pos+1);
+            if (hanging_lyric_pos > 0 && cur_seg.charAt(0).match(/[a-z]/i)) {
+              next_text =
+                next_text.slice(0, hanging_lyric_pos + 1) +
+                " midword" +
+                next_text.slice(hanging_lyric_pos + 1);
             }
             // recalc hanging_lyric_pos based on current_text length + offset
             hanging_lyric_pos = next_text.length + 28;
-            next_text = next_text + '<span class="next-lyric-chunk">' + cur_seg + '</span></span>';
+            next_text += '<span class="next-lyric-chunk">' + cur_seg + "</span></span>";
             prev_chunk_is_chord = false;
-            if (!cur_seg.slice(-1).match(/[a-z]/i)){
+            if (!cur_seg.slice(-1).match(/[a-z]/i)) {
               hanging_lyric_pos = -1;
             }
           }
         }
-        if (prev_chunk_is_chord == true){
-          next_text = next_text + '</span>';
+        if (prev_chunk_is_chord == true) {
+          next_text += "</span>";
         }
       }
     }
-    $("#nextslide").html(next_text);
+    document.getElementById("nextslide").innerHTML = next_text;
 
-    $('#currentslide>span').each(function(){
-      element = $(this);
-      if (element.children().length > 1){
-        lyricWidth = $(element.children('.lyric-chunk')).width();
-        chordOuterWidth = $(element.children('.chord-chunk')).outerWidth();
-        if (lyricWidth < chordOuterWidth){
-          if ($(element.children('.midword')).length > 0){
-            spacerWidth = chordOuterWidth-element.width();
-            element.append('<span class="midword-spacer">-</span>');
-            if (spacerWidth < body_size_int){
-              element.children('.midword-spacer').width(body_size_int);
+    document.querySelectorAll("#currentslide>span").forEach((element) => {
+      if (element.children.length > 1) {
+        lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
+        chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
+        if (lyricWidth < chordWidth) {
+          if (element.querySelectorAll(".midword").length > 0) {
+            spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
+            element.insertAdjacentHTML("beforeend", '<span class="midword-spacer">-</span>');
+            if (spacerWidth < body_size_int) {
+              element.querySelector(".midword-spacer").style.width = body_size_int + "px";
             } else {
-              element.children('.midword-spacer').width(spacerWidth);
+              element.querySelector(".midword-spacer").style.width = spacerWidth + "px";
             }
           } else {
-            element.css("padding-right", chordOuterWidth-element.width());
+            element.style.paddingRight =
+              chordWidth - parseInt(getComputedStyle(element).width) + "px";
           }
         }
       }
     });
 
-  $('#nextslide>span').each(function(){
-      element = $(this);
-      if (element.children().length > 1){
-        lyricWidth = $(element.children('.next-lyric-chunk')).width();
-        chordOuterWidth = $(element.children('.next-chord-chunk')).outerWidth();
-        if (lyricWidth < chordOuterWidth){
-          if ($(element.children('.midword')).length > 0){
-            spacerWidth = chordOuterWidth-element.width();
-            element.append('<span class="next-midword-spacer">-</span>');
-            if (spacerWidth < body_size_int){
-              element.children('.next-midword-spacer').width(body_size_int);
+    document.querySelectorAll("#nextslide>span").forEach((element) => {
+      if (element.children.length > 1) {
+        lyricWidth = parseInt(getComputedStyle(element.querySelector(".next-lyric-chunk")).width);
+        chordWidth = parseInt(getComputedStyle(element.querySelector(".next-chord-chunk")).width);
+        if (lyricWidth < chordWidth) {
+          if (element.querySelectorAll(".midword").length > 0) {
+            spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
+            element.insertAdjacentHTML("beforeend", '<span class="next-midword-spacer">-</span>');
+            if (spacerWidth < body_size_int) {
+              element.querySelector(".next-midword-spacer").style.width = body_size_int + "px";
             } else {
-              element.children('.next-midword-spacer').width(spacerWidth);
+              element.querySelector(".next-midword-spacer").style.width = spacerWidth + "px";
             }
           } else {
-            element.css("padding-right", chordOuterWidth-element.width());
+            element.style.paddingRight =
+              chordWidth - parseInt(getComputedStyle(element).width) + "px";
           }
         }
       }
     });
-
-  } else if (slide_type == "bible"){
-    current_text = "<div class =\"nonsong-block\"><p class=\"nonsong-line\">";
-    current_text = current_text + current_slides[slide_index].replace(/\n/g, "</p><p class=\"nonsong-line\">");
-    current_text = current_text + "</div>";
-    if (slide_index < (current_slides.length - 1)){
-      next_text = "<div class =\"next-nonsong-block\"><p class=\"nonsong-line\">";
-      next_text = next_text + current_slides[slide_index + 1].replace(/\n/g, "</p><p class=\"nonsong-line\">");
-      next_text = next_text + "</div>";
+  } else if (slide_type == "bible") {
+    current_text = "<div class ='nonsong-block'><p class='nonsong-line'>";
+    current_text += current_slides[slide_index].replace(/\n/g, "</p><p class='nonsong-line'>");
+    current_text += "</div>";
+    if (slide_index < current_slides.length - 1) {
+      next_text = "<div class ='next-nonsong-block'><p class='nonsong-line'>";
+      next_text += current_slides[slide_index + 1].replace(/\n/g, "</p><p class='nonsong-line'>");
+      next_text += "</div>";
     } else {
       next_text = "<div></div>";
     }
-    $("#currentslide").html(current_text);
-    $("#nextslide").html(next_text);
+    document.getElementById("currentslide").innerHTML = current_text;
+    document.getElementById("nextslide").innerHTML = next_text;
   } else if (slide_type == "video") {
-    current_text = "<div class =\"nonsong-block\"><p class=\"nonsong-line\">";
-    current_text = current_text + current_slides[0].replace(/\n/g, "</p><p class=\"nonsong-line\">");
-    current_text = current_text + "</div>";
-    $("#currentslide").html(current_text);
-    $("#nextslide").html("");
+    current_text = "<div class ='nonsong-block'><p class='nonsong-line'>";
+    current_text += current_slides[0].replace(/\n/g, "</p><p class='nonsong-line'>");
+    current_text += "</div>";
+    document.getElementById("currentslide").innerHTML = current_text;
+    document.getElementById("nextslide").innerHTML = "";
   } else if (slide_type == "presentation") {
-    if (slide_index < current_slides.length - 1){
-      $("#currentslide").html(
-          "<div class='two-image-div'><p>Current:</p><img class='pres-two-thumb' src = '" + current_slides[slide_index] + "' /></div>" + 
-          "<div class='two-image-div'><p>Next:</p><img class='pres-two-thumb' src = '" + current_slides[slide_index+1] + "' /></div>");
-    } else {
-      $("#currentslide").html(
-        "<div class='two-image-div'><p>Current:</p><img class='pres-two-thumb' src = '" + current_slides[slide_index] + "' /></div>" + 
-        "<div class='two-image-div'></div>");
-    }
-    $("#nextslide").html("");
+    document.getElementById("currentslide").innerHTML = "";
+    document.getElementById("nextslide").innerHTML = "";
   } else {
-    $("#currentslide").html("");
-    $("#nextslide").html("");
+    document.getElementById("currentslide").innerHTML = "";
+    document.getElementById("nextslide").innerHTML = "";
   }
 }
 
-function update_capo(){
-  capo = $("#caposelect").val();
-  if (capo != 0){
+function update_capo() {
+  capo = parseInt(document.getElementById("caposelect").value);
+  if (capo != 0) {
     window.localStorage.setItem(cur_song_id.toString(), capo.toString());
   } else {
     window.localStorage.removeItem(cur_song_id.toString());
   }
-  websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
+  websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
 }
 
-function capo_check_update_music(){
-  if (cur_song_id != -1){
+function capo_check_update_music() {
+  if (cur_song_id != -1) {
     saved_capo = window.localStorage.getItem(cur_song_id.toString());
     if (saved_capo == null) {
       saved_capo = 0;
     } else {
       saved_capo = parseInt(saved_capo);
     }
-    if (saved_capo != capo){
+    if (saved_capo != capo) {
       capo = saved_capo;
-      $('#caposelect').val(capo);
-      websocket.send(JSON.stringify({"action": "client.set-capo", "params": { "capo": capo }}));
+      document.getElementById("caposelect").value = capo;
+      websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
     } else {
       update_music();
     }
@@ -246,22 +250,26 @@ function capo_check_update_music(){
   }
 }
 
-function start_websocket(){
+function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/basic");
   websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
-    switch(json_data.action){
+    switch (json_data.action) {
       case "update.basic-init":
-        toastr.options.positionClass = "toast-bottom-center";
-        toastr.success("Connected to Malachi server");
+        Toastify({
+          text: "Connected to Malachi server",
+          gravity: "bottom",
+          position: "left",
+          style: { background: "#4caf50" },
+        }).showToast();
       case "update.service-overview-update":
         slide_index = json_data.params.slide_index;
-        if (JSON.stringify(json_data.params.current_item != "{}")){
+        if (JSON.stringify(json_data.params.current_item != "{}")) {
           slide_type = json_data.params.current_item.type;
           current_slides = json_data.params.current_item.slides;
           current_title = json_data.params.current_item["title"];
-          if (slide_type == "song"){
+          if (slide_type == "song") {
             cur_song_id = json_data.params.current_item["song-id"];
             played_key = json_data.params.current_item["played-key"];
             verse_order = json_data.params.current_item["verse-order"];
@@ -289,7 +297,7 @@ function start_websocket(){
         slide_type = json_data.params.current_item.type;
         current_slides = json_data.params.current_item.slides;
         current_title = json_data.params.current_item["title"];
-        if (slide_type == "song"){
+        if (slide_type == "song") {
           cur_song_id = json_data.params.current_item["song-id"];
           played_key = json_data.params.current_item["played-key"];
           verse_order = json_data.params.current_item["verse-order"];
@@ -305,35 +313,45 @@ function start_websocket(){
       default:
         console.error("Unsupported event", json_data);
     }
-  }
-  websocket.onclose = function(event){
-    if (event.wasClean == false){
-      toastr.options.positionClass = "toast-bottom-full-width";
-      toastr.options.timeOut = "3500";
-      toastr.error("Reconnection attempt will be made in 5 seconds", "Connection was closed/refused by server");
+  };
+  websocket.onclose = function (event) {
+    if (event.wasClean == false) {
+      Toastify({
+        text: "Connection was closed/refused by server\nReconnection attempt will be made in 5 seconds",
+        gravity: "bottom",
+        position: "left",
+        duration: 4000,
+        style: { background: "#f44337" },
+      }).showToast();
       setTimeout(start_websocket, 5000);
     }
-  }
+  };
 }
 
-$(document).ready(function(){
-  start_websocket();
-  $("#caposelect").change(update_capo);
-});
+let ready = (callback) => {
+  if (document.readyState != "loading") {
+    callback();
+  } else {
+    document.addEventListener("DOMContentLoaded", callback);
+  }
+};
 
+ready(() => {
+  start_websocket();
+});
 
 // Adjust document body size based on ?size=n parameter, if it exists
 params = window.location.search.slice(1);
 body_size_int = 16;
 body_size = "16px";
-if (params != ""){
-  param_arr = params.split('&');
-  for(var i=0; i<param_arr.length; i++){
-    param_pair = param_arr[i].split('=');
-    if (param_pair[0] == 'size'){
+if (params != "") {
+  param_arr = params.split("&");
+  for (var i = 0; i < param_arr.length; i++) {
+    param_pair = param_arr[i].split("=");
+    if (param_pair[0] == "size") {
       body_size_int = parseInt(param_pair[1]);
       body_size = param_pair[1] + "px";
     }
   }
 }
-$("html").css("font-size", body_size);
+document.querySelector("html").style.fontSize = body_size;

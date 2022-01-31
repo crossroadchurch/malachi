@@ -6,7 +6,7 @@
     "margin-top-vh": "8",
     "max-lines": "5",
     "countdown-size-vh": "12",
-    "countdown-top-vh": "25",
+    "countdown-top-vh": "23",
     "countdown-h-size-vh": "25",
     "countdown-h-text": "Welcome!",
     "font-file": "./html/fonts/Inter-SemiBold.otf",

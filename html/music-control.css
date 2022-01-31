@@ -1,26 +1,26 @@
 @font-face {
-  font-family: 'Inter Semi Bold';
+  font-family: "Inter Semi Bold";
   font-style: normal;
-  src: local('Inter-SemiBold'), url(/html/fonts/Inter-SemiBold.otf) format('opentype');
+  src: local("Inter-SemiBold"), url(/html/fonts/Inter-SemiBold.otf) format("opentype");
 }
 
 @font-face {
-  font-family: 'Ubuntu Condensed';
+  font-family: "Ubuntu Condensed";
   font-style: normal;
   font-weight: 700;
-  src: local('Ubuntu Condensed'), url(/html/fonts/Ubuntu-C.ttf) format('truetype');
+  src: local("Ubuntu Condensed"), url(/html/fonts/Ubuntu-C.ttf) format("truetype");
 }
 
 @font-face {
-  font-family: 'Quivira';
+  font-family: "Quivira";
   font-style: normal;
   font-weight: 700;
-  src: local('Quivira'), url(/html/fonts/Quivira.otf) format('truetype');
+  src: local("Quivira"), url(/html/fonts/Quivira.otf) format("truetype");
 }
 
 body {
   background-color: rgb(51, 51, 51);
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
   overflow: hidden;
   margin: 0;
   padding: 6px;
@@ -38,6 +38,7 @@ body {
 #header {
   padding-bottom: 1rem;
   width: 95vw;
+  font-size: 0rem;
 }
 
 .chord-line {
@@ -72,7 +73,7 @@ body {
 }
 
 .chord-chunk {
-  font-family: 'Ubuntu Condensed', sans-serif;
+  font-family: "Ubuntu Condensed", sans-serif;
   color: #d922d2;
   display: inline-block;
   position: absolute;
@@ -83,7 +84,7 @@ body {
 }
 
 .lyric-chunk {
-  font-family: 'Inter Semi Bold', sans-serif;
+  font-family: "Inter Semi Bold", sans-serif;
   color: white;
   display: inline-block;
   margin: 2rem 0rem 0.5rem 0rem;
@@ -91,15 +92,15 @@ body {
   max-width: 66vw;
 }
 
-.lyric-chord-block{
-  position:relative;
+.lyric-chord-block {
+  position: relative;
   margin-right: 0px;
   display: inline-block;
   max-width: 66vw;
 }
 
 .next-chord-chunk {
-  font-family: 'Ubuntu Condensed', sans-serif;
+  font-family: "Ubuntu Condensed", sans-serif;
   color: #999;
   display: inline-block;
   position: absolute;
@@ -110,7 +111,7 @@ body {
 }
 
 .next-lyric-chunk {
-  font-family: 'Inter Semi Bold', sans-serif;;
+  font-family: "Inter Semi Bold", sans-serif;
   color: #999;
   display: inline-block;
   margin: 2rem 0rem 0.5rem 0rem;
@@ -118,8 +119,8 @@ body {
   max-width: 66vw;
 }
 
-.next-lyric-chord-block{
-  position:relative;
+.next-lyric-chord-block {
+  position: relative;
   margin-right: 0px;
   display: inline-block;
   max-width: 66vw;
@@ -138,7 +139,7 @@ body {
 }
 
 .nonsong-block {
-  font-family: 'Inter Semi Bold', sans-serif;;
+  font-family: "Inter Semi Bold", sans-serif;
   color: white;
   display: inline-block;
   margin: 0.5rem 0rem;
@@ -149,7 +150,7 @@ body {
 }
 
 .next-nonsong-block {
-  font-family: 'Inter Semi Bold', sans-serif;;
+  font-family: "Inter Semi Bold", sans-serif;
   color: #999;
   display: inline-block;
   margin: 0.5rem 0rem;
@@ -159,14 +160,22 @@ span {
   white-space: pre;
 }
 
-#playedkey, #verseorder, #keyandcapo, #pres-controls {
+#playedkey,
+#verseorder,
+#keyandcapo,
+#pres-controls {
   display: inline-block;
   height: 3rem;
 }
 
+#keyandcapo {
+  font-size: 0rem;
+}
+
 #playedkey {
   font-size: 1.5rem;
-  margin: 0px 5px;
+  padding: 0px 5px;
+  margin-right: 5px;
   color: yellow;
 }
 
@@ -185,7 +194,7 @@ span {
   left: 2%;
   bottom: 2%;
   right: 30%;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 #currentslide {
@@ -197,25 +206,26 @@ span {
 }
 
 .vert-button-25 {
-  width:100%;
-  height:21%;
+  width: 100%;
+  height: 21%;
   margin: 1%;
 }
 
 .vert-button-75 {
-  width:100%;
-  height:71%;
+  width: 100%;
+  height: 71%;
   margin: 1%;
 }
 
 .large-button {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
   font-size: 2rem;
   border: none;
   background-color: gray;
   color: white;
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .large-button:active {
@@ -223,17 +233,18 @@ span {
 }
 
 .verse-button {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
   font-size: 2rem;
   height: 3rem;
   width: 6rem;
-  border:none;
+  border: none;
   background-color: gray;
   margin-right: 5px;
   color: white;
   text-align: center;
   text-decoration: none;
   line-height: 3rem;
+  cursor: pointer;
 }
 
 .verse-button:active {
@@ -241,11 +252,11 @@ span {
 }
 
 .current-verse-button {
-  background-color: #4CAF50 !important;
+  background-color: #4caf50 !important;
 }
 
 .menu-button {
-  font-family: 'Quivira';
+  font-family: "Quivira";
   font-size: 2rem;
   height: 3rem;
   width: 3rem;
@@ -255,6 +266,8 @@ span {
   text-align: center;
   text-decoration: none;
   line-height: 3rem;
+  margin-right: 0.25em;
+  cursor: pointer;
 }
 
 .icon-bar {
@@ -278,7 +291,7 @@ span {
 }
 
 .icon-options {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
   font-size: 2rem;
   margin-top: 0.45rem;
   margin-bottom: 0.45rem;
@@ -286,76 +299,44 @@ span {
 }
 
 .non-song-title {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
   font-size: 2rem;
   color: white;
 }
 
-.menu-song-item {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+.menu-list-item {
+  display: block;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
   font-size: 2rem;
   color: white;
   background: gray;
+  border: none;
+  cursor: pointer;
+  padding: 0.25em 0.5em;
+  margin-top: 0.25em;
 }
 
-.menu-song-current-item {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
-  font-size: 2rem;
-  color: white;
-  background: #4CAF50;
-}
-
-.menu-display-item {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
-  font-size: 2rem;
-  color: white;
-  background: grey;
-}
-
-.pres-thumb {
-  max-width: 90%;
-  max-height: 90%;
-}
-
-.pres-two-thumb {
-  margin-left: 2.5%;
-  margin-right: 2.5%;
-  max-width: 95%;
-  max-height: 95%;
-}
-
-.two-image-div {
-  width:50%;
-  float:left;
-}
-
-.two-image-div p {
-  color: #ffffff;
-  font-size: 2rem;
+.current-song-item {
+  background: #4caf50;
+  cursor: default;
 }
 
 .option-button {
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
+  font-size: 2rem;
   height: 2.8rem;
   width: 23%;
   margin-bottom: 0.2rem;
-  border:none;
+  border: none;
   background-color: gray;
   color: white;
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .option-button:active {
   background-color: darkmagenta !important;
-}
-
-.key-button {
-  font-size: 2rem;
-}
-
-.capo-button {
-  font-size: 2rem;
 }
 
 #music-options p {

@@ -11,76 +11,119 @@ var slide_index = -1;
 var item_index = -1;
 var cur_song_id = -1;
 var websocket;
-var valid_keys = [
-  "C",
-  "Db",
-  "D",
-  "Eb",
-  "E",
-  "F",
-  "F#",
-  "G",
-  "Ab",
-  "A",
-  "Bb",
-  "B"
-];
+var valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 var music_options_visible = false;
+var display_options_visible = false;
+var service_options_visible = false;
 
 function view_music_options(val) {
   music_options_visible = val;
+  service_options_visible = false;
+  display_options_visible = false;
   if (music_options_visible) {
-    $("#currentslide").css("display", "none");
-    $("#nextslide").css("display", "none");
-    $("#music-options").css("display", "block");
-    $("#music-options-btn").css("background", "#4CAF50");
+    document.getElementById("currentslide").style.display = "none";
+    document.getElementById("nextslide").style.display = "none";
+    document.getElementById("service-options").style.display = "none";
+    document.getElementById("service-options-btn").style.background = "gray";
+    document.getElementById("display-options").style.display = "none";
+    document.getElementById("display-options-btn").style.background = "gray";
+    document.getElementById("music-options").style.display = "block";
+    document.getElementById("music-options-btn").style.background = "#4CAF50";
   } else {
-    $("#currentslide").css("display", "block");
-    $("#nextslide").css("display", "block");
-    $("#music-options").css("display", "none");
-    $("#music-options-btn").css("background", "gray");
+    document.getElementById("currentslide").style.display = "block";
+    document.getElementById("nextslide").style.display = "block";
+    document.getElementById("service-options").style.display = "none";
+    document.getElementById("service-options-btn").style.background = "gray";
+    document.getElementById("display-options").style.display = "none";
+    document.getElementById("display-options-btn").style.background = "gray";
+    document.getElementById("music-options").style.display = "none";
+    document.getElementById("music-options-btn").style.background = "gray";
+  }
+}
+
+function view_display_options(val) {
+  display_options_visible = val;
+  service_options_visible = false;
+  music_options_visible = false;
+  if (display_options_visible) {
+    document.getElementById("currentslide").style.display = "none";
+    document.getElementById("nextslide").style.display = "none";
+    document.getElementById("service-options").style.display = "none";
+    document.getElementById("service-options-btn").style.background = "gray";
+    document.getElementById("display-options").style.display = "block";
+    document.getElementById("display-options-btn").style.background = "#4CAF50";
+    document.getElementById("music-options").style.display = "none";
+    document.getElementById("music-options-btn").style.background = "gray";
+  } else {
+    document.getElementById("currentslide").style.display = "block";
+    document.getElementById("nextslide").style.display = "block";
+    document.getElementById("service-options").style.display = "none";
+    document.getElementById("service-options-btn").style.background = "gray";
+    document.getElementById("display-options").style.display = "none";
+    document.getElementById("display-options-btn").style.background = "gray";
+    document.getElementById("music-options").style.display = "none";
+    document.getElementById("music-options-btn").style.background = "gray";
+  }
+}
+
+function view_service_options(val) {
+  service_options_visible = val;
+  display_options_visible = false;
+  music_options_visible = false;
+  if (service_options_visible) {
+    document.getElementById("currentslide").style.display = "none";
+    document.getElementById("nextslide").style.display = "none";
+    document.getElementById("service-options").style.display = "block";
+    document.getElementById("service-options-btn").style.background = "#4CAF50";
+    document.getElementById("display-options").style.display = "none";
+    document.getElementById("display-options-btn").style.background = "gray";
+    document.getElementById("music-options").style.display = "none";
+    document.getElementById("music-options-btn").style.background = "gray";
+  } else {
+    document.getElementById("currentslide").style.display = "block";
+    document.getElementById("nextslide").style.display = "block";
+    document.getElementById("service-options").style.display = "none";
+    document.getElementById("service-options-btn").style.background = "gray";
+    document.getElementById("display-options").style.display = "none";
+    document.getElementById("display-options-btn").style.background = "gray";
+    document.getElementById("music-options").style.display = "none";
+    document.getElementById("music-options-btn").style.background = "gray";
   }
 }
 
 function update_music() {
-  // First clear any capture image
-  hide_capture_image();
-
-  $("#playedkey").html(played_key);
+  document.getElementById("playedkey").innerHTML = played_key;
   if (played_key === "") {
-    $("#music-options-btn").css("display", "none");
+    document.getElementById("music-options-btn").style.display = "none";
     view_music_options(false);
   } else {
-    $("#music-options-btn").css("display", "inline-block");
-    $("#key-buttons button").css("background", "gray");
-    $(
-      "#key-buttons button:nth-child(" +
-        (valid_keys.indexOf(noncapo_key) + 1) +
-        ")"
-    ).css("background", "#4CAF50");
-    $("#capo-buttons button").css("background", "gray");
-    $("#capo-buttons button:nth-child(" + (capo + 1) + ")").css(
-      "background",
-      "#4CAF50"
-    );
+    document.getElementById("music-options-btn").style.display = "inline-block";
+    document.querySelectorAll("#key-buttons button").forEach((elt) => {
+      elt.style.background = "gray";
+    });
+    document.querySelector(
+      "#key-buttons button:nth-child(" + (valid_keys.indexOf(noncapo_key) + 1) + ")"
+    ).style.background = "#4CAF50";
+    document.querySelectorAll("#capo-buttons button").forEach((elt) => {
+      elt.style.background = "gray";
+    });
+    document.querySelector("#capo-buttons button:nth-child(" + (capo + 1) + ")").style.background =
+      "#4CAF50";
   }
   verse_control_list = "";
   verse_list = "";
 
   if (slide_type == "presentation") {
-    $("#pres-controls").css("display", "inline-block");
+    document.getElementById("pres-controls").style.display = "inline-block";
   } else {
-    $("#pres-controls").css("display", "none");
+    document.getElementById("pres-controls").style.display = "none";
   }
 
   if (slide_type == "song") {
     verse_list = verse_order.split(" ");
     part_counts_sum = 0;
     for (i = 0; i < verse_list.length; i++) {
-      if (
-        slide_index >= part_counts_sum &&
-        slide_index < part_counts_sum + part_counts[i]
-      ) {
+      if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[i]) {
         verse_control_list =
           verse_control_list +
           "<button class='verse-button current-verse-button' onclick='change_verse(" +
@@ -100,21 +143,21 @@ function update_music() {
       part_counts_sum = part_counts_sum + part_counts[i];
     }
   } else if (slide_type != undefined) {
-    verse_control_list =
-      "<span class='non-song-title'>" + service_items[item_index] + "</span>";
+    verse_control_list = "<span class='non-song-title'>" + service_items[item_index] + "</span>";
   }
-  $("#verseorder").html(verse_control_list);
+  document.getElementById("verseorder").innerHTML = verse_control_list;
 
   /* Update widths of verse buttons to make sure they can all be seen */
-  header_width = $("#header").width();
-  keyandcapo_width = $("#keyandcapo").width();
-  button_margin = parseInt($(".verse-button").css("margin-right"));
-  buttons_width =
-    header_width - keyandcapo_width - button_margin * verse_list.length;
+  header_width = Math.floor(document.getElementById("header").offsetWidth);
+  keyandcapo_width = Math.ceil(document.getElementById("keyandcapo").offsetWidth);
+  button_margin = parseInt(getComputedStyle(document.querySelector(".verse-button")).marginRight);
+  buttons_width = header_width - keyandcapo_width - button_margin * verse_list.length;
   max_button_width = Math.floor(buttons_width / verse_list.length);
-  pref_width = 6 * parseInt($("html").css("font-size")); /* 6rem */
+  pref_width = 6 * parseInt(document.querySelector("html").style.fontSize); /* 6rem */
   actual_width = Math.min(pref_width, max_button_width);
-  $(".verse-button").css("width", actual_width - 1 + "px");
+  document.querySelectorAll(".verse-button").forEach((elt) => {
+    elt.style.width = actual_width - 1 + "px";
+  });
 
   if (slide_type == "song") {
     current_slide_lines = current_slides[slide_index].split(/(\n)/);
@@ -122,15 +165,12 @@ function update_music() {
 
     for (line in current_slide_lines) {
       if (current_slide_lines[line] == "\n") {
-        current_text = current_text + "<br />";
+        current_text += "<br />";
       } else {
-        current_line_segments = current_slide_lines[line].split(
-          /(\[[\w\+#\/"='' ]*\])/
-        );
+        current_line_segments = current_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
         if (current_line_segments[0] != "") {
           // Process head of line
-          current_text =
-            current_text +
+          current_text +=
             '<span class="lyric-chord-block"><span class="lyric-chunk">' +
             current_line_segments[0] +
             "</span></span>";
@@ -145,13 +185,9 @@ function update_music() {
             cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="chord-chunk">');
             cur_seg = cur_seg.replace(/[\s]?\]/, "</span>");
             if (prev_chunk_is_chord == true) {
-              current_text =
-                current_text +
-                '</span><span class="lyric-chord-block">' +
-                cur_seg;
+              current_text += '</span><span class="lyric-chord-block">' + cur_seg;
             } else {
-              current_text =
-                current_text + '<span class="lyric-chord-block">' + cur_seg;
+              current_text += '<span class="lyric-chord-block">' + cur_seg;
             }
             prev_chunk_is_chord = true;
           } else {
@@ -164,11 +200,7 @@ function update_music() {
             }
             // recalc hanging_lyric_pos based on current_text length + offset
             hanging_lyric_pos = current_text.length + 23;
-            current_text =
-              current_text +
-              '<span class="lyric-chunk">' +
-              cur_seg +
-              "</span></span>";
+            current_text += '<span class="lyric-chunk">' + cur_seg + "</span></span>";
             prev_chunk_is_chord = false;
             if (!cur_seg.slice(-1).match(/[a-z]/i)) {
               hanging_lyric_pos = -1;
@@ -176,11 +208,11 @@ function update_music() {
           }
         }
         if (prev_chunk_is_chord == true) {
-          current_text = current_text + "</span>";
+          current_text += "</span>";
         }
       }
     }
-    $("#currentslide").html(current_text);
+    document.getElementById("currentslide").innerHTML = current_text;
 
     if (slide_index < current_slides.length - 1) {
       next_slide_lines = current_slides[slide_index + 1].split(/(\n)/);
@@ -191,15 +223,12 @@ function update_music() {
 
     for (line in next_slide_lines) {
       if (next_slide_lines[line] == "\n") {
-        next_text = next_text + "<br />";
+        next_text += "<br />";
       } else {
-        next_line_segments = next_slide_lines[line].split(
-          /(\[[\w\+#\/"='' ]*\])/
-        );
+        next_line_segments = next_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
         if (next_line_segments[0] != "") {
           // Process head of line
-          next_text =
-            next_text +
+          next_text +=
             '<span class="next-lyric-chord-block"><span class="next-lyric-chunk">' +
             next_line_segments[0] +
             "</span></span>";
@@ -211,19 +240,12 @@ function update_music() {
           cur_seg = next_line_segments[segment];
           if (cur_seg.charAt(0) == "[") {
             // Current is chord
-            cur_seg = cur_seg.replace(
-              /\[[\s]?/,
-              '<span class="next-chord-chunk">'
-            );
+            cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="next-chord-chunk">');
             cur_seg = cur_seg.replace(/[\s]?\]/, "</span>");
             if (prev_chunk_is_chord == true) {
-              next_text =
-                next_text +
-                '</span><span class="next-lyric-chord-block">' +
-                cur_seg;
+              next_text += '</span><span class="next-lyric-chord-block">' + cur_seg;
             } else {
-              next_text =
-                next_text + '<span class="next-lyric-chord-block">' + cur_seg;
+              next_text += '<span class="next-lyric-chord-block">' + cur_seg;
             }
             prev_chunk_is_chord = true;
           } else {
@@ -236,11 +258,7 @@ function update_music() {
             }
             // recalc hanging_lyric_pos based on current_text length + offset
             hanging_lyric_pos = next_text.length + 28;
-            next_text =
-              next_text +
-              '<span class="next-lyric-chunk">' +
-              cur_seg +
-              "</span></span>";
+            next_text += '<span class="next-lyric-chunk">' + cur_seg + "</span></span>";
             prev_chunk_is_chord = false;
             if (!cur_seg.slice(-1).match(/[a-z]/i)) {
               hanging_lyric_pos = -1;
@@ -248,136 +266,115 @@ function update_music() {
           }
         }
         if (prev_chunk_is_chord == true) {
-          next_text = next_text + "</span>";
+          next_text += "</span>";
         }
       }
     }
-    $("#nextslide").html(next_text);
+    document.getElementById("nextslide").innerHTML = next_text;
 
-    $("#currentslide>span").each(function() {
-      element = $(this);
-      if (element.children().length > 1) {
-        lyricWidth = $(element.children(".lyric-chunk")).width();
-        chordOuterWidth = $(element.children(".chord-chunk")).outerWidth();
-        if (lyricWidth < chordOuterWidth) {
-          if ($(element.children(".midword")).length > 0) {
-            spacerWidth = chordOuterWidth - element.width();
-            element.append('<span class="midword-spacer">-</span>');
+    document.querySelectorAll("#currentslide>span").forEach((element) => {
+      if (element.children.length > 1) {
+        lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
+        chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
+        if (lyricWidth < chordWidth) {
+          if (element.querySelectorAll(".midword").length > 0) {
+            spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
+            element.insertAdjacentHTML("beforeend", '<span class="midword-spacer">-</span>');
             if (spacerWidth < body_size_int) {
-              element.children(".midword-spacer").width(body_size_int);
+              element.querySelector(".midword-spacer").style.width = body_size_int + "px";
             } else {
-              element.children(".midword-spacer").width(spacerWidth);
+              element.querySelector(".midword-spacer").style.width = spacerWidth + "px";
             }
           } else {
-            element.css("padding-right", chordOuterWidth - element.width());
+            element.style.paddingRight =
+              chordWidth - parseInt(getComputedStyle(element).width) + "px";
           }
         }
       }
     });
 
-    $("#nextslide>span").each(function() {
-      element = $(this);
-      if (element.children().length > 1) {
-        lyricWidth = $(element.children(".next-lyric-chunk")).width();
-        chordOuterWidth = $(element.children(".next-chord-chunk")).outerWidth();
-        if (lyricWidth < chordOuterWidth) {
-          if ($(element.children(".midword")).length > 0) {
-            spacerWidth = chordOuterWidth - element.width();
-            element.append('<span class="next-midword-spacer">-</span>');
+    document.querySelectorAll("#nextslide>span").forEach((element) => {
+      if (element.children.length > 1) {
+        lyricWidth = parseInt(getComputedStyle(element.querySelector(".next-lyric-chunk")).width);
+        chordWidth = parseInt(getComputedStyle(element.querySelector(".next-chord-chunk")).width);
+        if (lyricWidth < chordWidth) {
+          if (element.querySelectorAll(".midword").length > 0) {
+            spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
+            element.insertAdjacentHTML("beforeend", '<span class="next-midword-spacer">-</span>');
             if (spacerWidth < body_size_int) {
-              element.children(".next-midword-spacer").width(body_size_int);
+              element.querySelector(".next-midword-spacer").style.width = body_size_int + "px";
             } else {
-              element.children(".next-midword-spacer").width(spacerWidth);
+              element.querySelector(".next-midword-spacer").style.width = spacerWidth + "px";
             }
           } else {
-            element.css("padding-right", chordOuterWidth - element.width());
+            element.style.paddingRight =
+              chordWidth - parseInt(getComputedStyle(element).width) + "px";
           }
         }
       }
     });
   } else if (slide_type == "bible") {
     current_text = '<div class ="nonsong-block"><p class="nonsong-line">';
-    current_text =
-      current_text +
-      current_slides[slide_index].replace(
-        /\n/g,
-        '</p><p class="nonsong-line">'
-      );
-    current_text = current_text + "</div>";
+    current_text += current_slides[slide_index].replace(/\n/g, '</p><p class="nonsong-line">');
+    current_text += "</div>";
     if (slide_index < current_slides.length - 1) {
       next_text = '<div class ="next-nonsong-block"><p class="nonsong-line">';
-      next_text =
-        next_text +
-        current_slides[slide_index + 1].replace(
-          /\n/g,
-          '</p><p class="nonsong-line">'
-        );
-      next_text = next_text + "</div>";
+      next_text += current_slides[slide_index + 1].replace(/\n/g, '</p><p class="nonsong-line">');
+      next_text += "</div>";
     } else {
       next_text = "<div></div>";
     }
-    $("#currentslide").html(current_text);
-    $("#nextslide").html(next_text);
+    document.getElementById("currentslide").innerHTML = current_text;
+    document.getElementById("nextslide").innerHTML = next_text;
   } else if (slide_type == "video") {
     current_text = '<div class ="nonsong-block"><p class="nonsong-line">';
-    current_text =
-      current_text +
-      current_slides[0].replace(/\n/g, '</p><p class="nonsong-line">');
-    current_text = current_text + "</div>";
-    $("#currentslide").html(current_text);
-    $("#nextslide").html("");
+    current_text += current_slides[0].replace(/\n/g, '</p><p class="nonsong-line">');
+    current_text += "</div>";
+    document.getElementById("currentslide").innerHTML = current_text;
+    document.getElementById("nextslide").innerHTML = "";
   } else {
-    $("#currentslide").html("");
-    $("#nextslide").html("");
+    document.getElementById("currentslide").innerHTML = "";
+    document.getElementById("nextslide").innerHTML = "";
   }
 }
 
 function update_menu() {
+  temp_menu = "";
   if (service_items.length > 0) {
-    temp_menu = "<ul class='jq-dropdown-menu'>";
     // Build up song choice menu, place divider at current song location
     for (i = 0; i < service_items.length; i++) {
       if (i != item_index) {
-        temp_menu =
-          temp_menu +
-          "<li class='menu-song-item'><a onclick='change_song(" +
-          i +
-          ")' class='menu-song-link'>" +
-          service_items[i] +
-          "</a></li>";
+        temp_menu += "<button class='menu-list-item' ";
+        temp_menu += "onclick='change_song(" + i + ")'>";
+        temp_menu += service_items[i] + "</button>";
       } else {
-        temp_menu =
-          temp_menu +
-          "<li class='menu-song-current-item'><a>" +
-          service_items[i] +
-          "</a></li>";
+        temp_menu += "<button class='menu-list-item current-song-item'>";
+        temp_menu += service_items[i] + "</button>";
       }
     }
-    temp_menu = temp_menu + "</ul>";
-  } else {
-    temp_menu = "<ul class='jq-dropdown-menu'></ul>";
   }
-  temp_menu = temp_menu + "</ul>";
   if (temp_menu != menustring) {
-    $("#jq-dropdown-1").html(temp_menu);
+    document.getElementById("service-options").innerHTML = temp_menu;
     menustring = temp_menu;
   }
 }
 
 function display_on() {
+  view_display_options(false);
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
-      params: { state: "on" }
+      params: { state: "on" },
     })
   );
 }
 
 function display_off() {
+  view_display_options(false);
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
-      params: { state: "off" }
+      params: { state: "off" },
     })
   );
 }
@@ -389,65 +386,48 @@ function change_capo(new_capo) {
   } else {
     window.localStorage.removeItem(cur_song_id.toString());
   }
-  websocket.send(
-    JSON.stringify({ action: "client.set-capo", params: { capo: capo } })
-  );
+  websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
   view_music_options(false);
 }
 
 function change_key(new_key) {
   if (played_key !== "") {
-    transpose_amount =
-      (valid_keys.indexOf(new_key) - valid_keys.indexOf(noncapo_key)) % 12;
+    transpose_amount = (valid_keys.indexOf(new_key) - valid_keys.indexOf(noncapo_key)) % 12;
     websocket.send(
       JSON.stringify({
         action: "command.transpose-by",
-        params: { amount: transpose_amount }
+        params: { amount: transpose_amount },
       })
     );
   }
   view_music_options(false);
 }
 
-function next_slide(event) {
-  event.preventDefault();
+function next_slide() {
   if (slide_type == "presentation") {
-    websocket.send(
-      JSON.stringify({ action: "command.next-presentation-slide", params: {} })
-    );
+    websocket.send(JSON.stringify({ action: "command.next-presentation-slide", params: {} }));
   } else {
-    websocket.send(
-      JSON.stringify({ action: "command.next-slide", params: {} })
-    );
+    websocket.send(JSON.stringify({ action: "command.next-slide", params: {} }));
   }
 }
 
-function previous_slide(event) {
-  event.preventDefault();
+function previous_slide() {
   if (slide_type == "presentation") {
-    websocket.send(
-      JSON.stringify({ action: "command.prev-presentation-slide", params: {} })
-    );
+    websocket.send(JSON.stringify({ action: "command.prev-presentation-slide", params: {} }));
   } else {
-    websocket.send(
-      JSON.stringify({ action: "command.previous-slide", params: {} })
-    );
+    websocket.send(JSON.stringify({ action: "command.previous-slide", params: {} }));
   }
 }
 
 function start_presentation() {
   if (slide_type == "presentation") {
-    websocket.send(
-      JSON.stringify({ action: "command.start-presentation", params: {} })
-    );
+    websocket.send(JSON.stringify({ action: "command.start-presentation", params: {} }));
   }
 }
 
 function stop_presentation() {
   if (slide_type == "presentation") {
-    websocket.send(
-      JSON.stringify({ action: "command.stop-presentation", params: {} })
-    );
+    websocket.send(JSON.stringify({ action: "command.stop-presentation", params: {} }));
   }
 }
 
@@ -456,9 +436,7 @@ function n_s() {
 }
 
 function p_s() {
-  websocket.send(
-    JSON.stringify({ action: "command.previous-slide", params: {} })
-  );
+  websocket.send(JSON.stringify({ action: "command.previous-slide", params: {} }));
 }
 
 function n_i() {
@@ -466,21 +444,16 @@ function n_i() {
 }
 
 function p_i() {
-  websocket.send(
-    JSON.stringify({ action: "command.previous-item", params: {} })
-  );
+  websocket.send(JSON.stringify({ action: "command.previous-item", params: {} }));
 }
 
 function change_verse(id) {
-  websocket.send(
-    JSON.stringify({ action: "command.goto-slide", params: { index: id } })
-  );
+  websocket.send(JSON.stringify({ action: "command.goto-slide", params: { index: id } }));
 }
 
 function change_song(id) {
-  websocket.send(
-    JSON.stringify({ action: "command.goto-item", params: { index: id } })
-  );
+  view_service_options(false);
+  websocket.send(JSON.stringify({ action: "command.goto-item", params: { index: id } }));
 }
 
 function capo_check_update_music() {
@@ -493,10 +466,7 @@ function capo_check_update_music() {
     }
     if (saved_capo != capo) {
       capo = saved_capo;
-      // $('#caposelect').val(capo);
-      websocket.send(
-        JSON.stringify({ action: "client.set-capo", params: { capo: capo } })
-      );
+      websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
     } else {
       update_music();
     }
@@ -505,43 +475,20 @@ function capo_check_update_music() {
   }
 }
 
-function display_capture_image(src, cap_w, cap_h) {
-  document.getElementById("captureimage").setAttribute("src", src);
-  $("#captureimage").css("display", "block");
-  capture_ar = cap_w / cap_h;
-  div_ar = $("#musicarea").width() / $("#musicarea").height(); // Need to use div size
-  if (capture_ar <= div_ar) {
-    left_pos = $("#musicarea").width() * 0.5 * (1 - capture_ar / div_ar);
-    $("#captureimage").css("height", $("#musicarea").height() + "px");
-    $("#captureimage").css("width", "auto");
-    $("#captureimage").css("top", "0px");
-    $("#captureimage").css("left", left_pos + "px");
-  } else {
-    top_pos = $("#musicarea").height() * 0.5 * (1 - div_ar / capture_ar);
-    $("#captureimage").css("height", "auto");
-    $("#captureimage").css("width", $("#musicarea").width() + "px");
-    $("#captureimage").css("top", top_pos + "px");
-    $("#captureimage").css("left", "0px");
-  }
-}
-
-function hide_capture_image() {
-  $("#captureimage").attr("src", "");
-  $("#captureimage").css("display", "none");
-}
-
 function start_websocket() {
   websocket = null;
-  websocket = new WebSocket(
-    "ws://" + window.location.hostname + ":9001/leader"
-  );
-  websocket.onmessage = function(event) {
+  websocket = new WebSocket("ws://" + window.location.hostname + ":9001/leader");
+  websocket.onmessage = function (event) {
     json_data = JSON.parse(event.data);
     console.log(json_data);
     switch (json_data.action) {
       case "update.leader-init":
-        toastr.options.positionClass = "toast-bottom-center";
-        toastr.success("Connected to Malachi server");
+        Toastify({
+          text: "Connected to Malachi server",
+          gravity: "bottom",
+          position: "left",
+          style: { background: "#4caf50" },
+        }).showToast();
       case "update.service-overview-update":
         item_index = json_data.params.item_index;
         slide_index = json_data.params.slide_index;
@@ -572,9 +519,9 @@ function start_websocket() {
           played_key = "";
         }
         if (json_data.params.screen_state == "on") {
-          $("body").css("border-top", "6px solid #4CAF50");
+          document.querySelector("body").style.borderTop = "6px solid #4CAF50";
         } else {
-          $("body").css("border-top", "6px solid red");
+          document.querySelector("body").style.borderTop = "6px solid red";
         }
         update_menu();
         capo_check_update_music();
@@ -606,29 +553,14 @@ function start_websocket() {
         break;
       case "update.display-state":
         if (json_data.params.state == "on") {
-          $("body").css("border-top", "6px solid #4CAF50");
+          document.querySelector("body").style.borderTop = "6px solid #4CAF50";
         } else {
-          $("body").css("border-top", "6px solid red");
+          document.querySelector("body").style.borderTop = "6px solid red";
         }
         break;
-      case "update.capture-ready":
-        websocket.send(
-          JSON.stringify({ action: "request.capture-update", params: {} })
-        );
-        break;
       case "result.capture-update":
-        display_capture_image(
-          json_data.params.capture_src,
-          json_data.params.width,
-          json_data.params.height
-        );
-        websocket.send(
-          JSON.stringify({ action: "command.unlock-socket", params: {} })
-        );
-        break;
       case "update.stop-capture":
-        hide_capture_image();
-        break;
+      case "update.capture-ready":
       case "response.set-display-state":
       case "response.next-slide":
       case "response.previous-slide":
@@ -656,28 +588,31 @@ function start_websocket() {
         console.error("Unsupported event", json_data);
     }
   };
-  websocket.onclose = function(event) {
-    console.log(
-      "Connection was closed/refused by server (error code " + event.code + ")"
-    );
+  websocket.onclose = function (event) {
+    console.log("Connection was closed/refused by server (error code " + event.code + ")");
     if (event.wasClean == false) {
-      toastr.options.positionClass = "toast-bottom-full-width";
-      toastr.options.timeOut = "3500";
-      toastr.error(
-        "Reconnection attempt will be made in 5 seconds",
-        "Connection was closed/refused by server (error code " +
-          event.code +
-          ")"
-      );
+      Toastify({
+        text: "Connection was closed/refused by server\nReconnection attempt will be made in 5 seconds",
+        gravity: "bottom",
+        position: "left",
+        duration: 4000,
+        style: { background: "#f44337" },
+      }).showToast();
       setTimeout(start_websocket, 5000);
     }
   };
 }
 
-$(document).ready(function() {
+let ready = (callback) => {
+  if (document.readyState != "loading") {
+    callback();
+  } else {
+    document.addEventListener("DOMContentLoaded", callback);
+  }
+};
+
+ready(() => {
   start_websocket();
-  $("#controller-next").on("click", next_slide);
-  $("#controller-prev").on("click", previous_slide);
 });
 
 // Adjust document body size based on ?size=n parameter, if it exists
@@ -694,4 +629,4 @@ if (params != "") {
     }
   }
 }
-$("html").css("font-size", body_size);
+document.querySelector("html").style.fontSize = body_size;

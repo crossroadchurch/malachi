@@ -1,15 +1,13 @@
 @font-face {
   font-family: "Inter Semi Bold";
   font-style: normal;
-  src: local("Inter-SemiBold"),
-    url(/html/fonts/Inter-SemiBold.otf) format("opentype");
+  src: local("Inter-SemiBold"), url(/html/fonts/Inter-SemiBold.otf) format("opentype");
 }
 
 @font-face {
   font-family: "Inter Medium";
   font-style: normal;
-  src: local("Inter-Medium"),
-    url(/html/fonts/Inter-Medium.otf) format("opentype");
+  src: local("Inter-Medium"), url(/html/fonts/Inter-Medium.otf) format("opentype");
 }
 
 @font-face {
@@ -22,8 +20,7 @@
 @font-face {
   font-family: "Dancing Script Bold";
   font-style: normal;
-  src: local("DancingScript-Bold"),
-    url(/html/fonts/DancingScript-Bold.ttf) format("truetype");
+  src: local("DancingScript-Bold"), url(/html/fonts/DancingScript-Bold.ttf) format("truetype");
 }
 
 body {
@@ -70,9 +67,9 @@ body {
 }
 
 .outline {
-  text-shadow: -0.025em -0.025em 0 #000, 0 -0.025em 0 #000,
-    0.025em -0.025em 0 #000, 0.025em 0 0 #000, 0.025em 0.025em 0 #000,
-    0 0.025em 0 #000, -0.025em 0.025em 0 #000, -0.025em 0 0 #000;
+  text-shadow: -0.025em -0.025em 0 #000, 0 -0.025em 0 #000, 0.025em -0.025em 0 #000,
+    0.025em 0 0 #000, 0.025em 0.025em 0 #000, 0 0.025em 0 #000, -0.025em 0.025em 0 #000,
+    -0.025em 0 0 #000;
 }
 
 #copyright_area {
@@ -141,6 +138,6 @@ sup {
 #countdown_h {
   margin: 0;
   text-align: center;
-  color:white;
+  color: white;
   font-family: "Dancing Script Bold";
 }

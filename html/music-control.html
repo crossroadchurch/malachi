@@ -1,89 +1,102 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Malachi Musician Control View</title>
-  <link rel="stylesheet" href="/html/music-control.css" />
-  <link rel="stylesheet" href="/html/libs/jquery.dropdown.css" />
-  <link rel="stylesheet" href="/html/libs/toastr.min.css" />
-  <link rel="shortcut icon" href="/html/favicon.png" type="image/ico" />
-  <script type="text/javascript" src="/html/libs/jquery-1.12.4.min.js"></script>
-  <script type="text/javascript" src="/html/music-control.js"></script>
-  <script type="text/javascript" src="/html/libs/jquery.dropdown.js"></script>
-  <script type="text/javascript" src="/html/libs/toastr.min.js"></script>
-</head>
-<body>
-  <div id="songarea">
-    <div id="header">
-      <div id="keyandcapo">
-        <button id="action-menu" data-jq-dropdown="#jq-dropdown-1" class="menu-button">&#9776;</button>
-        <button id="display-menu" data-jq-dropdown="#jq-dropdown-2" class="menu-button">&#9634;</button>
-        <button id="music-options-btn" class="menu-button" onclick="view_music_options(!music_options_visible);">&#119135;</button>
-        <div id="playedkey"></div>
-      </div>
-      <div id="pres-controls">
-        <button id="start-pres" class="verse-button" onclick="start_presentation();">Start</button>
-        <button id="stop-pres" class="verse-button" onclick="stop_presentation();">Stop</button>
-      </div>
-      <div id="verseorder"></div>
-    </div>
-    <div id="musiccontrol">
-      <div id="musicarea">
-        <div id="capturearea">
-          <img id="captureimage" src="" />
+  <head>
+    <meta charset="utf-8" />
+    <title>Malachi Musician Control View</title>
+    <link rel="stylesheet" href="/html/libs/toastify.css" />
+    <link rel="stylesheet" href="/html/music-control.css" />
+    <link rel="shortcut icon" href="/html/favicon.png" type="image/ico" />
+    <script type="text/javascript" src="/html/libs/toastify.min.js"></script>
+    <script type="text/javascript" src="/html/music-control.js"></script>
+  </head>
+  <body>
+    <div id="songarea">
+      <div id="header">
+        <div id="keyandcapo">
+          <button
+            id="service-options-btn"
+            class="menu-button"
+            onclick="view_service_options(!service_options_visible);"
+          >
+            &#9776;
+          </button>
+          <button
+            id="display-options-btn"
+            class="menu-button"
+            onclick="view_display_options(!display_options_visible);"
+          >
+            &#9634;
+          </button>
+          <button
+            id="music-options-btn"
+            class="menu-button"
+            onclick="view_music_options(!music_options_visible);"
+          >
+            &#119135;
+          </button>
+          <div id="playedkey"></div>
         </div>
-        <div id="currentslide"></div>
-        <div id="nextslide"></div>
-        <div id="music-options" style="display:none;">
-          <div id="key-buttons">
-            <button class="option-button key-button" onclick="change_key('C');">C</button>
-            <button class="option-button key-button" onclick="change_key('Db');">Db</button>
-            <button class="option-button key-button" onclick="change_key('D');">D</button>
-            <button class="option-button key-button" onclick="change_key('Eb');">Eb</button>
-            <button class="option-button key-button" onclick="change_key('E');">E</button>
-            <button class="option-button key-button" onclick="change_key('F');">F</button>
-            <button class="option-button key-button" onclick="change_key('F#');">F#</button>
-            <button class="option-button key-button" onclick="change_key('G');">G</button>
-            <button class="option-button key-button" onclick="change_key('Ab');">Ab</button>
-            <button class="option-button key-button" onclick="change_key('A');">A</button>
-            <button class="option-button key-button" onclick="change_key('Bb');">Bb</button>
-            <button class="option-button key-button" onclick="change_key('B');">B</button>
+        <div id="pres-controls">
+          <button id="start-pres" class="verse-button" onclick="start_presentation();">
+            Start
+          </button>
+          <button id="stop-pres" class="verse-button" onclick="stop_presentation();">Stop</button>
+        </div>
+        <div id="verseorder"></div>
+      </div>
+      <div id="musiccontrol">
+        <div id="musicarea">
+          <div id="currentslide"></div>
+          <div id="nextslide"></div>
+          <div id="music-options" style="display: none">
+            <div id="key-buttons">
+              <button class="option-button" onclick="change_key('C');">C</button>
+              <button class="option-button" onclick="change_key('Db');">Db</button>
+              <button class="option-button" onclick="change_key('D');">D</button>
+              <button class="option-button" onclick="change_key('Eb');">Eb</button>
+              <button class="option-button" onclick="change_key('E');">E</button>
+              <button class="option-button" onclick="change_key('F');">F</button>
+              <button class="option-button" onclick="change_key('F#');">F#</button>
+              <button class="option-button" onclick="change_key('G');">G</button>
+              <button class="option-button" onclick="change_key('Ab');">Ab</button>
+              <button class="option-button" onclick="change_key('A');">A</button>
+              <button class="option-button" onclick="change_key('Bb');">Bb</button>
+              <button class="option-button" onclick="change_key('B');">B</button>
+            </div>
+            <div id="capo-buttons">
+              <button class="option-button" onclick="change_capo(0);">Capo 0</button>
+              <button class="option-button" onclick="change_capo(1);">Capo 1</button>
+              <button class="option-button" onclick="change_capo(2);">Capo 2</button>
+              <button class="option-button" onclick="change_capo(3);">Capo 3</button>
+              <button class="option-button" onclick="change_capo(4);">Capo 4</button>
+              <button class="option-button" onclick="change_capo(5);">Capo 5</button>
+              <button class="option-button" onclick="change_capo(6);">Capo 6</button>
+              <button class="option-button" onclick="change_capo(7);">Capo 7</button>
+              <button class="option-button" onclick="change_capo(8);">Capo 8</button>
+              <button class="option-button" onclick="change_capo(9);">Capo 9</button>
+              <button class="option-button" onclick="change_capo(10);">Capo 10</button>
+              <button class="option-button" onclick="change_capo(11);">Capo 11</button>
+            </div>
           </div>
-          <div id="capo-buttons">
-            <button class="option-button capo-button" onclick="change_capo(0);">Capo 0</button>
-            <button class="option-button capo-button" onclick="change_capo(1);">Capo 1</button>
-            <button class="option-button capo-button" onclick="change_capo(2);">Capo 2</button>
-            <button class="option-button capo-button" onclick="change_capo(3);">Capo 3</button>
-            <button class="option-button capo-button" onclick="change_capo(4);">Capo 4</button>
-            <button class="option-button capo-button" onclick="change_capo(5);">Capo 5</button>
-            <button class="option-button capo-button" onclick="change_capo(6);">Capo 6</button>
-            <button class="option-button capo-button" onclick="change_capo(7);">Capo 7</button>
-            <button class="option-button capo-button" onclick="change_capo(8);">Capo 8</button>
-            <button class="option-button capo-button" onclick="change_capo(9);">Capo 9</button>
-            <button class="option-button capo-button" onclick="change_capo(10);">Capo 10</button>
-            <button class="option-button capo-button" onclick="change_capo(11);">Capo 11</button>
+          <div id="display-options" style="display: none">
+            <button class="menu-list-item" onclick="display_off()">Display OFF</button>
+            <button class="menu-list-item" onclick="display_on()">Display ON</button>
           </div>
+          <div id="service-options" style="display: none"></div>
+        </div>
+        <div id="controlarea">
+          <button
+            id="controller-prev"
+            class="vert-button-25 large-button"
+            onclick="previous_slide();"
+          >
+            Previous
+          </button>
+          <button id="controller-next" class="vert-button-75 large-button" onclick="next_slide();">
+            Next
+          </button>
         </div>
       </div>
-      <div id="controlarea">
-        <button id="controller-prev" class="vert-button-25 large-button">Previous</button>
-        <button id="controller-next" class="vert-button-75 large-button">Next</button>
-      </div>
     </div>
-  </div>
-  <div id="jq-dropdown-1" class="jq-dropdown">
-    <ul class="jq-dropdown-menu">
-    </ul>
-  </div>
-  <div id="jq-dropdown-2" class="jq-dropdown">
-      <ul class="jq-dropdown-menu">
-        <li class='menu-display-item'>
-          <a onclick='display_off()'>Display OFF</a>
-        </li>
-        <li class='menu-display-item'>
-          <a onclick='display_on()'>Display ON</a>
-        </li>
-      </ul>
-    </div>
-</body>
+  </body>
 </html>

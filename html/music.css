@@ -1,19 +1,19 @@
 @font-face {
-  font-family: 'Inter Semi Bold';
+  font-family: "Inter Semi Bold";
   font-style: normal;
-  src: local('Inter-SemiBold'), url(/html/fonts/Inter-SemiBold.otf) format('opentype');
+  src: local("Inter-SemiBold"), url(/html/fonts/Inter-SemiBold.otf) format("opentype");
 }
 
 @font-face {
-  font-family: 'Ubuntu Condensed';
+  font-family: "Ubuntu Condensed";
   font-style: normal;
   font-weight: 700;
-  src: local('Ubuntu Condensed'), url(/html/fonts/Ubuntu-C.ttf) format('truetype');
+  src: local("Ubuntu Condensed"), url(/html/fonts/Ubuntu-C.ttf) format("truetype");
 }
 
 body {
   background-color: rgb(51, 51, 51);
-  font-family: 'Ubuntu Condensed', 'Open Sans', sans-serif;
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
   overflow: hidden;
 }
 
@@ -31,8 +31,8 @@ body {
 }
 
 .currenttag {
-   color: lightgreen;
-   font-weight: bold;
+  color: lightgreen;
+  font-weight: bold;
 }
 
 .chord-line {
@@ -67,7 +67,7 @@ body {
 }
 
 .chord-chunk {
-  font-family: 'Ubuntu Condensed', sans-serif;
+  font-family: "Ubuntu Condensed", sans-serif;
   color: #d922d2;
   display: inline-block;
   position: absolute;
@@ -78,19 +78,19 @@ body {
 }
 
 .lyric-chunk {
-  font-family: 'Inter Semi Bold', sans-serif;;
+  font-family: "Inter Semi Bold", sans-serif;
   color: white;
   display: inline-block;
   margin: 2rem 0rem;
 }
 
-.lyric-chord-block{
-  position:relative;
+.lyric-chord-block {
+  position: relative;
   margin-right: 0px;
 }
 
 .next-chord-chunk {
-  font-family: 'Ubuntu Condensed', sans-serif;
+  font-family: "Ubuntu Condensed", sans-serif;
   color: #999;
   display: inline-block;
   position: absolute;
@@ -101,14 +101,14 @@ body {
 }
 
 .next-lyric-chunk {
-  font-family: 'Inter Semi Bold', sans-serif;;
+  font-family: "Inter Semi Bold", sans-serif;
   color: #999;
   display: inline-block;
   margin: 2rem 0rem;
 }
 
-.next-lyric-chord-block{
-  position:relative;
+.next-lyric-chord-block {
+  position: relative;
   margin-right: 0px;
 }
 
@@ -125,7 +125,7 @@ body {
 }
 
 .nonsong-block {
-  font-family: 'Inter Semi Bold', sans-serif;;
+  font-family: "Inter Semi Bold", sans-serif;
   color: white;
   display: inline-block;
   margin: 0.5rem 0rem;
@@ -136,7 +136,7 @@ body {
 }
 
 .next-nonsong-block {
-  font-family: 'Inter Semi Bold', sans-serif;;
+  font-family: "Inter Semi Bold", sans-serif;
   color: #999;
   display: inline-block;
   margin: 0.5rem 0rem;
@@ -163,7 +163,9 @@ span {
   color: green;
 }
 
-#playedkey, #capoarea, #verseorder {
+#playedkey,
+#capoarea,
+#verseorder {
   display: inline;
 }
 
@@ -175,26 +177,4 @@ span {
 
 #caposelect {
   font-size: 1.25rem;
-}
-
-.pres-thumb {
-  max-width: 90%;
-  max-height: 90%;
-}
-
-.pres-two-thumb {
-  margin-left: 2.5%;
-  margin-right: 2.5%;
-  max-width: 95%;
-  max-height: 95%;
-}
-
-.two-image-div {
-  width:50%;
-  float:left;
-}
-
-.two-image-div p {
-  color: #ffffff;
-  font-size: 2rem;
 }

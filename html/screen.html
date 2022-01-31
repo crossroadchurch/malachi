@@ -5,29 +5,25 @@
     <title>Malachi Screen</title>
     <link rel="stylesheet" href="/html/screen.css" />
     <link rel="shortcut icon" href="/html/favicon.png" type="image/ico" />
-    <script
-      type="text/javascript"
-      src="/html/libs/jquery-1.12.4.min.js"
-    ></script>
     <script type="text/javascript" src="/html/screen.js"></script>
   </head>
   <body>
     <div id="main_area">
-      <video id="video_item" preload="auto" style="display:none;z-index:-1;">
+      <video id="video_item" preload="auto" style="display: none; z-index: -1">
         <source src="/html/black-frame.mp4" id="video_item_src" />
       </video>
-      <video loop id="loop_video" style="z-index:-2;">
+      <video loop id="loop_video" style="z-index: -2">
         <source src="/html/black-frame.mp4" id="loop_video_src" />
       </video>
       <image id="bg_image" src="" />
       <div id="slide_area"></div>
-      <div id="copyright_area" style="display:none;">
+      <div id="copyright_area" style="display: none">
         <p></p>
       </div>
-      <div id="verseorder_area" style="display:none;">
+      <div id="verseorder_area" style="display: none">
         <p></p>
       </div>
-      <div id="countdown_area" style="display:none;">
+      <div id="countdown_area" style="display: none">
         <p id="countdown_h" class="drop_shadow">Welcome!</p>
         <p id="countdown_p" class="drop_shadow">00:00</p>
       </div>
