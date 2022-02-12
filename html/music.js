@@ -1,35 +1,33 @@
-var capo = 0;
-var verse_order = "";
-var played_key = "";
-var slide_type = "";
-var cur_song_id = -1;
-var current_slides = [];
-var part_counts = [];
-var slide_index = -1;
-var websocket;
+let capo = 0;
+let verse_order = "";
+let played_key = "";
+let slide_type = "";
+let cur_song_id = -1;
+let current_slides = [];
+let current_title = "";
+let part_counts = [];
+let slide_index = -1;
+let websocket;
 
 function update_music() {
   document.getElementById("playedkey").innerHTML = played_key;
-  verse_control_list = "<ul>";
-  verse_list = "";
+  let verse_control_list = "<ul>";
+  let verse_list = "";
 
   if (slide_type == "song") {
     document.getElementById("capoarea").style.display = "inline";
     verse_list = verse_order.split(" ");
-    part_counts_sum = 0;
-    for (i = 0; i < verse_list.length; i++) {
+    let part_counts_sum = 0;
+    for (let i = 0; i < verse_list.length; i++) {
       if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[i]) {
-        verse_control_list =
-          verse_control_list +
-          "<li><span class='current-verse'>" +
-          verse_list[i].toUpperCase() +
-          "</span></li>";
+        verse_control_list +=
+          "<li><span class='current-verse'>" + verse_list[i].toUpperCase() + "</span></li>";
       } else {
-        verse_control_list = verse_control_list + "<li>" + verse_list[i].toUpperCase() + "</li>";
+        verse_control_list += "<li>" + verse_list[i].toUpperCase() + "</li>";
       }
-      part_counts_sum = part_counts_sum + part_counts[i];
+      part_counts_sum += part_counts[i];
     }
-    verse_control_list = verse_control_list + "</ul>";
+    verse_control_list += "</ul>";
   } else if (slide_type != undefined) {
     verse_control_list = "<ul><li>" + current_title + "</li></ul>";
     document.getElementById("capoarea").style.display = "none";
@@ -38,15 +36,18 @@ function update_music() {
   }
   document.getElementById("verseorder").innerHTML = verse_control_list;
 
-  if (slide_type == "song") {
-    current_slide_lines = current_slides[slide_index].split(/(\n)/);
-    current_text = "";
+  let current_text = "";
+  let next_text = "";
+  let prev_chunk_is_chord = false;
+  let hanging_lyric_pos = -1;
 
-    for (line in current_slide_lines) {
+  if (slide_type == "song") {
+    let current_slide_lines = current_slides[slide_index].split(/(\n)/);
+    for (const line in current_slide_lines) {
       if (current_slide_lines[line] == "\n") {
         current_text += "<br />";
       } else {
-        current_line_segments = current_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
+        let current_line_segments = current_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
         if (current_line_segments[0] != "") {
           // Process head of line
           current_text +=
@@ -57,8 +58,8 @@ function update_music() {
         // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
         prev_chunk_is_chord = false;
         hanging_lyric_pos = -1;
-        for (segment = 1; segment < current_line_segments.length; segment++) {
-          cur_seg = current_line_segments[segment];
+        for (let segment = 1; segment < current_line_segments.length; segment++) {
+          let cur_seg = current_line_segments[segment];
           if (cur_seg.charAt(0) == "[") {
             // Current is chord
             cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="chord-chunk">');
@@ -93,18 +94,16 @@ function update_music() {
     }
     document.getElementById("currentslide").innerHTML = current_text;
 
+    let next_slide_lines = [];
     if (slide_index < current_slides.length - 1) {
       next_slide_lines = current_slides[slide_index + 1].split(/(\n)/);
-    } else {
-      next_slide_lines = [];
     }
-    next_text = "";
 
-    for (line in next_slide_lines) {
+    for (const line in next_slide_lines) {
       if (next_slide_lines[line] == "\n") {
         next_text += "<br />";
       } else {
-        next_line_segments = next_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
+        let next_line_segments = next_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
         if (next_line_segments[0] != "") {
           // Process head of line
           next_text +=
@@ -115,8 +114,8 @@ function update_music() {
         // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
         prev_chunk_is_chord = false;
         hanging_lyric_pos = -1;
-        for (segment = 1; segment < next_line_segments.length; segment++) {
-          cur_seg = next_line_segments[segment];
+        for (let segment = 1; segment < next_line_segments.length; segment++) {
+          let cur_seg = next_line_segments[segment];
           if (cur_seg.charAt(0) == "[") {
             // Current is chord
             cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="next-chord-chunk">');
@@ -153,11 +152,11 @@ function update_music() {
 
     document.querySelectorAll("#currentslide>span").forEach((element) => {
       if (element.children.length > 1) {
-        lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
-        chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
+        const lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
+        const chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
         if (lyricWidth < chordWidth) {
           if (element.querySelectorAll(".midword").length > 0) {
-            spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
+            const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
             element.insertAdjacentHTML("beforeend", '<span class="midword-spacer">-</span>');
             if (spacerWidth < body_size_int) {
               element.querySelector(".midword-spacer").style.width = body_size_int + "px";
@@ -174,11 +173,15 @@ function update_music() {
 
     document.querySelectorAll("#nextslide>span").forEach((element) => {
       if (element.children.length > 1) {
-        lyricWidth = parseInt(getComputedStyle(element.querySelector(".next-lyric-chunk")).width);
-        chordWidth = parseInt(getComputedStyle(element.querySelector(".next-chord-chunk")).width);
+        const lyricWidth = parseInt(
+          getComputedStyle(element.querySelector(".next-lyric-chunk")).width
+        );
+        const chordWidth = parseInt(
+          getComputedStyle(element.querySelector(".next-chord-chunk")).width
+        );
         if (lyricWidth < chordWidth) {
           if (element.querySelectorAll(".midword").length > 0) {
-            spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
+            const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
             element.insertAdjacentHTML("beforeend", '<span class="next-midword-spacer">-</span>');
             if (spacerWidth < body_size_int) {
               element.querySelector(".next-midword-spacer").style.width = body_size_int + "px";
@@ -232,7 +235,7 @@ function update_capo() {
 
 function capo_check_update_music() {
   if (cur_song_id != -1) {
-    saved_capo = window.localStorage.getItem(cur_song_id.toString());
+    let saved_capo = window.localStorage.getItem(cur_song_id.toString());
     if (saved_capo == null) {
       saved_capo = 0;
     } else {
@@ -250,6 +253,66 @@ function capo_check_update_music() {
   }
 }
 
+function update_basic_init(json_data) {
+  Toastify({
+    text: "Connected to Malachi server",
+    gravity: "bottom",
+    position: "left",
+    style: { background: "#4caf50" },
+  }).showToast();
+  update_service_overview_update(json_data);
+}
+
+function update_service_overview_update(json_data) {
+  slide_index = json_data.params.slide_index;
+  if (JSON.stringify(json_data.params.current_item != "{}")) {
+    slide_type = json_data.params.current_item.type;
+    current_slides = json_data.params.current_item.slides;
+    current_title = json_data.params.current_item["title"];
+    if (slide_type == "song") {
+      cur_song_id = json_data.params.current_item["song-id"];
+      played_key = json_data.params.current_item["played-key"];
+      verse_order = json_data.params.current_item["verse-order"];
+      part_counts = json_data.params.current_item["part-counts"];
+    } else {
+      cur_song_id = -1;
+      verse_order = "";
+      part_counts = [];
+    }
+  } else {
+    slide_type = "none";
+    cur_song_id = -1;
+    current_slides = [];
+    verse_order = "";
+    part_counts = [];
+  }
+  capo_check_update_music();
+}
+
+function update_slide_index_update(json_data) {
+  slide_index = json_data.params.slide_index;
+  update_music();
+}
+
+function update_item_index_update(json_data) {
+  slide_index = json_data.params.slide_index;
+  slide_type = json_data.params.current_item.type;
+  current_slides = json_data.params.current_item.slides;
+  current_title = json_data.params.current_item["title"];
+  if (slide_type == "song") {
+    cur_song_id = json_data.params.current_item["song-id"];
+    played_key = json_data.params.current_item["played-key"];
+    verse_order = json_data.params.current_item["verse-order"];
+    part_counts = json_data.params.current_item["part-counts"];
+  } else {
+    cur_song_id = -1;
+    verse_order = "";
+    played_key = "";
+    part_counts = [];
+  }
+  capo_check_update_music();
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/basic");
@@ -257,58 +320,16 @@ function start_websocket() {
     json_data = JSON.parse(event.data);
     switch (json_data.action) {
       case "update.basic-init":
-        Toastify({
-          text: "Connected to Malachi server",
-          gravity: "bottom",
-          position: "left",
-          style: { background: "#4caf50" },
-        }).showToast();
+        update_basic_init(json_data);
+        break;
       case "update.service-overview-update":
-        slide_index = json_data.params.slide_index;
-        if (JSON.stringify(json_data.params.current_item != "{}")) {
-          slide_type = json_data.params.current_item.type;
-          current_slides = json_data.params.current_item.slides;
-          current_title = json_data.params.current_item["title"];
-          if (slide_type == "song") {
-            cur_song_id = json_data.params.current_item["song-id"];
-            played_key = json_data.params.current_item["played-key"];
-            verse_order = json_data.params.current_item["verse-order"];
-            part_counts = json_data.params.current_item["part-counts"];
-          } else {
-            cur_song_id = -1;
-            verse_order = "";
-            part_counts = [];
-          }
-        } else {
-          slide_type = "none";
-          cur_song_id = -1;
-          current_slides = [];
-          verse_order = "";
-          part_counts = [];
-        }
-        capo_check_update_music();
+        update_service_overview_update(json_data);
         break;
       case "update.slide-index-update":
-        slide_index = json_data.params.slide_index;
-        update_music();
+        update_slide_index_update(json_data);
         break;
       case "update.item-index-update":
-        slide_index = json_data.params.slide_index;
-        slide_type = json_data.params.current_item.type;
-        current_slides = json_data.params.current_item.slides;
-        current_title = json_data.params.current_item["title"];
-        if (slide_type == "song") {
-          cur_song_id = json_data.params.current_item["song-id"];
-          played_key = json_data.params.current_item["played-key"];
-          verse_order = json_data.params.current_item["verse-order"];
-          part_counts = json_data.params.current_item["part-counts"];
-        } else {
-          cur_song_id = -1;
-          verse_order = "";
-          played_key = "";
-          part_counts = [];
-        }
-        capo_check_update_music();
+        update_item_index_update(json_data);
         break;
       default:
         console.error("Unsupported event", json_data);
@@ -341,13 +362,13 @@ ready(() => {
 });
 
 // Adjust document body size based on ?size=n parameter, if it exists
-params = window.location.search.slice(1);
-body_size_int = 16;
-body_size = "16px";
+const params = window.location.search.slice(1);
+let body_size_int = 16;
+let body_size = "16px";
 if (params != "") {
-  param_arr = params.split("&");
-  for (var i = 0; i < param_arr.length; i++) {
-    param_pair = param_arr[i].split("=");
+  const param_arr = params.split("&");
+  for (let i = 0; i < param_arr.length; i++) {
+    let param_pair = param_arr[i].split("=");
     if (param_pair[0] == "size") {
       body_size_int = parseInt(param_pair[1]);
       body_size = param_pair[1] + "px";

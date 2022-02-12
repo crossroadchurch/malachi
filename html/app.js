@@ -12,7 +12,6 @@ let style_dict = {};
 let aspect_ratio;
 let video_timer = 0;
 let video_interval;
-let update_slider = true;
 let valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 
@@ -39,7 +38,7 @@ drag_dict["/html/icons/icons8-presentation-48.png"] = "drag_presentation_icon";
 drag_dict["/html/icons/icons8-tv-show-48.png"] = "drag_video_icon";
 
 function change_screen_state_flip() {
-  str_state = document.getElementById("flip_screen_state").checked ? "on" : "off";
+  const str_state = document.getElementById("flip_screen_state").checked ? "on" : "off";
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
@@ -49,14 +48,14 @@ function change_screen_state_flip() {
 }
 
 function add_verses() {
-  verses = document.querySelectorAll("input[name=v_list]:checked");
-  version = document.querySelector("input[name=b_version]:checked").getAttribute("data-bv");
+  let verses = document.querySelectorAll("input[name=v_list]:checked");
+  const version = document.querySelector("input[name=b_version]:checked").getAttribute("data-bv");
   if (verses.length > 0) {
-    let range_start = verses[0].id.substr(2);
+    let range_start = verses[0].id.substring(2);
     let prev_id = range_start - 1;
     let v_id;
     for (v = 0; v < verses.length; v++) {
-      v_id = verses[v].id.substr(2);
+      v_id = verses[v].id.substring(2);
       if (v_id - prev_id == 1) {
         // Range continues from previous verse
         prev_id = v_id;
@@ -110,8 +109,8 @@ function load_service(force) {
   document.getElementById("popup_save_before_load_service").style.display = "none";
   document.getElementById("popup_load_service").style.display = "none";
   if (document.querySelectorAll("input[name=files]").length > 0) {
-    sel_radio = parseInt(document.querySelector("input[name=files]:checked").id.substring(6));
-    sel_text = document.querySelector(
+    const sel_radio = parseInt(document.querySelector("input[name=files]:checked").id.substring(6));
+    const sel_text = document.querySelector(
       "#load_files_radio .ml_row:nth-child(" + (sel_radio + 1) + ") .ml_text"
     ).innerText;
     websocket.send(
@@ -132,10 +131,10 @@ function open_export_service_popup() {
 }
 
 function save_service_as() {
-  f_name = document.getElementById("f_name").value;
+  const f_name = document.getElementById("f_name").value;
   document.getElementById("popup_save_service_as").style.display = "none";
   // Replace invalid characters to avoid errors and prevent file being saved in other directories
-  clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
+  let clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
   if (clean_name.endsWith(".json") == false) {
     clean_name += ".json";
   }
@@ -150,10 +149,10 @@ function save_service_as() {
 }
 
 function export_service_as() {
-  f_name = document.getElementById("exp_name").value;
+  const f_name = document.getElementById("exp_name").value;
   document.getElementById("popup_export_service_as").style.display = "none";
   // Replace invalid characters to avoid errors and prevent file being saved in other directories
-  clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
+  let clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
   if (clean_name.endsWith(".zip") == false) {
     clean_name += ".zip";
   }
@@ -213,11 +212,11 @@ function goto_slide(idx) {
 }
 
 function song_search() {
-  song_val = document
+  const song_val = document
     .getElementById("song_search")
     .value.replace(/[^0-9a-z ]/gi, "")
     .trim();
-  remote_val = parseInt(
+  const remote_val = parseInt(
     document.querySelector("input[name=lr_search]:checked").getAttribute("data-lrs")
   );
   if (song_val !== "") {
@@ -236,16 +235,18 @@ function song_search() {
 }
 
 function bible_search() {
+  const search_text = document.getElementById("bible_search").value.trim();
+  const search_version = document
+    .querySelector("input[name=b_version]:checked")
+    .getAttribute("data-bv");
   if (document.querySelector("input[name=b_search_type]:checked").id == "b_search_type_ref") {
-    if (document.getElementById("bible_search").value.trim() !== "") {
+    if (search_text !== "") {
       websocket.send(
         JSON.stringify({
           action: "query.bible-by-ref",
           params: {
-            version: document
-              .querySelector("input[name=b_version]:checked")
-              .getAttribute("data-bv"),
-            "search-ref": document.getElementById("bible_search").value.trim(),
+            version: search_version,
+            "search-ref": search_text,
           },
         })
       );
@@ -253,15 +254,13 @@ function bible_search() {
       document.getElementById("passage_list").innerHTML = "";
     }
   } else {
-    if (document.getElementById("bible_search").value.trim().length > 2) {
+    if (search_text.length > 2) {
       websocket.send(
         JSON.stringify({
           action: "query.bible-by-text",
           params: {
-            version: document
-              .querySelector("input[name=b_version]:checked")
-              .getAttribute("data-bv"),
-            "search-text": document.getElementById("bible_search").value.trim(),
+            version: search_version,
+            "search-text": search_text,
           },
         })
       );
@@ -312,9 +311,7 @@ function refresh_backgrounds() {
 
 function video_tick() {
   video_timer += 1;
-  if (update_slider == true) {
-    document.getElementById("time_seek").value = video_timer;
-  }
+  document.getElementById("time_seek").value = video_timer;
 }
 
 function play_video() {
@@ -330,23 +327,24 @@ function stop_video() {
 }
 
 function start_countdown() {
-  var now = new Date();
-  var target = new Date(
+  const now = new Date();
+  const target_time = document.getElementById("cd_time").value;
+  const target = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate(),
-    document.getElementById("cd_time").value.split(":")[0],
-    document.getElementById("cd_time").value.split(":")[1],
+    target_time.split(":")[0],
+    target_time.split(":")[1],
     0
   );
-  var cd_length = Math.floor((target.getTime() - now.getTime()) / 1000);
+  const cd_length = Math.floor((target.getTime() - now.getTime()) / 1000);
   if (cd_length > 0) {
     websocket.send(
       JSON.stringify({
         action: "command.start-countdown",
         params: {
-          hr: document.getElementById("cd_time").value.split(":")[0],
-          min: document.getElementById("cd_time").value.split(":")[1],
+          hr: target_time.split(":")[0],
+          min: target_time.split(":")[1],
         },
       })
     );
@@ -535,11 +533,11 @@ function display_current_item(current_item, slide_index) {
   clearInterval(video_interval);
   video_timer = 0;
   document.getElementById("time_seek").value = video_timer;
+  let max_verse_order = [];
 
   if (current_item.type == "song") {
-    min_verse_order = current_item["verse-order"].split(" ");
-    part_counts = current_item["part-counts"];
-    max_verse_order = [];
+    const min_verse_order = current_item["verse-order"].split(" ");
+    const part_counts = current_item["part-counts"];
     for (i = 0; i < min_verse_order.length; i++) {
       for (j = 0; j < part_counts[i]; j++) {
         max_verse_order.push(min_verse_order[i].toUpperCase());
@@ -561,13 +559,14 @@ function display_current_item(current_item, slide_index) {
   }
 
   let item_list = "";
+  let slide_text = "";
   for (const [idx, slide] of current_item.slides.entries()) {
     if (current_item.type == "song") {
-      slide_lines = slide.split(/\n/);
+      let slide_lines = slide.split(/\n/);
       slide_text =
         "<p class='ml_songlyric'><span class='ml_songpart'>" + max_verse_order[idx] + "</span>";
       for (const line of slide_lines) {
-        line_segments = line.split(/\[[\w\+#\/"='' ]*\]/);
+        let line_segments = line.split(/\[[\w\+#\/"='' ]*\]/);
         for (const segment of line_segments) {
           slide_text += segment;
         }
@@ -598,20 +597,20 @@ function indicate_current_slide(slide_index) {
         "#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ") div.ml_text"
       )
       .classList.add("selected");
-    item_top =
+    const item_top =
       document
         .querySelector("#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ")")
         .getBoundingClientRect().top + document.body.scrollTop;
-    item_height = document.querySelector(
+    const item_height = document.querySelector(
       "#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ")"
     ).offsetHeight;
-    viewable_top =
+    const viewable_top =
       document.getElementById("current_item").getBoundingClientRect().top + document.body.scrollTop;
-    list_top =
+    const list_top =
       document.getElementById("current_item_list").getBoundingClientRect().top +
       document.body.scrollTop;
-    scroll_top = document.getElementById("current_item").scrollTop;
-    window_height = window.innerHeight;
+    const scroll_top = document.getElementById("current_item").scrollTop;
+    const window_height = window.innerHeight;
     if (item_top < viewable_top) {
       document.getElementById("current_item").scrollTop = item_top - list_top;
     } else if (item_top + item_height > window_height) {
@@ -713,10 +712,10 @@ function toast_error(error_details) {
 
 function update_transpose_slider() {
   if (document.querySelectorAll("input[name=e_key]:checked").length > 0) {
-    e_val = document.querySelector("input[name=e_key]:checked").getAttribute("data-ek");
-    e_idx = valid_keys.findIndex((element) => element == e_val);
-    t_idx = parseInt(document.getElementById("e_transpose").value, 10);
-    t_key = valid_keys[(e_idx + t_idx) % 12];
+    const e_val = document.querySelector("input[name=e_key]:checked").getAttribute("data-ek");
+    const e_idx = valid_keys.findIndex((element) => element == e_val);
+    const t_idx = parseInt(document.getElementById("e_transpose").value, 10);
+    const t_key = valid_keys[(e_idx + t_idx) % 12];
     document.getElementById("e_transpose_out").value = t_key;
   }
 }
@@ -823,7 +822,7 @@ function load_element(short_elt) {
 }
 
 function drag_start(event) {
-  drag_target = event.target;
+  const drag_target = event.target;
   if (event.target.tagName == "IMG") {
     const idx = event.target.getAttribute("data-idx");
     drag_target = document.querySelector("#service_list .ml_row[data-idx='" + idx + "']");
@@ -862,6 +861,367 @@ function drag_drop(event) {
   );
 }
 
+function update_app_init(json_data) {
+  Toastify({
+    text: "Connected to Malachi server",
+    gravity: "bottom",
+    position: "left",
+    style: { background: "#4caf50" },
+  }).showToast();
+  screen_state = json_data.params.screen_state;
+  document.getElementById("flip_screen_state").checked = screen_state === "on";
+
+  // Size screen_view div and current_item div based on style
+  // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
+  const aspect_ratio = json_data.params.style["aspect-ratio"];
+  const aspect_padding = 70 / aspect_ratio + "%";
+  document.getElementById("screen_view").style.paddingBottom = aspect_padding;
+  const video_height =
+    (0.7 * parseInt(getComputedStyle(document.getElementById("item_area")).width, 10)) /
+    aspect_ratio;
+  const header_height = parseInt(
+    getComputedStyle(document.getElementById("item_header")).height,
+    10
+  );
+  document.getElementById("current_item").style.height =
+    window.innerHeight - video_height - header_height - 24 + "px";
+
+  // Display style parameters in style tab
+  update_style_sliders(json_data.params.style);
+
+  // Populate service plan list
+  let service_list = "";
+  for (const [idx, item] of json_data.params.items.entries()) {
+    service_list += "<div class='ml_row' draggable='true' data-idx='" + idx + "' ";
+    service_list += "ondragstart='drag_start(event)'>";
+    service_list += "<a class='ml_button ml_icon ml_icon_display' ";
+    service_list += "onclick='goto_item(" + idx + ")'></a>";
+    service_list += "<div class='ml_text' ondblclick='goto_item(" + idx + ")'>";
+    service_list += "<img class='ml_small_icon' src='" + icon_dict[item.type] + "' ";
+    service_list += "data-idx='" + idx + "' draggable='false' />";
+    service_list += item.title + "</div>";
+    if (item.type == "song") {
+      service_list += "<a class='ml_button ml_icon ml_icon_edit' ";
+      service_list += "onclick='edit_song(" + item["song-id"] + ")'></a>";
+    }
+    service_list += "<a class='ml_button ml_icon ml_icon_minus' ";
+    service_list += "onclick='delete_item(" + idx + ")'></a>";
+    service_list += "</div>";
+  }
+  document.getElementById("service_list").innerHTML = service_list;
+  indicate_current_item(json_data.params.item_index);
+
+  // Populate current item title and list
+  if (json_data.params.item_index != -1) {
+    const current_item = json_data.params.items[json_data.params.item_index];
+    display_current_item(current_item, json_data.params.slide_index);
+  } else {
+    document.getElementById("video_controls").style.display = "none";
+    document.getElementById("presentation_controls").style.display = "none";
+    document.getElementById("current_item_icon").setAttribute("src", icon_dict["song"]);
+    document.getElementById("current_item_name").innerHTML = "No current item";
+    document.getElementById("current_item_list").innerHTML = "";
+  }
+
+  // Populate Presentation, Video, Background and Loop lists
+  websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
+  websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
+  websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
+  websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
+
+  // Populate Bible version list
+  websocket.send(JSON.stringify({ action: "request.bible-versions", params: {} }));
+}
+
+function update_service_overview_update(json_data) {
+  // Populate service plan list
+  let service_list = "";
+  for (const [idx, item] of json_data.params.items.entries()) {
+    service_list += "<div class='ml_row' draggable='true' data-idx='" + idx + "' ";
+    service_list += "ondragstart='drag_start(event)'>";
+    service_list += "<a class='ml_button ml_icon ml_icon_display' ";
+    service_list += "onclick='goto_item(" + idx + ")'></a>";
+    service_list += "<div class='ml_text' ondblclick='goto_item(" + idx + ")'>";
+    if (json_data.params.types[idx].substr(0, 4) == "song") {
+      service_list += "<img class='ml_small_icon' src='" + icon_dict["song"] + "' ";
+      service_list += "data-idx='" + idx + "' draggable='false' />";
+    } else {
+      service_list +=
+        "<img class='ml_small_icon' src='" + icon_dict[json_data.params.types[idx]] + "' ";
+      service_list += "data-idx='" + idx + "' draggable='false' />";
+    }
+    service_list += item + "</div>";
+    if (json_data.params.types[idx].substr(0, 4) == "song") {
+      service_list += "<a class='ml_button ml_icon ml_icon_edit' ";
+      service_list += "onclick='edit_song(" + json_data.params.types[idx].substr(5) + ")'></a>";
+    }
+    service_list += "<a class='ml_button ml_icon ml_icon_minus' ";
+    service_list += "onclick='delete_item(" + idx + ")'></a>";
+    service_list += "</div>";
+  }
+  document.getElementById("service_list").innerHTML = service_list;
+  indicate_current_item(json_data.params.item_index);
+
+  // Populate current item list
+  if (json_data.params.item_index != -1) {
+    const current_item = json_data.params.current_item;
+    display_current_item(current_item, json_data.params.slide_index);
+  } else {
+    document.getElementById("video_controls").style.display = "none";
+    document.getElementById("presentation_controls").style.display = "none";
+    document.getElementById("current_item_icon").setAttribute("src", icon_dict["song"]);
+    document.getElementById("current_item_name").innerHTML = "No current item";
+    document.getElementById("current_item_list").innerHTML = "";
+  }
+}
+
+function update_display_state(json_data) {
+  screen_state = json_data.params.state;
+  document.getElementById("flip_screen_state").checked = screen_state === "on";
+}
+
+function result_all_presentations(json_data) {
+  let pres_list = "";
+  for (const url of json_data.params.urls) {
+    pres_list += "<div class='ml_row'>";
+    pres_list += "<div class='ml_text'>" + url.substring(16) + "</div>";
+    pres_list += "<a class='ml_button ml_icon ml_icon_plus' ";
+    pres_list += "onclick='add_presentation(\"" + url + "\");'></a>";
+    pres_list += "</div>";
+  }
+  document.getElementById("presentation_list").innerHTML = pres_list;
+}
+
+function result_all_videos(json_data) {
+  let vid_list = "";
+  for (const url of json_data.params.urls) {
+    vid_list += "<div class='ml_row'>";
+    vid_list += "<img src='" + url + ".jpg' />";
+    vid_list += "<div class='ml_text'>" + url.substring(9) + "</div>";
+    vid_list += "<a class='ml_button ml_icon ml_icon_plus' ";
+    vid_list += "onclick='add_video(\"" + url + "\");'></a>";
+    vid_list += "</div>";
+  }
+  document.getElementById("video_list").innerHTML = vid_list;
+}
+
+function result_all_loops(json_data) {
+  let loop_list = "";
+  for (const url of json_data.params.urls) {
+    loop_list += "<div class='ml_row'>";
+    loop_list += "<img src='" + url + ".jpg' />";
+    loop_list += "<div class='ml_text'>" + url.substring(8) + "</div>";
+    loop_list += "<a class='ml_button ml_icon ml_icon_plus' ";
+    loop_list += "onclick='set_loop(\"" + url + "\");'></a>";
+    loop_list += "</div>";
+  }
+  document.getElementById("loop_list").innerHTML = loop_list;
+}
+
+function result_all_backgrounds(json_data) {
+  let bg_list = "";
+  for (const bg of json_data.params.bg_data) {
+    short_url = bg["url"].substring(14);
+    fn_params = "'" + bg["url"] + "', " + bg["width"] + ", " + bg["height"];
+    bg_list += "<div class='ml_row'>";
+    bg_list += "<img src='./backgrounds/thumbnails/" + short_url + "'/>";
+    bg_list += "<div class='ml_text'>" + short_url + "</div>";
+    bg_list += "<a class='ml_button ml_icon ml_icon_song' ";
+    bg_list += 'onclick="set_background_songs(' + fn_params + ');"></a>';
+    bg_list += "<a class='ml_button ml_icon ml_icon_bible' ";
+    bg_list += 'onclick="set_background_bible(' + fn_params + ');"></a>';
+    bg_list += "</div>";
+  }
+  document.getElementById("background_list").innerHTML = bg_list;
+}
+
+function result_song_details(json_data) {
+  if (json_data.params.status == "ok") {
+    let full_song = json_data.params["song-data"];
+    document.getElementById("e_title").value = full_song["title"];
+    document.getElementById("e_author").value = full_song["author"];
+    document.getElementById("e_book").value = full_song["song-book-name"];
+    document.getElementById("e_number").value = full_song["song-number"];
+    document.getElementById("e_book").value = full_song["song-book-name"];
+    document.getElementById("e_copyright").value = full_song["copyright"];
+    document.querySelectorAll("input[name=e_remote]").forEach((elt) => {
+      elt.checked = false;
+    });
+    document.querySelector("input[data-lr='" + full_song["remote"] + "']").checked = true;
+    let lyrics = "";
+    for (const part of full_song["parts"]) {
+      lyrics += "<" + part["part"].toUpperCase() + ">\n";
+      lyrics += part["data"];
+    }
+    if (lyrics == "") {
+      lyrics = "<V1>\n";
+    }
+    document.getElementById("e_lyrics").value = lyrics;
+    document.getElementById("e_order").value = full_song["verse-order"].toUpperCase();
+    document.querySelectorAll("input[name=e_key]").forEach((elt) => {
+      elt.checked = false;
+    });
+    const t_idx = full_song["transpose-by"];
+    document.getElementById("e_transpose").value = (t_idx + 12) % 12; // +12 needed to ensure remainder is in [0, 12)
+    if (full_song["song-key"]) {
+      document.querySelector("input[data-ek='" + full_song["song-key"] + "']").checked = true;
+      const e_idx = valid_keys.findIndex((element) => element == full_song["song-key"]);
+      const t_key = valid_keys[(e_idx + t_idx) % 12];
+      document.getElementById("e_transpose_out").value = t_key;
+    } else {
+      document.getElementById("e_transpose_out").value = "-";
+    }
+    // Ensure that we are in edit song mode, rather than create song mode
+    document.getElementById("popup_edit_mode").innerHTML = "Edit song";
+    document.getElementById("popup_edit_song").style.display = "flex";
+    editing_song_id = full_song["song-id"];
+  }
+}
+
+function response_new_service(json_data) {
+  if (json_data.params.status == "unsaved-service") {
+    document.getElementById("popup_new_service").style.display = "flex";
+  } else {
+    json_toast_response(json_data, "New service started", "Problem starting new service");
+  }
+}
+
+function response_load_service(json_data) {
+  if (json_data.params.status == "unsaved-service") {
+    document.getElementById("popup_save_before_load_service").style.display = "flex";
+  } else {
+    json_toast_response(json_data, "Service loaded successfully", "Problem loading service");
+  }
+}
+
+function result_song_titles(json_data) {
+  let song_list = "";
+  for (const [idx, song] of json_data.params.songs.entries()) {
+    if (idx < MAX_LIST_ITEMS) {
+      song_list += "<div class='ml_row'>";
+      song_list += "<div class='ml_text'>" + song[1] + "</div>";
+      song_list += "<a class='ml_button ml_icon ml_icon_edit' ";
+      song_list += "onclick='edit_song(" + song[0] + ");'></a>";
+      song_list += "<a class='ml_button ml_icon ml_icon_plus' ";
+      song_list += "onclick='add_song(" + song[0] + ");'></a>";
+      song_list += "</div>";
+    } else {
+      song_list += "<div class='ml_row'>";
+      song_list +=
+        "<div class='ml_text'>Maximum search results reached (" + MAX_LIST_ITEMS + ")</div>";
+      song_list += "</div>";
+      break;
+    }
+  }
+  document.getElementById("song_list").innerHTML = song_list;
+}
+
+function response_save_service(json_data) {
+  if (json_data.params.status == "unspecified-service") {
+    const cur_date = new Date();
+    const date_str = cur_date.toISOString().replace("T", " ").replace(/:/g, "-");
+    document.getElementById("f_name").value = date_str.substring(0, date_str.length - 5) + ".json";
+    document.getElementById("popup_save_service_as").style.display = "flex";
+  } else {
+    // Save has been successful
+    json_toast_response(json_data, "Service saved", "Problem saving service");
+    if (action_after_save == "new") {
+      action_after_save = "none";
+      new_service(true);
+    } else if (action_after_save == "load") {
+      action_after_save = "none";
+      load_service(true);
+    }
+  }
+}
+
+function result_all_services(json_data) {
+  let files_list = "";
+  if (json_data.params.filenames.length != 0) {
+    for (const [idx, file] of json_data.params.filenames.entries()) {
+      files_list += "<div class='ml_row'>";
+      files_list += "<div class='ml_radio_div'>";
+      files_list += "<input type='radio' data-role='none' ";
+      files_list += "name='files' id='files-" + idx + "' /></div>";
+      files_list += "<div class='ml_text'>" + file + "</div>";
+      files_list += "</div>";
+    }
+    document.getElementById("load_files_radio").innerHTML = files_list;
+    document.querySelectorAll("#load_files_radio input[type=radio]").forEach((elt) => {
+      elt.checked = false;
+    });
+    document.getElementById("files-0").checked = true;
+  } else {
+    files_list += "<div class='ml_row'><div class='ml_text'>";
+    files_list += "<em>No saved service plans</em></div><div>";
+    document.getElementById("load_files_radio").innerHTML = files_list;
+  }
+  document.getElementById("popup_load_service").style.display = "flex";
+}
+
+function result_bible_versions(json_data) {
+  let radios_html = "";
+  for (const [idx, version] of json_data.params.versions.entries()) {
+    radios_html += '<input type="radio" name="b_version" id="b_version_' + idx;
+    radios_html += '" data-bv="' + version + '" data-role="none"/>';
+    radios_html += '<label for="b_version_' + idx + '">' + version + "</label>";
+  }
+  document.getElementById("b_version_radios").innerHTML = radios_html;
+  document.querySelector('input[name="b_version"]:first-of-type').checked = true;
+  // Attach event listener
+  document.querySelectorAll('input[name="b_version"]').forEach((elt) => {
+    elt.addEventListener("change", (e) => {
+      if (
+        document.querySelectorAll("#passage_list input").length > 0 &&
+        document.getElementById("bible_search").value.trim() != ""
+      ) {
+        // A search has already been performed, so repeat the search with the new version
+        bible_search();
+      }
+    });
+  });
+}
+
+function trigger_play_video() {
+  video_interval = setInterval(video_tick, 1000);
+}
+
+function trigger_pause_video() {
+  clearInterval(video_interval);
+}
+
+function trigger_stop_video() {
+  clearInterval(video_interval);
+  video_timer = 0;
+  document.getElementById("time_seek").value = video_timer;
+}
+
+function trigger_seek_video(json_data) {
+  video_timer = json_data.params.seconds;
+  document.getElementById("time_seek").value = video_timer;
+}
+
+function result_bible_verses(json_data) {
+  let bible_list = "";
+  if (json_data.params.status !== "ok") {
+    json_toast_response(json_data, "Bible search success", "Problem performing Bible search");
+  }
+  for (const [idx, verse] of json_data.params.verses.entries()) {
+    if (idx < MAX_VERSE_ITEMS) {
+      bible_ref = verse[1] + " " + verse[2] + ":" + verse[3];
+      bible_list += "<div class='ml_row ml_expand_row'>";
+      bible_list += "<div class='ml_check_div'>";
+      bible_list += "<input type='checkbox' data-role='none' checked='checked' ";
+      bible_list += "name='v_list' id='v-" + verse[0] + "' /></div>";
+      bible_list += "<div class='ml_text ml_multitext'><p class='ml_bibleverse'>";
+      bible_list += "<strong>" + bible_ref + "</strong>&nbsp; " + verse[4];
+      bible_list += "</p></div>";
+      bible_list += "</div>";
+    }
+  }
+  document.getElementById("passage_list").innerHTML = bible_list;
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
@@ -870,262 +1230,45 @@ function start_websocket() {
     console.log(json_data);
     switch (json_data.action) {
       case "update.app-init":
-        Toastify({
-          text: "Connected to Malachi server",
-          gravity: "bottom",
-          position: "left",
-          style: { background: "#4caf50" },
-        }).showToast();
-        screen_state = json_data.params.screen_state;
-        if (screen_state === "on") {
-          bool_screen_state = true;
-        } else {
-          bool_screen_state = false;
-        }
-        document.getElementById("flip_screen_state").checked = bool_screen_state;
-
-        // Size screen_view div and current_item div based on style
-        // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
-        aspect_ratio = json_data.params.style["aspect-ratio"];
-        aspect_padding = 70 / aspect_ratio + "%";
-        document.getElementById("screen_view").style.paddingBottom = aspect_padding;
-        video_height =
-          (0.7 * parseInt(getComputedStyle(document.getElementById("item_area")).width, 10)) /
-          aspect_ratio;
-        header_height = parseInt(
-          getComputedStyle(document.getElementById("item_header")).height,
-          10
-        );
-        document.getElementById("current_item").style.height =
-          window.innerHeight - video_height - header_height - 16 + "px";
-
-        // Display style parameters in style tab
-        update_style_sliders(json_data.params.style);
-
-        // Populate service plan list
-        service_list = "";
-        for (const [idx, item] of json_data.params.items.entries()) {
-          service_list += "<div class='ml_row' draggable='true' data-idx='" + idx + "' ";
-          service_list += "ondragstart='drag_start(event)'>";
-          service_list += "<a href='#' class='ml_button ml_icon ml_icon_display' ";
-          service_list += "onclick='goto_item(" + idx + ")'></a>";
-          service_list += "<div class='ml_text' ondblclick='goto_item(" + idx + ")'>";
-          service_list += "<img class='ml_small_icon' src='" + icon_dict[item.type] + "' ";
-          service_list += "data-idx='" + idx + "' draggable='false' />";
-          service_list += item.title + "</div>";
-          if (item.type == "song") {
-            service_list += "<a href='#' class='ml_button ml_icon ml_icon_edit' ";
-            service_list += "onclick='edit_song(" + item["song-id"] + ")'></a>";
-          }
-          service_list += "<a href='#' class='ml_button ml_icon ml_icon_minus' ";
-          service_list += "onclick='delete_item(" + idx + ")'></a>";
-          service_list += "</div>";
-        }
-        document.getElementById("service_list").innerHTML = service_list;
-        indicate_current_item(json_data.params.item_index);
-
-        // Populate current item title and list
-        if (json_data.params.item_index != -1) {
-          current_item = json_data.params.items[json_data.params.item_index];
-          display_current_item(current_item, json_data.params.slide_index);
-        } else {
-          document.getElementById("video_controls").style.display = "none";
-          document.getElementById("presentation_controls").style.display = "none";
-          document.getElementById("current_item_icon").setAttribute("src", icon_dict["song"]);
-          document.getElementById("current_item_name").innerHTML = "No current item";
-          document.getElementById("current_item_list").innerHTML = "";
-        }
-
-        // Populate Presentation, Video, Background and Loop lists
-        websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
-        websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
-        websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
-        websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
-
-        // Populate Bible version list
-        websocket.send(JSON.stringify({ action: "request.bible-versions", params: {} }));
+        update_app_init(json_data);
         break;
-
       case "update.service-overview-update":
-        // Populate service plan list
-        service_list = "";
-        for (const [idx, item] of json_data.params.items.entries()) {
-          service_list += "<div class='ml_row' draggable='true' data-idx='" + idx + "' ";
-          service_list += "ondragstart='drag_start(event)'>";
-          service_list += "<a href='#' class='ml_button ml_icon ml_icon_display' ";
-          service_list += "onclick='goto_item(" + idx + ")'></a>";
-          service_list += "<div class='ml_text' ondblclick='goto_item(" + idx + ")'>";
-          if (json_data.params.types[idx].substr(0, 4) == "song") {
-            service_list += "<img class='ml_small_icon' src='" + icon_dict["song"] + "' ";
-            service_list += "data-idx='" + idx + "' draggable='false' />";
-          } else {
-            service_list +=
-              "<img class='ml_small_icon' src='" + icon_dict[json_data.params.types[idx]] + "' ";
-            service_list += "data-idx='" + idx + "' draggable='false' />";
-          }
-          service_list += item + "</div>";
-          if (json_data.params.types[idx].substr(0, 4) == "song") {
-            service_list += "<a href='#' class='ml_button ml_icon ml_icon_edit' ";
-            service_list +=
-              "onclick='edit_song(" + json_data.params.types[idx].substr(5) + ")'></a>";
-          }
-          service_list += "<a href='#' class='ml_button ml_icon ml_icon_minus' ";
-          service_list += "onclick='delete_item(" + idx + ")'></a>";
-          service_list += "</div>";
-        }
-        document.getElementById("service_list").innerHTML = service_list;
-        indicate_current_item(json_data.params.item_index);
-
-        // Populate current item list
-        if (json_data.params.item_index != -1) {
-          current_item = json_data.params.current_item;
-          display_current_item(current_item, json_data.params.slide_index);
-        } else {
-          document.getElementById("video_controls").style.display = "none";
-          document.getElementById("presentation_controls").style.display = "none";
-          document.getElementById("current_item_icon").setAttribute("src", icon_dict["song"]);
-          document.getElementById("current_item_name").innerHTML = "No current item";
-          document.getElementById("current_item_list").innerHTML = "";
-        }
+        update_service_overview_update(json_data);
         break;
-
       case "update.slide-index-update":
         indicate_current_slide(json_data.params.slide_index);
         break;
-
       case "update.item-index-update":
         indicate_current_item(json_data.params.item_index);
         display_current_item(json_data.params.current_item, json_data.params.slide_index);
         break;
-
       case "update.display-state":
-        screen_state = json_data.params.state;
-        if (screen_state === "on") {
-          bool_screen_state = true;
-        } else {
-          bool_screen_state = false;
-        }
-        document.getElementById("flip_screen_state").checked = bool_screen_state;
+        update_display_state(json_data);
         break;
-
       case "update.style-update":
         update_style_sliders(json_data.params.style);
         break;
-
       case "result.all-presentations":
-        let pres_list = "";
-        for (const url of json_data.params.urls) {
-          pres_list += "<div class='ml_row'>";
-          pres_list += "<div class='ml_text'>" + url.substring(16) + "</div>";
-          pres_list += "<a href='#' class='ml_button ml_icon ml_icon_plus' ";
-          pres_list += "onclick='add_presentation(\"" + url + "\");'></a>";
-          pres_list += "</div>";
-        }
-        document.getElementById("presentation_list").innerHTML = pres_list;
+        result_all_presentations(json_data);
         break;
-
       case "result.all-videos":
-        let vid_list = "";
-        for (const url of json_data.params.urls) {
-          vid_list += "<div class='ml_row'>";
-          vid_list += "<img src='" + url + ".jpg' />";
-          vid_list += "<div class='ml_text'>" + url.substring(9) + "</div>";
-          vid_list += "<a href='#' class='ml_button ml_icon ml_icon_plus' ";
-          vid_list += "onclick='add_video(\"" + url + "\");'></a>";
-          vid_list += "</div>";
-        }
-        document.getElementById("video_list").innerHTML = vid_list;
+        result_all_videos(json_data);
         break;
-
       case "result.all-loops":
-        let loop_list = "";
-        for (const url of json_data.params.urls) {
-          loop_list += "<div class='ml_row'>";
-          loop_list += "<img src='" + url + ".jpg' />";
-          loop_list += "<div class='ml_text'>" + url.substring(8) + "</div>";
-          loop_list += "<a href='#' class='ml_button ml_icon ml_icon_plus' ";
-          loop_list += "onclick='set_loop(\"" + url + "\");'></a>";
-          loop_list += "</div>";
-        }
-        document.getElementById("loop_list").innerHTML = loop_list;
+        result_all_loops(json_data);
         break;
-
       case "result.all-backgrounds":
-        let bg_list = "";
-        for (const bg of json_data.params.bg_data) {
-          short_url = bg["url"].substring(14);
-          fn_params = "'" + bg["url"] + "', " + bg["width"] + ", " + bg["height"];
-          bg_list += "<div class='ml_row'>";
-          bg_list += "<img src='./backgrounds/thumbnails/" + short_url + "'/>";
-          bg_list += "<div class='ml_text'>" + short_url + "</div>";
-          bg_list += "<a href='#' class='ml_button ml_icon ml_icon_song' ";
-          bg_list += 'onclick="set_background_songs(' + fn_params + ');"></a>';
-          bg_list += "<a href='#' class='ml_button ml_icon ml_icon_bible' ";
-          bg_list += 'onclick="set_background_bible(' + fn_params + ');"></a>';
-          bg_list += "</div>";
-        }
-        document.getElementById("background_list").innerHTML = bg_list;
+        result_all_backgrounds(json_data);
         break;
-
       case "result.song-details":
-        if (json_data.params.status == "ok") {
-          let full_song = json_data.params["song-data"];
-          document.getElementById("e_title").value = full_song["title"];
-          document.getElementById("e_author").value = full_song["author"];
-          document.getElementById("e_book").value = full_song["song-book-name"];
-          document.getElementById("e_number").value = full_song["song-number"];
-          document.getElementById("e_book").value = full_song["song-book-name"];
-          document.getElementById("e_copyright").value = full_song["copyright"];
-          document.querySelectorAll("input[name=e_remote]").forEach((elt) => {
-            elt.checked = false;
-          });
-          document.querySelector("input[data-lr='" + full_song["remote"] + "']").checked = true;
-          lyrics = "";
-          for (const part of full_song["parts"]) {
-            lyrics += "<" + part["part"].toUpperCase() + ">\n";
-            lyrics += part["data"];
-          }
-          if (lyrics == "") {
-            lyrics = "<V1>\n";
-          }
-          document.getElementById("e_lyrics").value = lyrics;
-          document.getElementById("e_order").value = full_song["verse-order"].toUpperCase();
-          document.querySelectorAll("input[name=e_key]").forEach((elt) => {
-            elt.checked = false;
-          });
-          t_idx = full_song["transpose-by"];
-          document.getElementById("e_transpose").value = (t_idx + 12) % 12; // +12 needed to ensure remainder is in [0, 12)
-          if (full_song["song-key"]) {
-            document.querySelector("input[data-ek='" + full_song["song-key"] + "']").checked = true;
-            e_idx = valid_keys.findIndex((element) => element == full_song["song-key"]);
-            t_key = valid_keys[(e_idx + t_idx) % 12];
-            document.getElementById("e_transpose_out").value = t_key;
-          } else {
-            document.getElementById("e_transpose_out").value = "-";
-          }
-          // Ensure that we are in edit song mode, rather than create song mode
-          document.getElementById("popup_edit_mode").innerHTML = "Edit song";
-          document.getElementById("popup_edit_song").style.display = "flex";
-          editing_song_id = full_song["song-id"];
-        }
+        result_song_details(json_data);
         break;
-
       case "response.new-service":
-        if (json_data.params.status == "unsaved-service") {
-          document.getElementById("popup_new_service").style.display = "flex";
-        } else {
-          json_toast_response(json_data, "New service started", "Problem starting new service");
-        }
+        response_new_service(json_data);
         break;
-
       case "response.load-service":
-        if (json_data.params.status == "unsaved-service") {
-          document.getElementById("popup_save_before_load_service").style.display = "flex";
-        } else {
-          json_toast_response(json_data, "Service loaded successfully", "Problem loading service");
-        }
+        response_load_service(json_data);
         break;
-
       case "response.export-service":
         json_toast_response(
           json_data,
@@ -1133,149 +1276,45 @@ function start_websocket() {
           "Problem exporting service"
         );
         break;
-
       case "result.song-titles":
-        let song_list = "";
-        for (const [idx, song] of json_data.params.songs.entries()) {
-          if (idx < MAX_LIST_ITEMS) {
-            song_list += "<div class='ml_row'>";
-            song_list += "<div class='ml_text'>" + song[1] + "</div>";
-            song_list += "<a href='#' class='ml_button ml_icon ml_icon_edit' ";
-            song_list += "onclick='edit_song(" + song[0] + ");'></a>";
-            song_list += "<a href='#' class='ml_button ml_icon ml_icon_plus' ";
-            song_list += "onclick='add_song(" + song[0] + ");'></a>";
-            song_list += "</div>";
-          } else {
-            song_list += "<div class='ml_row'>";
-            song_list +=
-              "<div class='ml_text'>Maximum search results reached (" + MAX_LIST_ITEMS + ")</div>";
-            song_list += "</div>";
-            break;
-          }
-        }
-        document.getElementById("song_list").innerHTML = song_list;
+        result_song_titles(json_data);
         break;
-
       case "response.save-service":
-        if (json_data.params.status == "unspecified-service") {
-          cur_date = new Date();
-          date_str = cur_date.toISOString().replace("T", " ").replace(/:/g, "-");
-          document.getElementById("f_name").value =
-            date_str.substr(0, date_str.length - 5) + ".json";
-          document.getElementById("popup_save_service_as").style.display = "flex";
-        } else {
-          // Save has been successful
-          json_toast_response(json_data, "Service saved", "Problem saving service");
-          if (action_after_save == "new") {
-            action_after_save = "none";
-            new_service(true);
-          } else if (action_after_save == "load") {
-            action_after_save = "none";
-            load_service(true);
-          }
-        }
+        response_save_service(json_data);
         break;
-
       case "result.all-services":
-        files_list = "";
-        if (json_data.params.filenames.length != 0) {
-          for (const [idx, file] of json_data.params.filenames.entries()) {
-            files_list += "<div class='ml_row'>";
-            files_list += "<div class='ml_radio_div'>";
-            files_list += "<input type='radio' data-role='none' ";
-            files_list += "name='files' id='files-" + idx + "' /></div>";
-            files_list += "<div class='ml_text'>" + file + "</div>";
-            files_list += "</div>";
-          }
-          document.getElementById("load_files_radio").innerHTML = files_list;
-          document.querySelectorAll("#load_files_radio input[type=radio]").forEach((elt) => {
-            elt.checked = false;
-          });
-          document.getElementById("files-0").checked = true;
-        } else {
-          files_list += "<div class='ml_row'><div class='ml_text'>";
-          files_list += "<em>No saved service plans</em></div><div>";
-          document.getElementById("load_files_radio").innerHTML = files_list;
-        }
-        document.getElementById("popup_load_service").style.display = "flex";
+        result_all_services(json_data);
         break;
-
       case "result.bible-versions":
-        radios_html = "";
-        for (const [idx, version] of json_data.params.versions.entries()) {
-          radios_html += '<input type="radio" name="b_version" id="b_version_' + idx;
-          radios_html += '" data-bv="' + version + '" data-role="none"/>';
-          radios_html += '<label for="b_version_' + idx + '">' + version + "</label>";
-        }
-        document.getElementById("b_version_radios").innerHTML = radios_html;
-        document.querySelector('input[name="b_version"]:first-of-type').checked = true;
-        // Attach event listener
-        document.querySelectorAll('input[name="b_version"]').forEach((elt) => {
-          elt.addEventListener("change", (e) => {
-            if (
-              document.querySelectorAll("#passage_list input").length > 0 &&
-              document.getElementById("bible_search").value.trim() != ""
-            ) {
-              // A search has already been performed, so repeat the search with the new version
-              bible_search();
-            }
-          });
-        });
+        result_bible_versions(json_data);
         break;
-
       case "result.bible-verses":
-        let bible_list = "";
-        if (json_data.params.status !== "ok") {
-          json_toast_response(json_data, "Bible search success", "Problem performing Bible search");
-        }
-        for (const [idx, verse] of json_data.params.verses.entries()) {
-          if (idx < MAX_VERSE_ITEMS) {
-            bible_ref = verse[1] + " " + verse[2] + ":" + verse[3];
-            bible_list += "<div class='ml_row ml_expand_row'>";
-            bible_list += "<div class='ml_check_div'>";
-            bible_list += "<input type='checkbox' data-role='none' checked='checked' ";
-            bible_list += "name='v_list' id='v-" + verse[0] + "' /></div>";
-            bible_list += "<div class='ml_text ml_multitext'><p class='ml_bibleverse'>";
-            bible_list += "<strong>" + bible_ref + "</strong>&nbsp; " + verse[4];
-            bible_list += "</p></div>";
-            bible_list += "</div>";
-          }
-        }
-        document.getElementById("passage_list").innerHTML = bible_list;
+        result_bible_verses(json_data);
         break;
-
       case "trigger.play-video":
-        video_interval = setInterval(video_tick, 1000);
+        trigger_play_video();
         break;
       case "trigger.pause-video":
-        clearInterval(video_interval);
+        trigger_pause_video();
         break;
       case "trigger.stop-video":
-        clearInterval(video_interval);
-        video_timer = 0;
-        document.getElementById("time_seek").value = video_timer;
+        trigger_stop_video();
         break;
       case "trigger.seek-video":
-        video_timer = json_data.params.seconds;
-        document.getElementById("time_seek").value = video_timer;
+        trigger_seek_video(json_data);
         break;
-
       case "response.add-video":
         json_toast_response(json_data, "Video added to service", "Problem adding video");
         break;
-
       case "response.add-song-item":
         json_toast_response(json_data, "Song added to service", "Problem adding song");
         break;
-
       case "response.edit-song":
         json_toast_response(json_data, "Song edited", "Problem editing song");
         break;
-
       case "response.create-song":
         json_toast_response(json_data, "Song added", "Could not add song");
         break;
-
       case "response.add-presentation":
         json_toast_response(
           json_data,
@@ -1283,15 +1322,12 @@ function start_websocket() {
           "Problem adding presentation"
         );
         break;
-
       case "response.set-loop":
         json_toast_response(json_data, "Video loop set", "Problem setting video loop");
         break;
-
       case "response.clear-loop":
         json_toast_response(json_data, "Video loop cancelled", "Problem cancelling video loop");
         break;
-
       case "response.add-bible-item":
         json_toast_response(
           json_data,
@@ -1299,23 +1335,18 @@ function start_websocket() {
           "Problem adding Bible passage"
         );
         break;
-
       case "response.change-bible-version":
         json_toast_response(json_data, "Bible version changed", "Problem changing Bible version");
         break;
-
       case "response.remove-item":
         json_toast_response(json_data, "Item removed", "Problem removing item");
         break;
-
       case "response.stop-capture":
         json_toast_response(json_data, "Capturing stopped", "Problem stopping capture");
         break;
-
       case "response.start-capture":
         json_toast_response(json_data, "Capturing started", "Problem starting capture");
         break;
-
       case "update.video-loop":
       case "update.capture-update":
       case "update.start-capture":
@@ -1373,7 +1404,7 @@ ready(() => {
   document.getElementById("flip_screen_state").addEventListener("change", change_screen_state_flip);
 
   document.getElementById("song_search").addEventListener("keypress", (e) => {
-    key_code = e.which ? e.which : e.keyCode;
+    const key_code = e.which ? e.which : e.keyCode;
     if (key_code == 13) {
       song_search();
     }
@@ -1386,7 +1417,7 @@ ready(() => {
   });
 
   document.getElementById("bible_search").addEventListener("keypress", (e) => {
-    key_code = e.which ? e.which : e.keyCode;
+    const key_code = e.which ? e.which : e.keyCode;
     if (key_code == 13) {
       bible_search();
     }
@@ -1469,18 +1500,18 @@ ready(() => {
 window.addEventListener("resize", (e) => {
   // Size screen_view div and current_item div based on style
   // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
-  aspect_padding = 70 / aspect_ratio + "%";
+  const aspect_padding = 70 / aspect_ratio + "%";
   document.getElementById("screen_view").style.paddingBottom = aspect_padding;
-  video_height =
+  const video_height =
     (0.7 * parseInt(getComputedStyle(document.getElementById("item_area")).width, 10)) /
     aspect_ratio;
   document.getElementById("current_item").style.height =
-    window.innerHeight - video_height - 16 + "px";
+    window.innerHeight - video_height - 24 + "px";
 });
 
 document.addEventListener("keydown", (e) => {
-  key_code = e.which ? e.which : e.keyCode;
-  let tag = e.target.tagName.toLowerCase();
+  const key_code = e.which ? e.which : e.keyCode;
+  const tag = e.target.tagName.toLowerCase();
   if (tag != "input" && tag != "textarea") {
     switch (key_code) {
       case 38: // Up arrow

@@ -17,12 +17,7 @@
         </div>
         <div id="item_header">
           <div class="mi_toggle">
-            <input
-              type="checkbox"
-              data-role="none"
-              id="flip_screen_state"
-              name="flip_screen_state"
-            />
+            <input type="checkbox" id="flip_screen_state" name="flip_screen_state" />
             <output id="flip_screen_state_out"></output>
           </div>
           <img id="current_item_icon" src="/html/icons/icons8-musical-notes-48.png" /><span
@@ -108,7 +103,7 @@
             <div class="cmd_button small_button" onclick="start_countdown()">
               Start countdown to:
             </div>
-            <input data-role="none" type="time" id="cd_time" name="cd_time" class="mi_textinput" />
+            <input type="time" id="cd_time" name="cd_time" class="mi_textinput" />
             <div class="cmd_button small_button" onclick="clear_countdown()">Cancel countdown</div>
           </div>
         </div>
@@ -126,7 +121,6 @@
               type="search"
               id="song_search"
               value=""
-              data-role="none"
               class="mi_textinput"
               placeholder="Lyric or title search"
             />
@@ -135,9 +129,9 @@
               <span>Search</span>
             </div>
             <div class="radio_toggle_group">
-              <input type="radio" name="lr_search" id="lr_search_0" data-lrs="0" data-role="none" />
+              <input type="radio" name="lr_search" id="lr_search_0" data-lrs="0" />
               <label for="lr_search_0">Local</label>
-              <input type="radio" name="lr_search" id="lr_search_1" data-lrs="1" data-role="none" />
+              <input type="radio" name="lr_search" id="lr_search_1" data-lrs="1" />
               <label for="lr_search_1">Remote</label>
             </div>
           </div>
@@ -150,7 +144,7 @@
             <div id="b_version_radios" class="radio_toggle_group"></div>
           </div>
           <div class="search_div">
-            <input type="search" id="bible_search" value="" data-role="none" class="mi_textinput" />
+            <input type="search" id="bible_search" value="" class="mi_textinput" />
             <div class="cmd_button small_button" onclick="bible_search()">
               <img src="/html/icons/icons8-search-24.png" />
               <span>Search</span>
@@ -166,16 +160,9 @@
                 id="b_search_type_ref"
                 value="on"
                 checked="checked"
-                data-role="none"
               />
               <label for="b_search_type_ref">Ref</label>
-              <input
-                type="radio"
-                name="b_search_type"
-                id="b_search_type_text"
-                value="off"
-                data-role="none"
-              />
+              <input type="radio" name="b_search_type" id="b_search_type_text" value="off" />
               <label for="b_search_type_text">Text</label>
             </div>
             <div class="cmd_button small_button" onclick="select_all_verses()">Select all</div>
@@ -223,22 +210,14 @@
               <div class="ml_row">
                 <div class="ml_text">Songs</div>
                 <img id="song_bg_icon" src="" />
-                <a
-                  class="ml_button ml_icon ml_icon_minus"
-                  href="#"
-                  onclick="remove_song_background();"
-                ></a>
+                <a class="ml_button ml_icon ml_icon_minus" onclick="remove_song_background();"></a>
               </div>
             </div>
             <div class="ml_list song_bible_button">
               <div class="ml_row">
                 <div class="ml_text">Bible</div>
                 <img id="bible_bg_icon" src="" />
-                <a
-                  class="ml_button ml_icon ml_icon_minus"
-                  href="#"
-                  onclick="remove_bible_background();"
-                ></a>
+                <a class="ml_button ml_icon ml_icon_minus" onclick="remove_bible_background();"></a>
               </div>
             </div>
           </div>
@@ -257,7 +236,6 @@
                 min="50"
                 max="100"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -271,7 +249,6 @@
                 min="5"
                 max="20"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -285,7 +262,6 @@
                 min="1"
                 max="10"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -299,7 +275,6 @@
                 min="0"
                 max="25"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -307,27 +282,15 @@
             </div>
             <div id="t_color_picker">
               <label for="t_color">Song and Bible text colour:</label>
-              <input type="text" id="t_color" data-role="none" class="mi_textinput" />
+              <input type="text" id="t_color" class="mi_textinput" />
             </div>
             <div id="o_style_div" class="radio_toggle_group">
               <span>Text outline:</span>
-              <input
-                type="radio"
-                name="o_style"
-                id="o_style_1"
-                data-ol="drop-shadow"
-                data-role="none"
-              />
+              <input type="radio" name="o_style" id="o_style_1" data-ol="drop-shadow" />
               <label for="o_style_1">Drop shadow</label>
-              <input
-                type="radio"
-                name="o_style"
-                id="o_style_2"
-                data-ol="text-outline"
-                data-role="none"
-              />
+              <input type="radio" name="o_style" id="o_style_2" data-ol="text-outline" />
               <label for="o_style_2">Outlined</label>
-              <input type="radio" name="o_style" id="o_style_3" data-ol="none" data-role="none" />
+              <input type="radio" name="o_style" id="o_style_3" data-ol="none" />
               <label for="o_style_3">None</label>
             </div>
           </div>
@@ -341,7 +304,6 @@
                 min="1"
                 max="50"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -349,7 +311,7 @@
             </div>
             <div id="countdown_h_text_input">
               <label for="cd_text">Header text:</label>
-              <input type="text" id="cd_text" data-role="none" class="mi_textinput" />
+              <input type="text" id="cd_text" class="mi_textinput" />
             </div>
             <div class="mi_range">
               <label for="cd_size">Countdown font size (% of screen height):</label>
@@ -359,7 +321,6 @@
                 min="1"
                 max="50"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -373,7 +334,6 @@
                 min="0"
                 max="100"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -385,7 +345,7 @@
             <div class="mi_toggle_div">
               <span>Display copyright:</span>
               <div class="mi_toggle">
-                <input type="checkbox" data-role="none" id="d_copyright" />
+                <input type="checkbox" id="d_copyright" />
                 <output id="d_copyright_out"></output>
               </div>
             </div>
@@ -397,7 +357,6 @@
                 min="10"
                 max="50"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -411,7 +370,6 @@
                 min="20"
                 max="90"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -423,7 +381,7 @@
             <div class="mi_toggle_div">
               <span>Display verse order:</span>
               <div class="mi_toggle">
-                <input type="checkbox" data-role="none" id="d_verseorder" />
+                <input type="checkbox" id="d_verseorder" />
                 <output id="d_verseorder_out"></output>
               </div>
             </div>
@@ -435,7 +393,6 @@
                 min="10"
                 max="50"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -449,7 +406,6 @@
                 min="20"
                 max="90"
                 step="1"
-                data-role="none"
                 oninput="style_slider_input(this)"
                 onchange="style_slider_change(this)"
               />
@@ -557,7 +513,6 @@
               name="f_name"
               type="text"
               value=""
-              data-role="none"
               class="mi_textinput"
               placeholder="service.json"
             />
@@ -592,7 +547,6 @@
               name="exp_name"
               type="text"
               value=""
-              data-role="none"
               class="mi_textinput"
               placeholder="service.zip"
             />
@@ -655,64 +609,64 @@
         <!-- Left column -->
         <div class="popup_panel">
           <span id="e_title_span">Song name:</span>
-          <input data-role="none" type="text" id="e_title" class="mi_textinput" />
+          <input type="text" id="e_title" class="mi_textinput" />
           <div class="popup_row">
             <div class="popup_column">
               <span>Author:</span>
-              <input data-role="none" type="text" id="e_author" class="mi_textinput" />
+              <input type="text" id="e_author" class="mi_textinput" />
             </div>
             <div id="e_remote_div" class="radio_toggle_group">
-              <input type="radio" name="e_remote" id="e_remote_0" data-lr="0" data-role="none" />
+              <input type="radio" name="e_remote" id="e_remote_0" data-lr="0" />
               <label for="e_remote_0">Local</label>
-              <input type="radio" name="e_remote" id="e_remote_1" data-lr="1" data-role="none" />
+              <input type="radio" name="e_remote" id="e_remote_1" data-lr="1" />
               <label for="e_remote_1">Remote</label>
             </div>
           </div>
           <span>Copyright:</span>
-          <input data-role="none" type="text" id="e_copyright" class="mi_textinput" />
+          <input type="text" id="e_copyright" class="mi_textinput" />
           <div class="popup_row">
             <div class="popup_column">
               <span>Song book:</span>
-              <input data-role="none" type="text" id="e_book" class="mi_textinput" />
+              <input type="text" id="e_book" class="mi_textinput" />
             </div>
             <div class="popup_column">
               <span>Song number:</span>
-              <input data-role="none" type="text" id="e_number" class="mi_textinput" />
+              <input type="text" id="e_number" class="mi_textinput" />
             </div>
           </div>
           <span>Verse order:</span>
-          <input data-role="none" type="text" id="e_order" class="mi_textinput" />
+          <input type="text" id="e_order" class="mi_textinput" />
           <span>Key:</span>
           <div id="e_key_div" class="radio_toggle_group">
-            <input type="radio" name="e_key" id="e_key_1" data-ek="C" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_1" data-ek="C" />
             <label for="e_key_1">C</label>
-            <input type="radio" name="e_key" id="e_key_2" data-ek="Db" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_2" data-ek="Db" />
             <label for="e_key_2">Db</label>
-            <input type="radio" name="e_key" id="e_key_3" data-ek="D" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_3" data-ek="D" />
             <label for="e_key_3">D</label>
-            <input type="radio" name="e_key" id="e_key_4" data-ek="Eb" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_4" data-ek="Eb" />
             <label for="e_key_4">Eb</label>
-            <input type="radio" name="e_key" id="e_key_5" data-ek="E" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_5" data-ek="E" />
             <label for="e_key_5">E</label>
-            <input type="radio" name="e_key" id="e_key_6" data-ek="F" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_6" data-ek="F" />
             <label for="e_key_6">F</label>
-            <input type="radio" name="e_key" id="e_key_7" data-ek="F#" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_7" data-ek="F#" />
             <label for="e_key_7">F#</label>
-            <input type="radio" name="e_key" id="e_key_8" data-ek="G" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_8" data-ek="G" />
             <label for="e_key_8">G</label>
-            <input type="radio" name="e_key" id="e_key_9" data-ek="Ab" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_9" data-ek="Ab" />
             <label for="e_key_9">Ab</label>
-            <input type="radio" name="e_key" id="e_key_10" data-ek="A" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_10" data-ek="A" />
             <label for="e_key_10">A</label>
-            <input type="radio" name="e_key" id="e_key_11" data-ek="Bb" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_11" data-ek="Bb" />
             <label for="e_key_11">Bb</label>
-            <input type="radio" name="e_key" id="e_key_12" data-ek="B" data-role="none" />
+            <input type="radio" name="e_key" id="e_key_12" data-ek="B" />
             <label for="e_key_12">B</label>
           </div>
           <div class="popup_baseline_row">
             <div class="mi_range">
               <label for="e_transpose">Transpose by:</label>
-              <input id="e_transpose" type="range" min="0" max="11" step="1" data-role="none" />
+              <input id="e_transpose" type="range" min="0" max="11" step="1" />
               <output id="e_transpose_out"></output>
             </div>
             <div class="popup_buttons">
@@ -733,7 +687,6 @@
             rows="15"
             name="e_lyrics"
             id="e_lyrics"
-            data-role="none"
             class="mi_textarea"
           ></textarea>
           <p>
@@ -747,6 +700,33 @@
         </div>
       </div>
       <div class="popup_v_spacer"></div>
+    </div>
+    <div
+      id="drag_ghost"
+      class="ml_list"
+      style="position: absolute; top: -200; left: 0; width: 275px"
+    >
+      <div class="ml_row">
+        <div class="ml_text">
+          <img
+            id="drag_song_icon"
+            class="ml_drag_icon"
+            src="/html/icons/icons8-musical-notes-48.png"
+          />
+          <img
+            id="drag_bible_icon"
+            class="ml_drag_icon"
+            src="/html/icons/icons8-literature-48.png"
+          />
+          <img
+            id="drag_presentation_icon"
+            class="ml_drag_icon"
+            src="/html/icons/icons8-presentation-48.png"
+          />
+          <img id="drag_video_icon" class="ml_drag_icon" src="/html/icons/icons8-tv-show-48.png" />
+          <span id="ghost_text">Song title goes here</span>
+        </div>
+      </div>
     </div>
   </body>
 </html>

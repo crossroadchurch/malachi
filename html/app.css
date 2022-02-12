@@ -45,7 +45,6 @@ input {
 
 #current_item {
   overflow-y: scroll;
-  padding-top: 0.5em;
 }
 
 #current_item_icon {
@@ -150,6 +149,7 @@ input {
   padding-left: 1em;
   padding-right: 1em;
   padding-top: 0.5em;
+  padding-bottom: 0.5em;
   display: flex;
   align-items: center;
 }
