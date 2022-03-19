@@ -286,10 +286,10 @@ function update_music() {
     document.querySelectorAll("#currentslide>span").forEach((element) => {
       if (element.children.length > 1) {
         const lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
+        const chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
         if (lyricWidth == 0) {
           element.querySelector(".lyric-chunk").innerHTML = "&nbsp;";
         }
-        const chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
         if (lyricWidth <= chordWidth) {
           if (element.querySelectorAll(".midword").length > 0) {
             const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
@@ -301,7 +301,7 @@ function update_music() {
             }
           } else {
             element.style.paddingRight =
-              chordWidth - parseInt(getComputedStyle(element).width) + "px";
+              chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
           }
         }
       }
@@ -329,7 +329,7 @@ function update_music() {
             }
           } else {
             element.style.paddingRight =
-              chordWidth - parseInt(getComputedStyle(element).width) + "px";
+              chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
           }
         }
       }

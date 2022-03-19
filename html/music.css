@@ -71,7 +71,7 @@ body {
   color: #d922d2;
   display: inline-block;
   position: absolute;
-  top: -3rem;
+  top: -1rem;
   left: 0px;
   margin-top: 0.5rem;
   padding-right: 1rem;
@@ -81,12 +81,14 @@ body {
   font-family: "Inter Semi Bold", sans-serif;
   color: white;
   display: inline-block;
-  margin: 2rem 0rem;
+  margin: 2rem 0rem 0.5rem 0rem;
+  white-space: pre-wrap;
 }
 
 .lyric-chord-block {
   position: relative;
   margin-right: 0px;
+  display: inline-block;
 }
 
 .next-chord-chunk {
@@ -94,7 +96,7 @@ body {
   color: #999;
   display: inline-block;
   position: absolute;
-  top: -3rem;
+  top: -1rem;
   left: 0px;
   margin-top: 0.5rem;
   padding-right: 1rem;
@@ -104,12 +106,14 @@ body {
   font-family: "Inter Semi Bold", sans-serif;
   color: #999;
   display: inline-block;
-  margin: 2rem 0rem;
+  margin: 2rem 0rem 0.5rem 0rem;
+  white-space: pre-wrap;
 }
 
 .next-lyric-chord-block {
   position: relative;
   margin-right: 0px;
+  display: inline-block;
 }
 
 .next-midword-spacer {

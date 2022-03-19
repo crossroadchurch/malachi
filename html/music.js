@@ -171,7 +171,7 @@ function update_music() {
             }
           } else {
             element.style.paddingRight =
-              chordWidth - parseInt(getComputedStyle(element).width) + "px";
+              chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
           }
         }
       }
@@ -199,7 +199,7 @@ function update_music() {
             }
           } else {
             element.style.paddingRight =
-              chordWidth - parseInt(getComputedStyle(element).width) + "px";
+              chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
           }
         }
       }
