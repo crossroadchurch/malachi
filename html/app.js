@@ -15,6 +15,28 @@ let video_interval;
 let valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 
+// DOM pointers
+const DOM_dict = {};
+// prettier-ignore
+const DOM_KEYS = [
+  "flip_screen_state", "video_controls", "presentation_controls",
+  "current_item_list", "current_item_icon", "current_item_name", "current_item",
+  "screen_view", "item_area", "item_header", "song_search", "bible_search",
+  "cd_time", "time_seek", "ghost_text", "drag_ghost",
+  "song_list", "passage_list", "service_list", "presentation_list",
+  "video_list", "loop_list", "background_list", "b_version_radios",
+  "e_title", "e_author", "e_book", "e_number", "e_copyright", "e_lyrics",
+  "e_order", "e_transpose", "e_transpose_out", "e_title_span",
+  "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
+  "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
+  "cd_top", "cd_top_out", "cd_text", "d_copyright", "cp_size", "cp_size_out",
+  "cp_width", "cp_width_out", "d_verseorder", "vo_size", "vo_size_out",
+  "vo_width", "vo_width_out", "t_color", "song_bg_icon", "bible_bg_icon",
+  "popup_new_service", "popup_load_service", "popup_save_before_load_service",
+  "popup_save_service_as", "popup_export_service_as", "f_name", "exp_name",
+  "popup_edit_mode", "popup_edit_song", "load_files_radio",
+];
+
 style_dict["s_width"] = "div-width-vw";
 style_dict["s_font_size"] = "font-size-vh";
 style_dict["s_lines"] = "max-lines";
@@ -38,7 +60,7 @@ drag_dict["/html/icons/icons8-presentation-48.png"] = "drag_presentation_icon";
 drag_dict["/html/icons/icons8-tv-show-48.png"] = "drag_video_icon";
 
 function change_screen_state_flip() {
-  const str_state = document.getElementById("flip_screen_state").checked ? "on" : "off";
+  const str_state = DOM_dict["flip_screen_state"].checked ? "on" : "off";
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
@@ -106,8 +128,8 @@ function load_service_preload() {
 }
 
 function load_service(force) {
-  document.getElementById("popup_save_before_load_service").style.display = "none";
-  document.getElementById("popup_load_service").style.display = "none";
+  DOM_dict["popup_save_before_load_service"].style.display = "none";
+  DOM_dict["popup_load_service"].style.display = "none";
   if (document.querySelectorAll("input[name=files]").length > 0) {
     const sel_radio = parseInt(document.querySelector("input[name=files]:checked").id.substring(6));
     const sel_text = document.querySelector(
@@ -123,16 +145,16 @@ function load_service(force) {
 }
 
 function open_save_service_popup() {
-  document.getElementById("popup_save_service_as").style.display = "flex";
+  DOM_dict["popup_save_service_as"].style.display = "flex";
 }
 
 function open_export_service_popup() {
-  document.getElementById("popup_export_service_as").style.display = "flex";
+  DOM_dict["popup_export_service_as"].style.display = "flex";
 }
 
 function save_service_as() {
-  const f_name = document.getElementById("f_name").value;
-  document.getElementById("popup_save_service_as").style.display = "none";
+  const f_name = DOM_dict["f_name"].value;
+  DOM_dict["popup_save_service_as"].style.display = "none";
   // Replace invalid characters to avoid errors and prevent file being saved in other directories
   let clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
   if (clean_name.endsWith(".json") == false) {
@@ -145,12 +167,12 @@ function save_service_as() {
     })
   );
   // Reset input for next time
-  document.getElementById("f_name").value = "";
+  DOM_dict["f_name"].value = "";
 }
 
 function export_service_as() {
-  const f_name = document.getElementById("exp_name").value;
-  document.getElementById("popup_export_service_as").style.display = "none";
+  const f_name = DOM_dict["exp_name"].value;
+  DOM_dict["popup_export_service_as"].style.display = "none";
   // Replace invalid characters to avoid errors and prevent file being saved in other directories
   let clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
   if (clean_name.endsWith(".zip") == false) {
@@ -163,12 +185,12 @@ function export_service_as() {
     })
   );
   // Reset input for next time
-  document.getElementById("exp_name").value = "";
+  DOM_dict["exp_name"].value = "";
 }
 
 function save_service(action_after) {
-  document.getElementById("popup_new_service").style.display = "none";
-  document.getElementById("popup_save_before_load_service").style.display = "none";
+  DOM_dict["popup_new_service"].style.display = "none";
+  DOM_dict["popup_save_before_load_service"].style.display = "none";
   action_after_save = action_after;
   websocket.send(JSON.stringify({ action: "command.save-service", params: {} }));
 }
@@ -230,12 +252,12 @@ function song_search() {
       })
     );
   } else {
-    document.getElementById("song_list").innerHTML = "";
+    DOM_dict["song_list"].innerHTML = "";
   }
 }
 
 function bible_search() {
-  const search_text = document.getElementById("bible_search").value.trim();
+  const search_text = DOM_dict["bible_search"].value.trim();
   const search_version = document
     .querySelector("input[name=b_version]:checked")
     .getAttribute("data-bv");
@@ -251,7 +273,7 @@ function bible_search() {
         })
       );
     } else {
-      document.getElementById("passage_list").innerHTML = "";
+      DOM_dict["passage_list"].innerHTML = "";
     }
   } else {
     if (search_text.length > 2) {
@@ -271,7 +293,7 @@ function bible_search() {
 }
 
 function new_service(force) {
-  document.getElementById("popup_new_service").style.display = "none";
+  DOM_dict["popup_new_service"].style.display = "none";
   websocket.send(JSON.stringify({ action: "command.new-service", params: { force: force } }));
 }
 
@@ -311,7 +333,7 @@ function refresh_backgrounds() {
 
 function video_tick() {
   video_timer += 1;
-  document.getElementById("time_seek").value = video_timer;
+  DOM_dict["time_seek"].value = video_timer;
 }
 
 function play_video() {
@@ -328,7 +350,7 @@ function stop_video() {
 
 function start_countdown() {
   const now = new Date();
-  const target_time = document.getElementById("cd_time").value;
+  const target_time = DOM_dict["cd_time"].value;
   const target = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -367,40 +389,39 @@ function restore_loop() {
 
 function create_song() {
   // Empty all fields on popup
-  document.getElementById("e_title").value = "";
-  document.getElementById("e_author").value = "";
-  document.getElementById("e_book").value = "";
-  document.getElementById("e_number").value = "";
-  document.getElementById("e_book").value = "";
-  document.getElementById("e_copyright").value = "";
-  document.getElementById("e_lyrics").value = "<V1>\n";
-  document.getElementById("e_order").value = "";
+  DOM_dict["e_title"].value = "";
+  DOM_dict["e_author"].value = "";
+  DOM_dict["e_book"].value = "";
+  DOM_dict["e_number"].value = "";
+  DOM_dict["e_copyright"].value = "";
+  DOM_dict["e_lyrics"].value = "<V1>\n";
+  DOM_dict["e_order"].value = "";
   document.querySelectorAll("input[name='e_key']").forEach((elt) => {
     elt.checked = false;
   });
   document.querySelector("input[data-lr='0']").checked = true;
   document.querySelector("input[data-lr='1']").checked = false;
-  document.getElementById("e_transpose").value = 0;
-  document.getElementById("e_transpose_out").value = "-";
+  DOM_dict["e_transpose"].value = 0;
+  DOM_dict["e_transpose_out"].value = "-";
   // Switch into create song mode
-  document.getElementById("popup_edit_mode").innerHTML = "Create song";
+  DOM_dict["popup_edit_mode"].innerHTML = "Create song";
   // Display popup
-  document.getElementById("popup_edit_song").style.display = "flex";
+  DOM_dict["popup_edit_song"].style.display = "flex";
 }
 
 function reset_edit_song_form() {
-  document.getElementById("e_title_span").style.color = "black";
-  document.getElementById("e_title_span").style.fontWeight = "normal";
+  DOM_dict["e_title_span"].style.color = "black";
+  DOM_dict["e_title_span"].style.fontWeight = "normal";
 }
 
 function save_song() {
   // Validation: title can't be empty, other validation carried out by server
-  if (document.getElementById("e_title").value.trim() == "") {
-    document.getElementById("e_title_span").style.color = "red";
-    document.getElementById("e_title_span").style.fontWeight = "bold";
+  if (DOM_dict["e_title"].value.trim() == "") {
+    DOM_dict["e_title_span"].style.color = "red";
+    DOM_dict["e_title_span"].style.fontWeight = "bold";
   } else {
     reset_edit_song_form();
-    let lyric_text = document.getElementById("e_lyrics").value;
+    let lyric_text = DOM_dict["e_lyrics"].value;
     let lyric_lines = lyric_text.split("\n");
     let current_part = "";
     let current_lines = [];
@@ -429,13 +450,13 @@ function save_song() {
     }
 
     let fields = {
-      author: document.getElementById("e_author").value,
-      transpose_by: document.getElementById("e_transpose").value % 12,
+      author: DOM_dict["e_author"].value,
+      transpose_by: DOM_dict["e_transpose"].value % 12,
       lyrics_chords: parts,
-      verse_order: document.getElementById("e_order").value.toLowerCase(),
-      song_book_name: document.getElementById("e_book").value,
-      song_number: document.getElementById("e_number").value,
-      copyright: document.getElementById("e_copyright").value,
+      verse_order: DOM_dict["e_order"].value.toLowerCase(),
+      song_book_name: DOM_dict["e_book"].value,
+      song_number: DOM_dict["e_number"].value,
+      copyright: DOM_dict["e_copyright"].value,
     };
     // Deal with optional field
     if (document.querySelectorAll("input[name=e_key]:checked").length > 0) {
@@ -448,8 +469,8 @@ function save_song() {
       document.querySelector("input[name=e_remote]:checked").getAttribute("data-lr")
     );
 
-    if (document.getElementById("popup_edit_mode").innerText == "Edit song") {
-      fields["title"] = document.getElementById("e_title").value;
+    if (DOM_dict["popup_edit_mode"].innerText == "Edit song") {
+      fields["title"] = DOM_dict["e_title"].value;
       websocket.send(
         JSON.stringify({
           action: "command.edit-song",
@@ -464,13 +485,13 @@ function save_song() {
         JSON.stringify({
           action: "command.create-song",
           params: {
-            title: document.getElementById("e_title").value,
+            title: DOM_dict["e_title"].value,
             fields: fields,
           },
         })
       );
     }
-    document.getElementById("popup_edit_song").style.display = "none";
+    DOM_dict["popup_edit_song"].style.display = "none";
   }
 }
 
@@ -526,13 +547,13 @@ function toggle_display_state() {
 }
 
 function display_current_item(current_item, slide_index) {
-  document.getElementById("current_item_icon").setAttribute("src", icon_dict[current_item.type]);
-  document.getElementById("current_item_name").innerHTML = current_item.title;
+  DOM_dict["current_item_icon"].setAttribute("src", icon_dict[current_item.type]);
+  DOM_dict["current_item_name"].innerHTML = current_item.title;
 
   // Reset video seek track
   clearInterval(video_interval);
   video_timer = 0;
-  document.getElementById("time_seek").value = video_timer;
+  DOM_dict["time_seek"].value = video_timer;
   let max_verse_order = [];
 
   if (current_item.type == "song") {
@@ -546,16 +567,16 @@ function display_current_item(current_item, slide_index) {
   }
 
   if (current_item.type == "video") {
-    document.getElementById("video_controls").style.display = "block";
-    document.getElementById("time_seek").max = current_item.duration;
+    DOM_dict["video_controls"].style.display = "block";
+    DOM_dict["time_seek"].max = current_item.duration;
   } else {
-    document.getElementById("video_controls").style.display = "none";
+    DOM_dict["video_controls"].style.display = "none";
   }
 
   if (current_item.type == "presentation") {
-    document.getElementById("presentation_controls").style.display = "block";
+    DOM_dict["presentation_controls"].style.display = "block";
   } else {
-    document.getElementById("presentation_controls").style.display = "none";
+    DOM_dict["presentation_controls"].style.display = "none";
   }
 
   let item_list = "";
@@ -581,7 +602,7 @@ function display_current_item(current_item, slide_index) {
     item_list += slide_text + "</div>";
     item_list += "</div>";
   }
-  document.getElementById("current_item_list").innerHTML = item_list;
+  DOM_dict["current_item_list"].innerHTML = item_list;
 
   // Indicate selection of slide_index
   indicate_current_slide(slide_index);
@@ -605,17 +626,15 @@ function indicate_current_slide(slide_index) {
       "#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ")"
     ).offsetHeight;
     const viewable_top =
-      document.getElementById("current_item").getBoundingClientRect().top + document.body.scrollTop;
+      DOM_dict["current_item"].getBoundingClientRect().top + document.body.scrollTop;
     const list_top =
-      document.getElementById("current_item_list").getBoundingClientRect().top +
-      document.body.scrollTop;
-    const scroll_top = document.getElementById("current_item").scrollTop;
+      DOM_dict["current_item_list"].getBoundingClientRect().top + document.body.scrollTop;
+    const scroll_top = DOM_dict["current_item"].scrollTop;
     const window_height = window.innerHeight;
     if (item_top < viewable_top) {
-      document.getElementById("current_item").scrollTop = item_top - list_top;
+      DOM_dict["current_item"].scrollTop = item_top - list_top;
     } else if (item_top + item_height > window_height) {
-      document.getElementById("current_item").scrollTop =
-        8 + scroll_top + item_top + item_height - window_height;
+      DOM_dict["current_item"].scrollTop = 8 + scroll_top + item_top + item_height - window_height;
     }
   }
 }
@@ -632,50 +651,52 @@ function indicate_current_item(item_index) {
 }
 
 function update_style_sliders(style) {
-  document.getElementById("s_width").value = style[style_dict["s_width"]];
-  document.getElementById("s_width_out").value = style[style_dict["s_width"]];
-  document.getElementById("s_font_size").value = style[style_dict["s_font_size"]];
-  document.getElementById("s_font_size_out").value = style[style_dict["s_font_size"]];
-  document.getElementById("s_lines").value = style[style_dict["s_lines"]];
-  document.getElementById("s_lines_out").value = style[style_dict["s_lines"]];
-  document.getElementById("s_margin").value = style[style_dict["s_margin"]];
-  document.getElementById("s_margin_out").value = style[style_dict["s_margin"]];
+  DOM_dict["s_width"].value = style[style_dict["s_width"]];
+  DOM_dict["s_width_out"].value = style[style_dict["s_width"]];
+  DOM_dict["s_font_size"].value = style[style_dict["s_font_size"]];
+  DOM_dict["s_font_size_out"].value = style[style_dict["s_font_size"]];
+  DOM_dict["s_lines"].value = style[style_dict["s_lines"]];
+  DOM_dict["s_lines_out"].value = style[style_dict["s_lines"]];
+  DOM_dict["s_margin"].value = style[style_dict["s_margin"]];
+  DOM_dict["s_margin_out"].value = style[style_dict["s_margin"]];
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {
     elt.checked = false;
   });
   document.querySelector("input[data-ol='" + style["outline-style"] + "']").checked = true;
-  document.getElementById("ch_size").value = style[style_dict["ch_size"]];
-  document.getElementById("ch_size_out").value = style[style_dict["ch_size"]];
-  document.getElementById("cd_size").value = style[style_dict["cd_size"]];
-  document.getElementById("cd_size_out").value = style[style_dict["cd_size"]];
-  document.getElementById("cd_top").value = style[style_dict["cd_top"]];
-  document.getElementById("cd_top_out").value = style[style_dict["cd_top"]];
-  document.getElementById("cd_text").value = style["countdown-h-text"];
-  document.getElementById("d_copyright").checked = style["display-copyright"];
-  document.getElementById("cp_size").value = style[style_dict["cp_size"]];
-  document.getElementById("cp_size_out").value = style[style_dict["cp_size"]];
-  document.getElementById("cp_width").value = style[style_dict["cp_width"]];
-  document.getElementById("cp_width_out").value = style[style_dict["cp_width"]];
-  document.getElementById("d_verseorder").checked = style["display-verseorder"];
-  document.getElementById("vo_size").value = style[style_dict["vo_size"]];
-  document.getElementById("vo_size_out").value = style[style_dict["vo_size"]];
-  document.getElementById("vo_width").value = style[style_dict["vo_width"]];
-  document.getElementById("vo_width_out").value = style[style_dict["vo_width"]];
-  document.getElementById("t_color").value = style["font-color"];
+  DOM_dict["ch_size"].value = style[style_dict["ch_size"]];
+  DOM_dict["ch_size_out"].value = style[style_dict["ch_size"]];
+  DOM_dict["cd_size"].value = style[style_dict["cd_size"]];
+  DOM_dict["cd_size_out"].value = style[style_dict["cd_size"]];
+  DOM_dict["cd_top"].value = style[style_dict["cd_top"]];
+  DOM_dict["cd_top_out"].value = style[style_dict["cd_top"]];
+  DOM_dict["cd_text"].value = style["countdown-h-text"];
+  DOM_dict["d_copyright"].checked = style["display-copyright"];
+  DOM_dict["cp_size"].value = style[style_dict["cp_size"]];
+  DOM_dict["cp_size_out"].value = style[style_dict["cp_size"]];
+  DOM_dict["cp_width"].value = style[style_dict["cp_width"]];
+  DOM_dict["cp_width_out"].value = style[style_dict["cp_width"]];
+  DOM_dict["d_verseorder"].checked = style["display-verseorder"];
+  DOM_dict["vo_size"].value = style[style_dict["vo_size"]];
+  DOM_dict["vo_size_out"].value = style[style_dict["vo_size"]];
+  DOM_dict["vo_width"].value = style[style_dict["vo_width"]];
+  DOM_dict["vo_width_out"].value = style[style_dict["vo_width"]];
+  DOM_dict["t_color"].value = style["font-color"];
   // Update background status items
   if (style["song-background-url"] == "none") {
-    document.getElementById("song_bg_icon").setAttribute("src", "");
+    DOM_dict["song_bg_icon"].setAttribute("src", "");
   } else {
-    document
-      .getElementById("song_bg_icon")
-      .setAttribute("src", "./backgrounds/thumbnails/" + style["song-background-url"].substr(14));
+    DOM_dict["song_bg_icon"].setAttribute(
+      "src",
+      "./backgrounds/thumbnails/" + style["song-background-url"].substr(14)
+    );
   }
   if (style["bible-background-url"] == "none") {
-    document.getElementById("bible_bg_icon").setAttribute("src", "");
+    DOM_dict["bible_bg_icon"].setAttribute("src", "");
   } else {
-    document
-      .getElementById("bible_bg_icon")
-      .setAttribute("src", "./backgrounds/thumbnails/" + style["bible-background-url"].substr(14));
+    DOM_dict["bible_bg_icon"].setAttribute(
+      "src",
+      "./backgrounds/thumbnails/" + style["bible-background-url"].substr(14)
+    );
   }
 }
 
@@ -714,9 +735,9 @@ function update_transpose_slider() {
   if (document.querySelectorAll("input[name=e_key]:checked").length > 0) {
     const e_val = document.querySelector("input[name=e_key]:checked").getAttribute("data-ek");
     const e_idx = valid_keys.findIndex((element) => element == e_val);
-    const t_idx = parseInt(document.getElementById("e_transpose").value, 10);
+    const t_idx = parseInt(DOM_dict["e_transpose"].value, 10);
     const t_key = valid_keys[(e_idx + t_idx) % 12];
-    document.getElementById("e_transpose_out").value = t_key;
+    DOM_dict["e_transpose_out"].value = t_key;
   }
 }
 
@@ -801,13 +822,13 @@ function close_popup(elt_id) {
 }
 
 function close_save_as_popup() {
-  document.getElementById("f_name").value = "";
-  document.getElementById("popup_save_service_as").style.display = "none";
+  DOM_dict["f_name"].value = "";
+  DOM_dict["popup_save_service_as"].style.display = "none";
 }
 
 function close_export_as_popup() {
-  document.getElementById("exp_name").value = "";
-  document.getElementById("popup_export_service_as").style.display = "none";
+  DOM_dict["exp_name"].value = "";
+  DOM_dict["popup_export_service_as"].style.display = "none";
 }
 
 function load_element(short_elt) {
@@ -833,13 +854,13 @@ function drag_start(event) {
     elt.style.display = "none";
   });
   document.getElementById(ghost_id).style.display = "inline";
-  document.getElementById("ghost_text").innerText = drag_target.innerText;
+  DOM_dict["ghost_text"].innerText = drag_target.innerText;
   const bounds = drag_target.getBoundingClientRect();
-  const parent_bounds = document.getElementById("service_list").getBoundingClientRect();
+  const parent_bounds = DOM_dict["service_list"].getBoundingClientRect();
   drag_data.start_idx = (bounds.top - parent_bounds.top) / bounds.height;
   drag_data.dy = bounds.height;
-  drag_data.max_idx = document.getElementById("service_list").children.length - 1;
-  event.dataTransfer.setDragImage(document.getElementById("drag_ghost"), 0, 0);
+  drag_data.max_idx = DOM_dict["service_list"].children.length - 1;
+  event.dataTransfer.setDragImage(DOM_dict["drag_ghost"], 0, 0);
 }
 
 function drag_over(event) {
@@ -847,7 +868,7 @@ function drag_over(event) {
 }
 
 function drag_drop(event) {
-  const base_y = document.getElementById("service_list").getBoundingClientRect().top;
+  const base_y = DOM_dict["service_list"].getBoundingClientRect().top;
   const idx_unbounded = parseInt((event.clientY - base_y) / drag_data.dy);
   const end_idx = Math.max(Math.min(idx_unbounded, drag_data.max_idx), 0);
   websocket.send(
@@ -869,21 +890,17 @@ function update_app_init(json_data) {
     style: { background: "#4caf50" },
   }).showToast();
   screen_state = json_data.params.screen_state;
-  document.getElementById("flip_screen_state").checked = screen_state === "on";
+  DOM_dict["flip_screen_state"].checked = screen_state === "on";
 
   // Size screen_view div and current_item div based on style
   // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
   const aspect_ratio = json_data.params.style["aspect-ratio"];
   const aspect_padding = 70 / aspect_ratio + "%";
-  document.getElementById("screen_view").style.paddingBottom = aspect_padding;
+  DOM_dict["screen_view"].style.paddingBottom = aspect_padding;
   const video_height =
-    (0.7 * parseInt(getComputedStyle(document.getElementById("item_area")).width, 10)) /
-    aspect_ratio;
-  const header_height = parseInt(
-    getComputedStyle(document.getElementById("item_header")).height,
-    10
-  );
-  document.getElementById("current_item").style.height =
+    (0.7 * parseInt(getComputedStyle(DOM_dict["item_area"]).width, 10)) / aspect_ratio;
+  const header_height = parseInt(getComputedStyle(DOM_dict["item_header"]).height, 10);
+  DOM_dict["current_item"].style.height =
     window.innerHeight - video_height - header_height - 24 + "px";
 
   // Display style parameters in style tab
@@ -908,7 +925,7 @@ function update_app_init(json_data) {
     service_list += "onclick='delete_item(" + idx + ")'></a>";
     service_list += "</div>";
   }
-  document.getElementById("service_list").innerHTML = service_list;
+  DOM_dict["service_list"].innerHTML = service_list;
   indicate_current_item(json_data.params.item_index);
 
   // Populate current item title and list
@@ -916,11 +933,11 @@ function update_app_init(json_data) {
     const current_item = json_data.params.items[json_data.params.item_index];
     display_current_item(current_item, json_data.params.slide_index);
   } else {
-    document.getElementById("video_controls").style.display = "none";
-    document.getElementById("presentation_controls").style.display = "none";
-    document.getElementById("current_item_icon").setAttribute("src", icon_dict["song"]);
-    document.getElementById("current_item_name").innerHTML = "No current item";
-    document.getElementById("current_item_list").innerHTML = "";
+    DOM_dict["video_controls"].style.display = "none";
+    DOM_dict["presentation_controls"].style.display = "none";
+    DOM_dict["current_item_icon"].setAttribute("src", icon_dict["song"]);
+    DOM_dict["current_item_name"].innerHTML = "No current item";
+    DOM_dict["current_item_list"].innerHTML = "";
   }
 
   // Populate Presentation, Video, Background and Loop lists
@@ -959,7 +976,7 @@ function update_service_overview_update(json_data) {
     service_list += "onclick='delete_item(" + idx + ")'></a>";
     service_list += "</div>";
   }
-  document.getElementById("service_list").innerHTML = service_list;
+  DOM_dict["service_list"].innerHTML = service_list;
   indicate_current_item(json_data.params.item_index);
 
   // Populate current item list
@@ -967,17 +984,17 @@ function update_service_overview_update(json_data) {
     const current_item = json_data.params.current_item;
     display_current_item(current_item, json_data.params.slide_index);
   } else {
-    document.getElementById("video_controls").style.display = "none";
-    document.getElementById("presentation_controls").style.display = "none";
-    document.getElementById("current_item_icon").setAttribute("src", icon_dict["song"]);
-    document.getElementById("current_item_name").innerHTML = "No current item";
-    document.getElementById("current_item_list").innerHTML = "";
+    DOM_dict["video_controls"].style.display = "none";
+    DOM_dict["presentation_controls"].style.display = "none";
+    DOM_dict["current_item_icon"].setAttribute("src", icon_dict["song"]);
+    DOM_dict["current_item_name"].innerHTML = "No current item";
+    DOM_dict["current_item_list"].innerHTML = "";
   }
 }
 
 function update_display_state(json_data) {
   screen_state = json_data.params.state;
-  document.getElementById("flip_screen_state").checked = screen_state === "on";
+  DOM_dict["flip_screen_state"].checked = screen_state === "on";
 }
 
 function result_all_presentations(json_data) {
@@ -989,7 +1006,7 @@ function result_all_presentations(json_data) {
     pres_list += "onclick='add_presentation(\"" + url + "\");'></a>";
     pres_list += "</div>";
   }
-  document.getElementById("presentation_list").innerHTML = pres_list;
+  DOM_dict["presentation_list"].innerHTML = pres_list;
 }
 
 function result_all_videos(json_data) {
@@ -1002,7 +1019,7 @@ function result_all_videos(json_data) {
     vid_list += "onclick='add_video(\"" + url + "\");'></a>";
     vid_list += "</div>";
   }
-  document.getElementById("video_list").innerHTML = vid_list;
+  DOM_dict["video_list"].innerHTML = vid_list;
 }
 
 function result_all_loops(json_data) {
@@ -1015,7 +1032,7 @@ function result_all_loops(json_data) {
     loop_list += "onclick='set_loop(\"" + url + "\");'></a>";
     loop_list += "</div>";
   }
-  document.getElementById("loop_list").innerHTML = loop_list;
+  DOM_dict["loop_list"].innerHTML = loop_list;
 }
 
 function result_all_backgrounds(json_data) {
@@ -1032,18 +1049,17 @@ function result_all_backgrounds(json_data) {
     bg_list += 'onclick="set_background_bible(' + fn_params + ');"></a>';
     bg_list += "</div>";
   }
-  document.getElementById("background_list").innerHTML = bg_list;
+  DOM_dict["background_list"].innerHTML = bg_list;
 }
 
 function result_song_details(json_data) {
   if (json_data.params.status == "ok") {
     let full_song = json_data.params["song-data"];
-    document.getElementById("e_title").value = full_song["title"];
-    document.getElementById("e_author").value = full_song["author"];
-    document.getElementById("e_book").value = full_song["song-book-name"];
-    document.getElementById("e_number").value = full_song["song-number"];
-    document.getElementById("e_book").value = full_song["song-book-name"];
-    document.getElementById("e_copyright").value = full_song["copyright"];
+    DOM_dict["e_title"].value = full_song["title"];
+    DOM_dict["e_author"].value = full_song["author"];
+    DOM_dict["e_book"].value = full_song["song-book-name"];
+    DOM_dict["e_number"].value = full_song["song-number"];
+    DOM_dict["e_copyright"].value = full_song["copyright"];
     document.querySelectorAll("input[name=e_remote]").forEach((elt) => {
       elt.checked = false;
     });
@@ -1056,31 +1072,31 @@ function result_song_details(json_data) {
     if (lyrics == "") {
       lyrics = "<V1>\n";
     }
-    document.getElementById("e_lyrics").value = lyrics;
-    document.getElementById("e_order").value = full_song["verse-order"].toUpperCase();
+    DOM_dict["e_lyrics"].value = lyrics;
+    DOM_dict["e_order"].value = full_song["verse-order"].toUpperCase();
     document.querySelectorAll("input[name=e_key]").forEach((elt) => {
       elt.checked = false;
     });
     const t_idx = full_song["transpose-by"];
-    document.getElementById("e_transpose").value = (t_idx + 12) % 12; // +12 needed to ensure remainder is in [0, 12)
+    DOM_dict["e_transpose"].value = (t_idx + 12) % 12; // +12 needed to ensure remainder is in [0, 12)
     if (full_song["song-key"]) {
       document.querySelector("input[data-ek='" + full_song["song-key"] + "']").checked = true;
       const e_idx = valid_keys.findIndex((element) => element == full_song["song-key"]);
       const t_key = valid_keys[(e_idx + t_idx) % 12];
-      document.getElementById("e_transpose_out").value = t_key;
+      DOM_dict["e_transpose_out"].value = t_key;
     } else {
-      document.getElementById("e_transpose_out").value = "-";
+      DOM_dict["e_transpose_out"].value = "-";
     }
     // Ensure that we are in edit song mode, rather than create song mode
-    document.getElementById("popup_edit_mode").innerHTML = "Edit song";
-    document.getElementById("popup_edit_song").style.display = "flex";
+    DOM_dict["popup_edit_mode"].innerHTML = "Edit song";
+    DOM_dict["popup_edit_song"].style.display = "flex";
     editing_song_id = full_song["song-id"];
   }
 }
 
 function response_new_service(json_data) {
   if (json_data.params.status == "unsaved-service") {
-    document.getElementById("popup_new_service").style.display = "flex";
+    DOM_dict["popup_new_service"].style.display = "flex";
   } else {
     json_toast_response(json_data, "New service started", "Problem starting new service");
   }
@@ -1088,7 +1104,7 @@ function response_new_service(json_data) {
 
 function response_load_service(json_data) {
   if (json_data.params.status == "unsaved-service") {
-    document.getElementById("popup_save_before_load_service").style.display = "flex";
+    DOM_dict["popup_save_before_load_service"].style.display = "flex";
   } else {
     json_toast_response(json_data, "Service loaded successfully", "Problem loading service");
   }
@@ -1113,15 +1129,15 @@ function result_song_titles(json_data) {
       break;
     }
   }
-  document.getElementById("song_list").innerHTML = song_list;
+  DOM_dict["song_list"].innerHTML = song_list;
 }
 
 function response_save_service(json_data) {
   if (json_data.params.status == "unspecified-service") {
     const cur_date = new Date();
     const date_str = cur_date.toISOString().replace("T", " ").replace(/:/g, "-");
-    document.getElementById("f_name").value = date_str.substring(0, date_str.length - 5) + ".json";
-    document.getElementById("popup_save_service_as").style.display = "flex";
+    DOM_dict["f_name"].value = date_str.substring(0, date_str.length - 5) + ".json";
+    DOM_dict["popup_save_service_as"].style.display = "flex";
   } else {
     // Save has been successful
     json_toast_response(json_data, "Service saved", "Problem saving service");
@@ -1146,7 +1162,7 @@ function result_all_services(json_data) {
       files_list += "<div class='ml_text'>" + file + "</div>";
       files_list += "</div>";
     }
-    document.getElementById("load_files_radio").innerHTML = files_list;
+    DOM_dict["load_files_radio"].innerHTML = files_list;
     document.querySelectorAll("#load_files_radio input[type=radio]").forEach((elt) => {
       elt.checked = false;
     });
@@ -1154,9 +1170,9 @@ function result_all_services(json_data) {
   } else {
     files_list += "<div class='ml_row'><div class='ml_text'>";
     files_list += "<em>No saved service plans</em></div><div>";
-    document.getElementById("load_files_radio").innerHTML = files_list;
+    DOM_dict["load_files_radio"].innerHTML = files_list;
   }
-  document.getElementById("popup_load_service").style.display = "flex";
+  DOM_dict["popup_load_service"].style.display = "flex";
 }
 
 function result_bible_versions(json_data) {
@@ -1166,14 +1182,14 @@ function result_bible_versions(json_data) {
     radios_html += '" data-bv="' + version + '" data-role="none"/>';
     radios_html += '<label for="b_version_' + idx + '">' + version + "</label>";
   }
-  document.getElementById("b_version_radios").innerHTML = radios_html;
+  DOM_dict["b_version_radios"].innerHTML = radios_html;
   document.querySelector('input[name="b_version"]:first-of-type').checked = true;
   // Attach event listener
   document.querySelectorAll('input[name="b_version"]').forEach((elt) => {
     elt.addEventListener("change", (e) => {
       if (
         document.querySelectorAll("#passage_list input").length > 0 &&
-        document.getElementById("bible_search").value.trim() != ""
+        DOM_dict["bible_search"].value.trim() != ""
       ) {
         // A search has already been performed, so repeat the search with the new version
         bible_search();
@@ -1193,12 +1209,12 @@ function trigger_pause_video() {
 function trigger_stop_video() {
   clearInterval(video_interval);
   video_timer = 0;
-  document.getElementById("time_seek").value = video_timer;
+  DOM_dict["time_seek"].value = video_timer;
 }
 
 function trigger_seek_video(json_data) {
   video_timer = json_data.params.seconds;
-  document.getElementById("time_seek").value = video_timer;
+  DOM_dict["time_seek"].value = video_timer;
 }
 
 function result_bible_verses(json_data) {
@@ -1219,7 +1235,7 @@ function result_bible_verses(json_data) {
       bible_list += "</div>";
     }
   }
-  document.getElementById("passage_list").innerHTML = bible_list;
+  DOM_dict["passage_list"].innerHTML = bible_list;
 }
 
 function start_websocket() {
@@ -1401,9 +1417,12 @@ let ready = (callback) => {
 };
 
 ready(() => {
-  document.getElementById("flip_screen_state").addEventListener("change", change_screen_state_flip);
+  for (const key of DOM_KEYS) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  DOM_dict["flip_screen_state"].addEventListener("change", change_screen_state_flip);
 
-  document.getElementById("song_search").addEventListener("keypress", (e) => {
+  DOM_dict["song_search"].addEventListener("keypress", (e) => {
     const key_code = e.which ? e.which : e.keyCode;
     if (key_code == 13) {
       song_search();
@@ -1416,29 +1435,32 @@ ready(() => {
     elt.addEventListener("change", song_search);
   });
 
-  document.getElementById("bible_search").addEventListener("keypress", (e) => {
+  DOM_dict["bible_search"].addEventListener("keypress", (e) => {
     const key_code = e.which ? e.which : e.keyCode;
     if (key_code == 13) {
       bible_search();
     }
   });
 
-  document.getElementById("e_transpose").addEventListener("change", update_transpose_slider);
+  DOM_dict["e_transpose"].addEventListener("change", update_transpose_slider);
   document.querySelectorAll('input[name="e_key"]').forEach((elt) => {
     elt.addEventListener("change", update_transpose_slider);
   });
 
-  document.getElementById("t_color").addEventListener("input", (e) => {
-    e.target.style.backgroundColor = "#" + e.target.value;
-    websocket.send(
-      JSON.stringify({
-        action: "command.edit-style-param",
-        params: {
-          param: "font-color",
-          value: e.target.value,
-        },
-      })
-    );
+  DOM_dict["t_color"].addEventListener("keypress", (e) => {
+    const key_code = e.which ? e.which : e.keyCode;
+    if (key_code == 13) {
+      e.target.style.backgroundColor = "#" + e.target.value;
+      websocket.send(
+        JSON.stringify({
+          action: "command.edit-style-param",
+          params: {
+            param: "font-color",
+            value: e.target.value,
+          },
+        })
+      );
+    }
   });
 
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {
@@ -1455,7 +1477,7 @@ ready(() => {
     });
   });
 
-  document.getElementById("cd_text").addEventListener("input", (e) => {
+  DOM_dict["cd_text"].addEventListener("input", (e) => {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
@@ -1467,7 +1489,7 @@ ready(() => {
     );
   });
 
-  document.getElementById("d_copyright").addEventListener("change", (e) => {
+  DOM_dict["d_copyright"].addEventListener("change", (e) => {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
@@ -1479,7 +1501,7 @@ ready(() => {
     );
   });
 
-  document.getElementById("d_verseorder").addEventListener("change", (e) => {
+  DOM_dict["d_verseorder"].addEventListener("change", (e) => {
     websocket.send(
       JSON.stringify({
         action: "command.edit-style-param",
@@ -1491,22 +1513,19 @@ ready(() => {
     );
   });
 
-  document.getElementById("cd_time").value =
-    String((new Date().getHours() + 1) % 24).padStart(2, "0") + ":00";
+  DOM_dict["cd_time"].value = String((new Date().getHours() + 1) % 24).padStart(2, "0") + ":00";
+
+  window.addEventListener("resize", (e) => {
+    // Size screen_view div and current_item div based on style
+    // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
+    const aspect_padding = 70 / aspect_ratio + "%";
+    DOM_dict["screen_view"].style.paddingBottom = aspect_padding;
+    const video_height =
+      (0.7 * parseInt(getComputedStyle(DOM_dict["item_area"]).width, 10)) / aspect_ratio;
+    DOM_dict["current_item"].style.height = window.innerHeight - video_height - 24 + "px";
+  });
 
   start_websocket();
-});
-
-window.addEventListener("resize", (e) => {
-  // Size screen_view div and current_item div based on style
-  // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
-  const aspect_padding = 70 / aspect_ratio + "%";
-  document.getElementById("screen_view").style.paddingBottom = aspect_padding;
-  const video_height =
-    (0.7 * parseInt(getComputedStyle(document.getElementById("item_area")).width, 10)) /
-    aspect_ratio;
-  document.getElementById("current_item").style.height =
-    window.innerHeight - video_height - 24 + "px";
 });
 
 document.addEventListener("keydown", (e) => {

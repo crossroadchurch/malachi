@@ -8,14 +8,17 @@ let current_title = "";
 let part_counts = [];
 let slide_index = -1;
 let websocket;
+// DOM pointers
+const DOM_dict = {};
+const DOM_KEYS = ["playedkey", "capoarea", "verseorder", "currentslide", "nextslide", "caposelect"];
 
 function update_music() {
-  document.getElementById("playedkey").innerHTML = played_key;
+  DOM_dict["playedkey"].innerHTML = played_key;
   let verse_control_list = "<ul>";
   let verse_list = "";
 
   if (slide_type == "song") {
-    document.getElementById("capoarea").style.display = "inline";
+    DOM_dict["capoarea"].style.display = "inline";
     verse_list = verse_order.split(" ");
     let part_counts_sum = 0;
     for (let i = 0; i < verse_list.length; i++) {
@@ -30,11 +33,11 @@ function update_music() {
     verse_control_list += "</ul>";
   } else if (slide_type != undefined) {
     verse_control_list = "<ul><li>" + current_title + "</li></ul>";
-    document.getElementById("capoarea").style.display = "none";
+    DOM_dict["capoarea"].style.display = "none";
   } else {
-    document.getElementById("capoarea").style.display = "none";
+    DOM_dict["capoarea"].style.display = "none";
   }
-  document.getElementById("verseorder").innerHTML = verse_control_list;
+  DOM_dict["verseorder"].innerHTML = verse_control_list;
 
   let current_text = "";
   let next_text = "";
@@ -92,7 +95,7 @@ function update_music() {
         }
       }
     }
-    document.getElementById("currentslide").innerHTML = current_text;
+    DOM_dict["currentslide"].innerHTML = current_text;
 
     let next_slide_lines = [];
     if (slide_index < current_slides.length - 1) {
@@ -148,13 +151,16 @@ function update_music() {
         }
       }
     }
-    document.getElementById("nextslide").innerHTML = next_text;
+    DOM_dict["nextslide"].innerHTML = next_text;
 
     document.querySelectorAll("#currentslide>span").forEach((element) => {
       if (element.children.length > 1) {
         const lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
         const chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
-        if (lyricWidth < chordWidth) {
+        if (lyricWidth == 0) {
+          element.querySelector(".lyric-chunk").innerHTML = "&nbsp;";
+        }
+        if (lyricWidth <= chordWidth) {
           if (element.querySelectorAll(".midword").length > 0) {
             const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
             element.insertAdjacentHTML("beforeend", '<span class="midword-spacer">-</span>');
@@ -179,7 +185,10 @@ function update_music() {
         const chordWidth = parseInt(
           getComputedStyle(element.querySelector(".next-chord-chunk")).width
         );
-        if (lyricWidth < chordWidth) {
+        if (lyricWidth == 0) {
+          element.querySelector(".next-lyric-chunk").innerHTML = "&nbsp;";
+        }
+        if (lyricWidth <= chordWidth) {
           if (element.querySelectorAll(".midword").length > 0) {
             const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
             element.insertAdjacentHTML("beforeend", '<span class="next-midword-spacer">-</span>');
@@ -206,25 +215,25 @@ function update_music() {
     } else {
       next_text = "<div></div>";
     }
-    document.getElementById("currentslide").innerHTML = current_text;
-    document.getElementById("nextslide").innerHTML = next_text;
+    DOM_dict["currentslide"].innerHTML = current_text;
+    DOM_dict["nextslide"].innerHTML = next_text;
   } else if (slide_type == "video") {
     current_text = "<div class ='nonsong-block'><p class='nonsong-line'>";
     current_text += current_slides[0].replace(/\n/g, "</p><p class='nonsong-line'>");
     current_text += "</div>";
-    document.getElementById("currentslide").innerHTML = current_text;
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = current_text;
+    DOM_dict["nextslide"].innerHTML = "";
   } else if (slide_type == "presentation") {
-    document.getElementById("currentslide").innerHTML = "";
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = "";
+    DOM_dict["nextslide"].innerHTML = "";
   } else {
-    document.getElementById("currentslide").innerHTML = "";
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = "";
+    DOM_dict["nextslide"].innerHTML = "";
   }
 }
 
 function update_capo() {
-  capo = parseInt(document.getElementById("caposelect").value);
+  capo = parseInt(DOM_dict["caposelect"].value);
   if (capo != 0) {
     window.localStorage.setItem(cur_song_id.toString(), capo.toString());
   } else {
@@ -243,7 +252,7 @@ function capo_check_update_music() {
     }
     if (saved_capo != capo) {
       capo = saved_capo;
-      document.getElementById("caposelect").value = capo;
+      DOM_dict["caposelect"].value = capo;
       websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
     } else {
       update_music();
@@ -358,6 +367,10 @@ let ready = (callback) => {
 };
 
 ready(() => {
+  // Setup DOM pointers
+  for (const key of DOM_KEYS) {
+    DOM_dict[key] = document.getElementById(key);
+  }
   start_websocket();
 });
 

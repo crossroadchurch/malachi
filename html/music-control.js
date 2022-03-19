@@ -15,29 +15,37 @@ const valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", 
 let music_options_visible = false;
 let display_options_visible = false;
 let service_options_visible = false;
+// DOM pointers
+const DOM_dict = {};
+// prettier-ignore
+const DOM_KEYS = [
+  "currentslide", "nextslide", "service_options", "service_options_btn", 
+  "display_options", "display_options_btn", "music_options", "music_options_btn",
+  "playedkey", "pres_controls", "verseorder", "header", "keyandcapo",
+];
 
 function view_music_options(val) {
   music_options_visible = val;
   service_options_visible = false;
   display_options_visible = false;
   if (music_options_visible) {
-    document.getElementById("currentslide").style.display = "none";
-    document.getElementById("nextslide").style.display = "none";
-    document.getElementById("service-options").style.display = "none";
-    document.getElementById("service-options-btn").style.background = "gray";
-    document.getElementById("display-options").style.display = "none";
-    document.getElementById("display-options-btn").style.background = "gray";
-    document.getElementById("music-options").style.display = "block";
-    document.getElementById("music-options-btn").style.background = "#4CAF50";
+    DOM_dict["currentslide"].style.display = "none";
+    DOM_dict["nextslide"].style.display = "none";
+    DOM_dict["service_options"].style.display = "none";
+    DOM_dict["service_options_btn"].style.background = "gray";
+    DOM_dict["display_options"].style.display = "none";
+    DOM_dict["display_options_btn"].style.background = "gray";
+    DOM_dict["music_options"].style.display = "block";
+    DOM_dict["music_options_btn"].style.background = "#4CAF50";
   } else {
-    document.getElementById("currentslide").style.display = "block";
-    document.getElementById("nextslide").style.display = "block";
-    document.getElementById("service-options").style.display = "none";
-    document.getElementById("service-options-btn").style.background = "gray";
-    document.getElementById("display-options").style.display = "none";
-    document.getElementById("display-options-btn").style.background = "gray";
-    document.getElementById("music-options").style.display = "none";
-    document.getElementById("music-options-btn").style.background = "gray";
+    DOM_dict["currentslide"].style.display = "block";
+    DOM_dict["nextslide"].style.display = "block";
+    DOM_dict["service_options"].style.display = "none";
+    DOM_dict["service_options_btn"].style.background = "gray";
+    DOM_dict["display_options"].style.display = "none";
+    DOM_dict["display_options_btn"].style.background = "gray";
+    DOM_dict["music_options"].style.display = "none";
+    DOM_dict["music_options_btn"].style.background = "gray";
   }
 }
 
@@ -46,23 +54,23 @@ function view_display_options(val) {
   service_options_visible = false;
   music_options_visible = false;
   if (display_options_visible) {
-    document.getElementById("currentslide").style.display = "none";
-    document.getElementById("nextslide").style.display = "none";
-    document.getElementById("service-options").style.display = "none";
-    document.getElementById("service-options-btn").style.background = "gray";
-    document.getElementById("display-options").style.display = "block";
-    document.getElementById("display-options-btn").style.background = "#4CAF50";
-    document.getElementById("music-options").style.display = "none";
-    document.getElementById("music-options-btn").style.background = "gray";
+    DOM_dict["currentslide"].style.display = "none";
+    DOM_dict["nextslide"].style.display = "none";
+    DOM_dict["service_options"].style.display = "none";
+    DOM_dict["service_options_btn"].style.background = "gray";
+    DOM_dict["display_options"].style.display = "block";
+    DOM_dict["display_options_btn"].style.background = "#4CAF50";
+    DOM_dict["music_options"].style.display = "none";
+    DOM_dict["music_options_btn"].style.background = "gray";
   } else {
-    document.getElementById("currentslide").style.display = "block";
-    document.getElementById("nextslide").style.display = "block";
-    document.getElementById("service-options").style.display = "none";
-    document.getElementById("service-options-btn").style.background = "gray";
-    document.getElementById("display-options").style.display = "none";
-    document.getElementById("display-options-btn").style.background = "gray";
-    document.getElementById("music-options").style.display = "none";
-    document.getElementById("music-options-btn").style.background = "gray";
+    DOM_dict["currentslide"].style.display = "block";
+    DOM_dict["nextslide"].style.display = "block";
+    DOM_dict["service_options"].style.display = "none";
+    DOM_dict["service_options_btn"].style.background = "gray";
+    DOM_dict["display_options"].style.display = "none";
+    DOM_dict["display_options_btn"].style.background = "gray";
+    DOM_dict["music_options"].style.display = "none";
+    DOM_dict["music_options_btn"].style.background = "gray";
   }
 }
 
@@ -71,52 +79,52 @@ function view_service_options(val) {
   display_options_visible = false;
   music_options_visible = false;
   if (service_options_visible) {
-    document.getElementById("currentslide").style.display = "none";
-    document.getElementById("nextslide").style.display = "none";
-    document.getElementById("service-options").style.display = "block";
-    document.getElementById("service-options-btn").style.background = "#4CAF50";
-    document.getElementById("display-options").style.display = "none";
-    document.getElementById("display-options-btn").style.background = "gray";
-    document.getElementById("music-options").style.display = "none";
-    document.getElementById("music-options-btn").style.background = "gray";
+    DOM_dict["currentslide"].style.display = "none";
+    DOM_dict["nextslide"].style.display = "none";
+    DOM_dict["service_options"].style.display = "block";
+    DOM_dict["service_options_btn"].style.background = "#4CAF50";
+    DOM_dict["display_options"].style.display = "none";
+    DOM_dict["display_options_btn"].style.background = "gray";
+    DOM_dict["music_options"].style.display = "none";
+    DOM_dict["music_options_btn"].style.background = "gray";
   } else {
-    document.getElementById("currentslide").style.display = "block";
-    document.getElementById("nextslide").style.display = "block";
-    document.getElementById("service-options").style.display = "none";
-    document.getElementById("service-options-btn").style.background = "gray";
-    document.getElementById("display-options").style.display = "none";
-    document.getElementById("display-options-btn").style.background = "gray";
-    document.getElementById("music-options").style.display = "none";
-    document.getElementById("music-options-btn").style.background = "gray";
+    DOM_dict["currentslide"].style.display = "block";
+    DOM_dict["nextslide"].style.display = "block";
+    DOM_dict["service_options"].style.display = "none";
+    DOM_dict["service_options_btn"].style.background = "gray";
+    DOM_dict["display_options"].style.display = "none";
+    DOM_dict["display_options_btn"].style.background = "gray";
+    DOM_dict["music_options"].style.display = "none";
+    DOM_dict["music_options_btn"].style.background = "gray";
   }
 }
 
 function update_music() {
-  document.getElementById("playedkey").innerHTML = played_key;
+  DOM_dict["playedkey"].innerHTML = played_key;
   if (played_key === "") {
-    document.getElementById("music-options-btn").style.display = "none";
+    DOM_dict["music_options_btn"].style.display = "none";
     view_music_options(false);
   } else {
-    document.getElementById("music-options-btn").style.display = "inline-block";
-    document.querySelectorAll("#key-buttons button").forEach((elt) => {
+    DOM_dict["music_options_btn"].style.display = "inline-block";
+    document.querySelectorAll("#key_buttons button").forEach((elt) => {
       elt.style.background = "gray";
     });
     document.querySelector(
-      "#key-buttons button:nth-child(" + (valid_keys.indexOf(noncapo_key) + 1) + ")"
+      "#key_buttons button:nth-child(" + (valid_keys.indexOf(noncapo_key) + 1) + ")"
     ).style.background = "#4CAF50";
-    document.querySelectorAll("#capo-buttons button").forEach((elt) => {
+    document.querySelectorAll("#capo_buttons button").forEach((elt) => {
       elt.style.background = "gray";
     });
-    document.querySelector("#capo-buttons button:nth-child(" + (capo + 1) + ")").style.background =
+    document.querySelector("#capo_buttons button:nth-child(" + (capo + 1) + ")").style.background =
       "#4CAF50";
   }
   let verse_control_list = "";
   let verse_list = "";
 
   if (slide_type == "presentation") {
-    document.getElementById("pres-controls").style.display = "inline-block";
+    DOM_dict["pres_controls"].style.display = "inline-block";
   } else {
-    document.getElementById("pres-controls").style.display = "none";
+    DOM_dict["pres_controls"].style.display = "none";
   }
 
   if (slide_type == "song") {
@@ -143,11 +151,11 @@ function update_music() {
   } else if (slide_type != undefined) {
     verse_control_list = "<span class='non-song-title'>" + service_items[item_index] + "</span>";
   }
-  document.getElementById("verseorder").innerHTML = verse_control_list;
+  DOM_dict["verseorder"].innerHTML = verse_control_list;
 
   /* Update widths of verse buttons to make sure they can all be seen */
-  const header_width = Math.floor(document.getElementById("header").offsetWidth);
-  const keyandcapo_width = Math.ceil(document.getElementById("keyandcapo").offsetWidth);
+  const header_width = Math.floor(DOM_dict["header"].offsetWidth);
+  const keyandcapo_width = Math.ceil(DOM_dict["keyandcapo"].offsetWidth);
   const button_margin = parseInt(
     getComputedStyle(document.querySelector(".verse-button")).marginRight
   );
@@ -216,7 +224,7 @@ function update_music() {
         }
       }
     }
-    document.getElementById("currentslide").innerHTML = current_text;
+    DOM_dict["currentslide"].innerHTML = current_text;
 
     let next_slide_lines = [];
     if (slide_index < current_slides.length - 1) {
@@ -273,13 +281,16 @@ function update_music() {
         }
       }
     }
-    document.getElementById("nextslide").innerHTML = next_text;
+    DOM_dict["nextslide"].innerHTML = next_text;
 
     document.querySelectorAll("#currentslide>span").forEach((element) => {
       if (element.children.length > 1) {
         const lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
+        if (lyricWidth == 0) {
+          element.querySelector(".lyric-chunk").innerHTML = "&nbsp;";
+        }
         const chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
-        if (lyricWidth < chordWidth) {
+        if (lyricWidth <= chordWidth) {
           if (element.querySelectorAll(".midword").length > 0) {
             const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
             element.insertAdjacentHTML("beforeend", '<span class="midword-spacer">-</span>');
@@ -304,7 +315,10 @@ function update_music() {
         const chordWidth = parseInt(
           getComputedStyle(element.querySelector(".next-chord-chunk")).width
         );
-        if (lyricWidth < chordWidth) {
+        if (lyricWidth == 0) {
+          element.querySelector(".next-lyric-chunk").innerHTML = "&nbsp;";
+        }
+        if (lyricWidth <= chordWidth) {
           if (element.querySelectorAll(".midword").length > 0) {
             const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
             element.insertAdjacentHTML("beforeend", '<span class="next-midword-spacer">-</span>');
@@ -331,17 +345,17 @@ function update_music() {
     } else {
       next_text = "<div></div>";
     }
-    document.getElementById("currentslide").innerHTML = current_text;
-    document.getElementById("nextslide").innerHTML = next_text;
+    DOM_dict["currentslide"].innerHTML = current_text;
+    DOM_dict["nextslide"].innerHTML = next_text;
   } else if (slide_type == "video") {
     current_text = '<div class ="nonsong-block"><p class="nonsong-line">';
     current_text += current_slides[0].replace(/\n/g, '</p><p class="nonsong-line">');
     current_text += "</div>";
-    document.getElementById("currentslide").innerHTML = current_text;
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = current_text;
+    DOM_dict["nextslide"].innerHTML = "";
   } else {
-    document.getElementById("currentslide").innerHTML = "";
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = "";
+    DOM_dict["nextslide"].innerHTML = "";
   }
 }
 
@@ -361,7 +375,7 @@ function update_menu() {
     }
   }
   if (temp_menu != menustring) {
-    document.getElementById("service-options").innerHTML = temp_menu;
+    DOM_dict["service_options"].innerHTML = temp_menu;
     menustring = temp_menu;
   }
 }
@@ -632,6 +646,9 @@ let ready = (callback) => {
 };
 
 ready(() => {
+  for (const key of DOM_KEYS) {
+    DOM_dict[key] = document.getElementById(key);
+  }
   start_websocket();
 });
 

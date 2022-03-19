@@ -8,11 +8,18 @@ let current_slides = [];
 let part_counts = [];
 let slide_index = -1;
 let item_index = -1;
+// DOM pointers
+const DOM_dict = {};
+// prettier-ignore
+const DOM_KEYS = [
+  "playedkey", "verseorder", "currentslide", "nextslide",
+  "songarea", "video_item_src", "video_item",
+];
 
 function update_music() {
   stop_running_video();
 
-  document.getElementById("playedkey").innerHTML = played_key;
+  DOM_dict["playedkey"].innerHTML = played_key;
   let verse_list = "";
   let verse_control_list = "<ul>";
 
@@ -32,7 +39,7 @@ function update_music() {
   } else if (slide_type != undefined) {
     verse_control_list = "<ul><li>" + current_title + "</li></ul>";
   }
-  document.getElementById("verseorder").innerHTML = verse_control_list;
+  DOM_dict["verseorder"].innerHTML = verse_control_list;
 
   let current_text = "";
   let next_text = "";
@@ -47,7 +54,7 @@ function update_music() {
       }
       current_text += "</p>";
     }
-    document.getElementById("currentslide").innerHTML = current_text;
+    DOM_dict["currentslide"].innerHTML = current_text;
 
     let next_slide_lines = [];
     if (slide_index < current_slides.length - 1) {
@@ -61,20 +68,20 @@ function update_music() {
       }
       next_text += "</p>";
     }
-    document.getElementById("nextslide").innerHTML = next_text;
+    DOM_dict["nextslide"].innerHTML = next_text;
   } else if (slide_type == "video") {
-    document.getElementById("currentslide").innerHTML = "";
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = "";
+    DOM_dict["nextslide"].innerHTML = "";
     // Background load video, wait for trigger to display and start playback
-    document.getElementById("songarea").style.display = "none";
-    document.getElementById("video_item_src").setAttribute("src", current_item.url);
-    document.getElementById("video_item").load();
+    DOM_dict["songarea"].style.display = "none";
+    DOM_dict["video_item_src"].setAttribute("src", current_item.url);
+    DOM_dict["video_item"].load();
   } else if (slide_type == "presentation") {
-    document.getElementById("currentslide").innerHTML = "";
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = "";
+    DOM_dict["nextslide"].innerHTML = "";
   } else {
-    document.getElementById("currentslide").innerHTML = "";
-    document.getElementById("nextslide").innerHTML = "";
+    DOM_dict["currentslide"].innerHTML = "";
+    DOM_dict["nextslide"].innerHTML = "";
   }
 }
 
@@ -83,23 +90,23 @@ function resize_video_item() {
   const screen_ar = window.innerWidth / window.innerHeight;
   if (video_ar <= screen_ar) {
     const left_pos = window.innerWidth * 0.5 * (1 - video_ar / screen_ar);
-    document.getElementById("video_item").style.height = "100%";
-    document.getElementById("video_item").style.width = "auto";
-    document.getElementById("video_item").style.top = 0;
-    document.getElementById("video_item").style.left = left_pos + "px";
+    DOM_dict["video_item"].style.height = "100%";
+    DOM_dict["video_item"].style.width = "auto";
+    DOM_dict["video_item"].style.top = 0;
+    DOM_dict["video_item"].style.left = left_pos + "px";
   } else {
     const top_pos = window.innerHeight * 0.5 * (1 - screen_ar / video_ar);
-    document.getElementById("video_item").style.height = "auto";
-    document.getElementById("video_item").style.width = "100%";
-    document.getElementById("video_item").style.top = top_pos + "px";
-    document.getElementById("video_item").style.left = 0;
+    DOM_dict["video_item"].style.height = "auto";
+    DOM_dict["video_item"].style.width = "100%";
+    DOM_dict["video_item"].style.top = top_pos + "px";
+    DOM_dict["video_item"].style.left = 0;
   }
 }
 
 function stop_running_video() {
-  document.getElementById("video_item").pause();
-  document.getElementById("video_item").style.display = "none";
-  document.getElementById("songarea").style.display = "block";
+  DOM_dict["video_item"].pause();
+  DOM_dict["video_item"].style.display = "none";
+  DOM_dict["songarea"].style.display = "block";
 }
 
 function update_basic_init(json_data) {
@@ -164,23 +171,23 @@ function update_item_index_update(json_data) {
 }
 
 function trigger_play_video() {
-  document.getElementById("songarea").style.display = "none";
-  document.getElementById("video_item").style.display = "block";
+  DOM_dict["songarea"].style.display = "none";
+  DOM_dict["video_item"].style.display = "block";
   resize_video_item();
-  document.getElementById("video_item").play();
+  DOM_dict["video_item"].play();
 }
 
 function trigger_pause_video() {
-  document.getElementById("video_item").pause();
+  DOM_dict["video_item"].pause();
 }
 
 function trigger_stop_video() {
   stop_running_video();
-  document.getElementById("video_item").currentTime = 0.0;
+  DOM_dict["video_item"].currentTime = 0.0;
 }
 
 function trigger_seek_video(json_data) {
-  document.getElementById("video_item").currentTime = json_data.params.seconds;
+  DOM_dict["video_item"].currentTime = json_data.params.seconds;
 }
 
 function start_websocket() {
@@ -247,7 +254,12 @@ let ready = (callback) => {
 };
 
 ready(() => {
-  document.getElementById("video_item").muted = "true";
+  // Setup DOM pointers
+  for (const key of DOM_KEYS) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  // Other setup tasks
+  DOM_dict["video_item"].muted = "true";
   start_websocket();
 });
 
