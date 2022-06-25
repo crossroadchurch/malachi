@@ -26,6 +26,14 @@
           >
         </div>
         <div id="current_item">
+          <div id="audio_controls">
+            <div class="playback_buttons">
+              <div class="button_inline_text">Song recording:</div>
+              <div class="cmd_button icon_button play_icon" onclick="play_audio()"></div>
+              <div class="cmd_button icon_button pause_icon" onclick="pause_audio()"></div>
+              <div class="cmd_button icon_button stop_icon" onclick="stop_audio()"></div>
+            </div>
+          </div>
           <div id="video_controls">
             <div class="playback_buttons">
               <div class="cmd_button icon_button play_icon" onclick="play_video()"></div>
@@ -599,6 +607,40 @@
       <div class="popup_v_spacer"></div>
     </div>
 
+    <!-- POPUP: Attach audio dialog -->
+    <div id="popup_attach_audio" class="popup_wrapper">
+      <div class="popup_v_spacer"></div>
+      <div style="display: flex">
+        <div class="popup_h_spacer"></div>
+        <div style="display: flex; flex-direction: column">
+          <div class="popup_header">
+            <span>Attach audio to song</span>
+          </div>
+          <div class="popup_panel">
+            <p>Choose audio to attach:</p>
+            <div
+              id="attach_audio_radio"
+              class="ml_list"
+              style="max-height: 250px; overflow-y: auto; width: 100%"
+            ></div>
+            <div class="popup_buttons">
+              <div class="cmd_button menu_button dialog_button" onclick="attach_audio()">
+                Attach
+              </div>
+              <div
+                class="cmd_button menu_button dialog_button"
+                onclick="close_attach_audio_popup()"
+              >
+                Cancel
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="popup_h_spacer"></div>
+      </div>
+      <div class="popup_v_spacer"></div>
+    </div>
+
     <!-- POPUP: Edit song dialog -->
     <div id="popup_edit_song" class="popup_wrapper">
       <div class="popup_v_spacer"></div>
@@ -632,6 +674,18 @@
             <div class="popup_column">
               <span>Song number:</span>
               <input type="text" id="e_number" class="mi_textinput" />
+            </div>
+            <div class="popup_column">
+              <span>Audio:</span>
+              <input type="text" id="e_audio" class="mi_textinput" readonly />
+            </div>
+            <div id="e_audio_button_div">
+              <div class="cmd_button small_button" onclick="audio_popup_preload()">
+                <img src="/html/icons/icons8-plus-24.png" />
+              </div>
+              <div class="cmd_button small_button" onclick="remove_audio()">
+                <img src="/html/icons/icons8-minus-24.png" />
+              </div>
             </div>
           </div>
           <span>Verse order:</span>

@@ -155,6 +155,7 @@ input {
 }
 
 #video_controls,
+#audio_controls,
 #presentation_controls {
   padding-left: 1em;
   padding-right: 1em;
@@ -185,7 +186,8 @@ input {
 
 #popup_save_service_as .popup_header,
 #popup_export_service_as .popup_header,
-#popup_load_service .popup_header {
+#popup_load_service .popup_header,
+#popup_attach_audio .popup_header {
   min-width: 400px;
 }
 
@@ -379,6 +381,15 @@ p.ml_bibleverse {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.button_inline_text {
+  display: flex;
+  align-items: center;
+  height: 2.75em;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 1px 0 #f3f3f3;
 }
 
 .cmd_button {
@@ -749,13 +760,13 @@ p.ml_bibleverse {
   -webkit-appearance: none;
   height: 1em;
   box-sizing: border-box;
-  border: 1px solid#ddd;
+  border: 1px solid #ddd;
   background-color: #f6f6f6;
   margin-bottom: 0.5em;
 }
 
 #time_seek::-webkit-progress-bar {
-  border: 1px solid#ddd;
+  border: 1px solid #ddd;
   background-color: #f6f6f6;
 }
 
@@ -812,7 +823,8 @@ p.ml_bibleverse {
 #popup_load_service,
 #popup_save_before_load_service,
 #popup_save_service_as,
-#popup_export_service_as {
+#popup_export_service_as,
+#popup_attach_audio {
   display: none;
 }
 
@@ -822,6 +834,22 @@ p.ml_bibleverse {
 
 #e_key_div {
   justify-content: left;
+}
+
+#e_audio_button_div {
+  padding-top: 1.825em;
+  display: flex;
+}
+
+#e_audio_button_div div:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 0;
+}
+
+#e_audio_button_div div:last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 .popup_wrapper {

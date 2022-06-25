@@ -16,4 +16,6 @@
 !/backgrounds/thumbnails/
 /backgrounds/thumbnails/*
 !/backgrounds/thumbnails/.gitkeep
+/audio/*
+!/audio/.gitkeep
 sha.txt

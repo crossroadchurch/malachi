@@ -22,7 +22,7 @@ class Song():
     """Represent a Song object in Malachi."""
 
     STR_FIELDS = ['song_book_name', 'title', 'author', 'song_key',
-                  'verse_order', 'copyright', 'song_number', 'search_title']
+                  'verse_order', 'copyright', 'song_number', 'search_title', 'audio']
     INT_FIELDS = ['transpose_by', 'remote']
 
     def __init__(self, song_id, cur_style):
@@ -73,7 +73,7 @@ class Song():
         """Retrieve non-lyric Song data from the songs database."""
         song_db, cursor = Song.db_connect()
         cursor.execute('''
-            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number, s.remote
+            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number, s.remote, s.audio
             FROM songs AS s
             WHERE s.id={s_id}
         '''.format(s_id=self.song_id))
@@ -95,6 +95,7 @@ class Song():
         self.song_book_name = result[5]
         self.song_number = result[6]
         self.remote = result[7]
+        self.audio = result[8]
 
     def get_title(self):
         """Return the title of this Song."""
@@ -129,6 +130,7 @@ class Song():
             "song-id": self.song_id,
             "title": self.title,
             "copyright": self.copyright,
+            "audio": self.audio,
             "slides": c_slides,
             "played-key": p_key,
             "non-capo-key": o_key,
@@ -160,7 +162,7 @@ class Song():
             "song-key": self.song_key, "transpose-by": self.transpose_by,
             "parts": tr_parts, "verse-order": self.verse_order, "copyright": self.copyright,
             "song-book-name": self.song_book_name, "song-number": self.song_number,
-            "remote": self.remote})
+            "remote": self.remote, "audio": self.audio })
 
     def __str__(self):
         return self.get_title()
@@ -298,18 +300,20 @@ class Song():
 
         self.parts = dict([x["part"], x["data"]]
                           for x in json.loads(result[0]))
-        self.verse_order = result[1]
+        self.saved_verse_order = result[1]
 
         # Create verse order if it is missing
-        if self.verse_order is None:
-            self.verse_order = ' '.join([x for x in self.parts])
-        elif self.verse_order.strip() == "":
-            self.verse_order = ' '.join([x for x in self.parts])
+        if self.saved_verse_order is None:
+            self.saved_verse_order = ' '.join([x for x in self.parts])
+        elif self.saved_verse_order.strip() == "":
+            self.saved_verse_order = ' '.join([x for x in self.parts])
 
         if self.parts != {}:
-            slide_temp = [self.parts[x] for x in self.verse_order.split(" ")]
+            slide_temp = [self.parts[x] for x in self.saved_verse_order.split(" ") if x in self.parts]
+            self.verse_order = ' '.join([x for x in self.saved_verse_order.split(" ") if x in self.parts])
         else:
             slide_temp = []
+            self.verse_order = self.saved_verse_order
         self.slides = []
         self.part_slide_count = []
 
@@ -626,6 +630,10 @@ class Song():
         if(len([x for x in song_rows if x[1]=='remote']) == 0):
             # Add remote song column to songs table
             cursor.execute('ALTER TABLE songs ADD COLUMN remote INTEGER DEFAULT 0')
+
+        if(len([x for x in song_rows if x[1]=='audio']) == 0):
+            # Add audio recording column to songs table
+            cursor.execute('ALTER TABLE songs ADD COLUMN audio TEXT NOT NULL DEFAULT ""')
 
         cursor.close()
         song_db.close()

@@ -248,6 +248,9 @@ class MalachiServer():
                 "command.pause-video": [self.pause_video, []],
                 "command.stop-video": [self.stop_video, []],
                 "command.seek-video": [self.seek_video, ["seconds"]],
+                "command.play-audio": [self.play_audio, []],
+                "command.pause-audio": [self.pause_audio, []],
+                "command.stop-audio": [self.stop_audio, []],
                 "command.start-presentation": [self.start_presentation, []],
                 "command.stop-presentation": [self.stop_presentation, []],
                 "command.next-presentation-slide": [self.next_presentation_slide, []],
@@ -273,6 +276,7 @@ class MalachiServer():
                 "request.all-backgrounds": [self.request_all_backgrounds, []],
                 "request.all-services": [self.request_all_services, []],
                 "request.all-presentations": [self.request_all_presentations, []],
+                "request.all-audio": [self.request_all_audio, []],
                 "request.capture-update": [self.capture_update, []]
             }
             try:
@@ -1006,6 +1010,36 @@ class MalachiServer():
             status, details = "invalid-item", "Current service item is not a video"
         await self.server_response(websocket, "response.seek-video", status, details)
 
+    async def play_audio(self, websocket, params):
+        """
+        Send a message to appropriate clients triggering playback of audio associated
+        with current Song.  Clients are responsible for error handling, failing gracefully
+        if current item is not a song, or if the current song has no associated audio.
+        """
+        status, details = "ok", ""
+        await self.broadcast(self.MEDIA_SOCKETS, "trigger.play-audio", {})
+        await self.server_response(websocket, "response.play-audio", status, details)
+
+    async def pause_audio(self, websocket, params):
+        """
+        Send a message to appropriate clients pausing playback of audio associated
+        with current Song.  Clients are responsible for error handling, failing gracefully
+        if current item is not a song, or if the current song has no associated audio.
+        """
+        status, details = "ok", ""
+        await self.broadcast(self.MEDIA_SOCKETS, "trigger.pause-audio", {})
+        await self.server_response(websocket, "response.pause-audio", status, details)
+
+    async def stop_audio(self, websocket, params):
+        """
+        Send a message to appropriate clients stopping playback of audio associated
+        with current Song.  Clients are responsible for error handling, failing gracefully
+        if current item is not a song, or if the current song has no associated audio.
+        """
+        status, details = "ok", ""
+        await self.broadcast(self.MEDIA_SOCKETS, "trigger.stop-audio", {})
+        await self.server_response(websocket, "response.stop-audio", status, details)
+
 
     async def start_countdown(self, websocket, params):
         """
@@ -1319,6 +1353,13 @@ class MalachiServer():
         """Return a list of all presentations in the ./presentations directory to websocket."""
         fnames = Presentation.get_all_presentations()
         await self.send_message(websocket, "result.all-presentations", {"urls": fnames})
+
+    async def request_all_audio(self, websocket, params):
+        """Return a list of all MP3 URLs in the ./audio directory to websocket."""
+        urls = [f for f in os.listdir('./audio') if f.endswith('.mp3')]
+        if urls:
+            urls.sort()
+        await self.send_message(websocket, "result.all-audio", {"urls": urls})
 
     # Song usage tracking
     def track_usage(self):

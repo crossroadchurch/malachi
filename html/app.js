@@ -19,13 +19,13 @@ let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 const DOM_dict = {};
 // prettier-ignore
 const DOM_KEYS = [
-  "flip_screen_state", "video_controls", "presentation_controls",
+  "flip_screen_state", "audio_controls", "video_controls", "presentation_controls",
   "current_item_list", "current_item_icon", "current_item_name", "current_item",
   "screen_view", "item_area", "item_header", "song_search", "bible_search",
   "cd_time", "time_seek", "ghost_text", "drag_ghost",
   "song_list", "passage_list", "service_list", "presentation_list",
   "video_list", "loop_list", "background_list", "b_version_radios",
-  "e_title", "e_author", "e_book", "e_number", "e_copyright", "e_lyrics",
+  "e_title", "e_author", "e_book", "e_number", "e_audio", "e_copyright", "e_lyrics",
   "e_order", "e_transpose", "e_transpose_out", "e_title_span",
   "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
@@ -35,6 +35,7 @@ const DOM_KEYS = [
   "popup_new_service", "popup_load_service", "popup_save_before_load_service",
   "popup_save_service_as", "popup_export_service_as", "f_name", "exp_name",
   "popup_edit_mode", "popup_edit_song", "load_files_radio",
+  "popup_attach_audio", "attach_audio_radio"
 ];
 
 style_dict["s_width"] = "div-width-vw";
@@ -348,6 +349,18 @@ function stop_video() {
   websocket.send(JSON.stringify({ action: "command.stop-video", params: {} }));
 }
 
+function play_audio() {
+  websocket.send(JSON.stringify({ action: "command.play-audio", params: {} }));
+}
+
+function pause_audio() {
+  websocket.send(JSON.stringify({ action: "command.pause-audio", params: {} }));
+}
+
+function stop_audio() {
+  websocket.send(JSON.stringify({ action: "command.stop-audio", params: {} }));
+}
+
 function start_countdown() {
   const now = new Date();
   const target_time = DOM_dict["cd_time"].value;
@@ -393,6 +406,7 @@ function create_song() {
   DOM_dict["e_author"].value = "";
   DOM_dict["e_book"].value = "";
   DOM_dict["e_number"].value = "";
+  DOM_dict["e_audio"].value = "";
   DOM_dict["e_copyright"].value = "";
   DOM_dict["e_lyrics"].value = "<V1>\n";
   DOM_dict["e_order"].value = "";
@@ -456,6 +470,7 @@ function save_song() {
       verse_order: DOM_dict["e_order"].value.toLowerCase(),
       song_book_name: DOM_dict["e_book"].value,
       song_number: DOM_dict["e_number"].value,
+      audio: DOM_dict["e_audio"].value,
       copyright: DOM_dict["e_copyright"].value,
     };
     // Deal with optional field
@@ -566,6 +581,12 @@ function display_current_item(current_item, slide_index) {
     }
   }
 
+  if (current_item.type == "song" && current_item["audio"] != "") {
+    DOM_dict["audio_controls"].style.display = "block";
+  } else {
+    DOM_dict["audio_controls"].style.display = "none";
+  }
+
   if (current_item.type == "video") {
     DOM_dict["video_controls"].style.display = "block";
     DOM_dict["time_seek"].max = current_item.duration;
@@ -603,6 +624,9 @@ function display_current_item(current_item, slide_index) {
     item_list += "</div>";
   }
   DOM_dict["current_item_list"].innerHTML = item_list;
+
+  // Stop audio playback if necessary
+  stop_audio();
 
   // Indicate selection of slide_index
   indicate_current_slide(slide_index);
@@ -1059,6 +1083,7 @@ function result_song_details(json_data) {
     DOM_dict["e_author"].value = full_song["author"];
     DOM_dict["e_book"].value = full_song["song-book-name"];
     DOM_dict["e_number"].value = full_song["song-number"];
+    DOM_dict["e_audio"].value = full_song["audio"];
     DOM_dict["e_copyright"].value = full_song["copyright"];
     document.querySelectorAll("input[name=e_remote]").forEach((elt) => {
       elt.checked = false;
@@ -1238,6 +1263,55 @@ function result_bible_verses(json_data) {
   DOM_dict["passage_list"].innerHTML = bible_list;
 }
 
+function remove_audio() {
+  DOM_dict["e_audio"].value = "";
+}
+
+function audio_popup_preload() {
+  websocket.send(JSON.stringify({ action: "request.all-audio", params: {} }));
+}
+
+function show_audio_popup(json_data) {
+  let mp3_list = "";
+  if (json_data.params.urls.length != 0) {
+    for (const [idx, url] of json_data.params.urls.entries()) {
+      mp3_list += "<div class='ml_row'>";
+      mp3_list += "<div class='ml_radio_div'>";
+      mp3_list += "<input type='radio' data-role='none' ";
+      mp3_list += "name='mp3s' id='mp3-" + idx + "' /></div>";
+      mp3_list += "<div class='ml_text'>" + url + "</div>";
+      mp3_list += "</div>";
+    }
+    DOM_dict["attach_audio_radio"].innerHTML = mp3_list;
+    document.querySelectorAll("#attach_audio_radio input[type=radio]").forEach((elt) => {
+      elt.checked = false;
+    });
+    document.getElementById("mp3-0").checked = true;
+  } else {
+    mp3_list += "<div class='ml_row'><div class='ml_text'>";
+    mp3_list += "<em>No audio files found</em></div><div>";
+    DOM_dict["attach_audio_radio"].innerHTML = mp3_list;
+  }
+  DOM_dict["popup_edit_song"].style.display = "none";
+  DOM_dict["popup_attach_audio"].style.display = "flex";
+}
+
+function attach_audio() {
+  if (document.querySelectorAll("input[name=mp3s]").length > 0) {
+    const sel_mp3 = parseInt(document.querySelector("input[name=mp3s]:checked").id.substring(4));
+    const sel_text = document.querySelector(
+      "#attach_audio_radio .ml_row:nth-child(" + (sel_mp3 + 1) + ") .ml_text"
+    ).innerText;
+    DOM_dict["e_audio"].value = sel_text;
+  }
+  close_attach_audio_popup();
+}
+
+function close_attach_audio_popup() {
+  DOM_dict["popup_edit_song"].style.display = "flex";
+  DOM_dict["popup_attach_audio"].style.display = "none";
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
@@ -1263,6 +1337,9 @@ function start_websocket() {
         break;
       case "update.style-update":
         update_style_sliders(json_data.params.style);
+        break;
+      case "result.all-audio":
+        show_audio_popup(json_data);
         break;
       case "result.all-presentations":
         result_all_presentations(json_data);
@@ -1378,6 +1455,9 @@ function start_websocket() {
       case "response.play-video":
       case "response.pause-video":
       case "response.stop-video":
+      case "response.play-audio":
+      case "response.pause-audio":
+      case "response.stop-audio":
       case "response.start-presentation":
       case "response.edit-style-param":
       case "response.edit-style-params":
@@ -1389,6 +1469,9 @@ function start_websocket() {
       case "trigger.restore-loop":
       case "response.restore-loop":
       case "trigger.suspend-loop":
+      case "trigger.play-audio":
+      case "trigger.pause-audio":
+      case "trigger.stop-audio":
         break; // No action required;
       default:
         console.error("Unsupported event", json_data);

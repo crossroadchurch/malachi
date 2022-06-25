@@ -1,5 +1,6 @@
 let websocket;
 let current_item;
+let current_audio = "";
 let loop_width = 0;
 let loop_height = 0;
 let loop_ar = 0;
@@ -20,6 +21,7 @@ const DOM_KEYS = [
   "video_item", "video_item_src", "loop_video", "loop_video_src",
   "countdown_p", "countdown_h", "countdown_area", "bg_image",
   "slide_area", "verseorder_area", "copyright_area",
+  "audio_item", "audio_item_src"
 ];
 
 function display_current_slide(slide_index) {
@@ -392,6 +394,30 @@ function trigger_seek_video(json_data) {
   }
 }
 
+function trigger_play_audio() {
+  if (!video_muted && current_item) {
+    if (current_item.audio != current_audio) {
+      DOM_dict["audio_item_src"].src = "/audio/" + current_item.audio;
+      DOM_dict["audio_item"].load();
+      current_audio = current_item.audio;
+    }
+    DOM_dict["audio_item"].play();
+  }
+}
+
+function trigger_pause_audio() {
+  if (!video_muted) {
+    DOM_dict["audio_item"].pause();
+  }
+}
+
+function trigger_stop_audio() {
+  if (!video_muted) {
+    DOM_dict["audio_item"].pause();
+    current_audio = "";
+  }
+}
+
 function trigger_start_countdown(json_data) {
   if (!screen_state && !video_displayed) {
     const now = new Date();
@@ -456,6 +482,15 @@ function start_websocket() {
         break;
       case "trigger.seek-video":
         trigger_seek_video(json_data);
+        break;
+      case "trigger.play-audio":
+        trigger_play_audio();
+        break;
+      case "trigger.pause-audio":
+        trigger_pause_audio();
+        break;
+      case "trigger.stop-audio":
+        trigger_stop_audio();
         break;
       case "trigger.start-countdown":
         trigger_start_countdown(json_data);
