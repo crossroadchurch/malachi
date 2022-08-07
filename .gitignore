@@ -18,4 +18,6 @@
 !/backgrounds/thumbnails/.gitkeep
 /audio/*
 !/audio/.gitkeep
+/logs/*
+!/logs/.gitkeep
 sha.txt

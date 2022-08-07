@@ -873,7 +873,10 @@ function drag_start(event) {
     drag_target = document.querySelector("#service_list .ml_row[data-idx='" + idx + "']");
   }
   // Setup ghost image
-  const ghost_id = drag_dict[drag_target.querySelector("img").src.substr(21)];
+  const target_img = drag_target
+    .querySelector("img")
+    .src.substr(drag_target.querySelector("img").src.lastIndexOf("/") + 1);
+  const ghost_id = drag_dict[target_img];
   document.querySelectorAll(".ml_drag_icon").forEach((elt) => {
     elt.style.display = "none";
   });
