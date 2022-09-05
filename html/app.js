@@ -55,10 +55,10 @@ icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
 icon_dict["presentation"] = "/html/icons/icons8-presentation-48.png";
 icon_dict["video"] = "/html/icons/icons8-tv-show-48.png";
 
-drag_dict["/html/icons/icons8-literature-48.png"] = "drag_bible_icon";
-drag_dict["/html/icons/icons8-musical-notes-48.png"] = "drag_song_icon";
-drag_dict["/html/icons/icons8-presentation-48.png"] = "drag_presentation_icon";
-drag_dict["/html/icons/icons8-tv-show-48.png"] = "drag_video_icon";
+drag_dict["icons8-literature-48.png"] = "drag_bible_icon";
+drag_dict["icons8-musical-notes-48.png"] = "drag_song_icon";
+drag_dict["icons8-presentation-48.png"] = "drag_presentation_icon";
+drag_dict["icons8-tv-show-48.png"] = "drag_video_icon";
 
 function change_screen_state_flip() {
   const str_state = DOM_dict["flip_screen_state"].checked ? "on" : "off";
