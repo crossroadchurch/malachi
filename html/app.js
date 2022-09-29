@@ -1563,16 +1563,19 @@ ready(() => {
     });
   });
 
-  DOM_dict["cd_text"].addEventListener("input", (e) => {
-    websocket.send(
-      JSON.stringify({
-        action: "command.edit-style-param",
-        params: {
-          param: "countdown-h-text",
-          value: e.target.value,
-        },
-      })
-    );
+  DOM_dict["cd_text"].addEventListener("keypress", (e) => {
+    const key_code = e.which ? e.which : e.keyCode;
+    if (key_code == 13) {
+      websocket.send(
+        JSON.stringify({
+          action: "command.edit-style-param",
+          params: {
+            param: "countdown-h-text",
+            value: e.target.value,
+          },
+        })
+      );
+    }
   });
 
   DOM_dict["d_copyright"].addEventListener("change", (e) => {
