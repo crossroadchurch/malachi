@@ -1,10 +1,13 @@
 {
   "style": {
-    "aspect-ratio": 1.777,
+    "aspect-ratio": 1.7777,
     "font-size-vh": "10",
     "div-width-vw": "90",
     "margin-top-vh": "8",
     "max-lines": "5",
+    "il-font-size-vh": "7",
+    "il-max-lines": "7",
+    "il-width-vw": "44",
     "countdown-size-vh": "12",
     "countdown-top-vh": "23",
     "countdown-h-size-vh": "25",

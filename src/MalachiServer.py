@@ -46,7 +46,6 @@ class MalachiServer():
 
     SONGS_DATABASE = "./data/songs.sqlite"
     GLOBAL_SETTINGS_FILE = "./data/global_settings.json"
-    BIBLE_VERSIONS_FILES = "./data/bible_versions.json"
 
     def __init__(self):
         try:
@@ -225,6 +224,9 @@ class MalachiServer():
                 "command.goto-item": [self.goto_item, ["index"]],
                 "command.add-bible-item": [self.add_bible_item, \
                                            ["version", "start-verse", "end-verse"]],
+                "command.change-bible-il-version": [self.change_bible_il_version, \
+                                                    ["version"]],                      
+                "command.remove-bible-il-version": [self.remove_bible_il_version, []],                   
                 "command.change-bible-version": [self.change_bible_version, ["version"]],
                 "command.add-song-item": [self.add_song_item, ["song-id"]],
                 "command.add-video": [self.add_video, ["url"]],
@@ -655,6 +657,42 @@ class MalachiServer():
             await self.server_response(websocket, "response.add-bible-item", status, details)
             await self.clients_service_items_update()
 
+    async def change_bible_il_version(self, websocket, params):
+        '''
+        Change the interlinear Bible version of the current item.
+
+        Arguments:
+        params["version"] -- the neww interlinear Bible version.
+        '''
+        status, details = "ok", ""
+        try:
+            if self.s.get_current_item_type() == "BiblePassage":
+                self.s.items[self.s.item_index].interlinear_paginate_from_style(
+                    self.screen_style, params["version"], self.bible_versions)
+            else:
+                status, details = "invalid-item", "Current item not a Bible passage"
+        except InvalidVersionError as e:
+            status, details = "invalid-version", e.msg
+        except MatchingVerseIdError as e:
+            status, details = "invalid-matching-verse", e.msg
+        finally:
+            await self.server_response(websocket, "response.change-bible-il-version", status, details)
+            await self.clients_service_items_update()
+
+    async def remove_bible_il_version(self, websocket, params):
+        '''
+        Remove the interlinear Bible version of the current item.
+        '''
+        status, details = "ok", ""
+        try:
+            if self.s.get_current_item_type() == "BiblePassage":
+                self.s.items[self.s.item_index].paginate_from_style(self.screen_style)
+            else:
+                status, details = "invalid-item", "Current item not a Bible passage"
+        finally:
+            await self.server_response(websocket, "response.remove-bible-il-version", status, details)
+            await self.clients_service_items_update()
+
     async def change_bible_version(self, websocket, params):
         '''
         Change the Bible version of the current item.
@@ -876,7 +914,13 @@ class MalachiServer():
                     self.s.items[i].get_nonslide_data()
                     self.s.items[i].paginate_from_style(self.screen_style)
                 elif isinstance(self.s.items[i], BiblePassage):
-                    self.s.items[i].paginate_from_style(self.screen_style)
+                    if self.s.items[i].interlinear_version == "":
+                        self.s.items[i].paginate_from_style(self.screen_style)
+                    else:
+                        self.s.items[i].interlinear_paginate_from_style(
+                            self.screen_style,
+                            self.s.items[i].interlinear_version,
+                            self.bible_versions)
             await self.clients_service_items_update()
             self.save_settings()
             await self.broadcast(self.STYLE_STATE_SOCKETS, "update.style-update", {
@@ -1393,21 +1437,11 @@ class MalachiServer():
         MissingDataFilesError - raised if any essential files are missing.
         """
         missing_files = []
-        for f in [MalachiServer.BIBLE_VERSIONS_FILES, MalachiServer.SONGS_DATABASE,
-                  MalachiServer.GLOBAL_SETTINGS_FILE]:
+        for f in [MalachiServer.SONGS_DATABASE, MalachiServer.GLOBAL_SETTINGS_FILE]:
             if not os.path.isfile(f):
                 missing_files.append(f)
         if missing_files:
             raise MissingDataFilesError(missing_files)
-        self.load_bible_versions()
-        for v in self.bible_versions:
-            if not os.path.isfile("./data/" + v + ".sqlite"):
-                missing_files.append("./data/" + v + ".sqlite")
-        if missing_files:
-            raise MissingDataFilesError(missing_files)
-
-    def load_bible_versions(self):
-        """Load supported Bible versions from ./data/bible_versions.json."""
-        with open(MalachiServer.BIBLE_VERSIONS_FILES) as f:
-            json_data = json.load(f)
-        self.bible_versions = json_data["versions"]
+        self.bible_versions = [f[:-7] for f in os.listdir('./data')
+            if f.endswith('.sqlite') and f!='songs.sqlite']
+        print(self.bible_versions)

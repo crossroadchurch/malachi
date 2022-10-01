@@ -20,4 +20,11 @@
 !/audio/.gitkeep
 /logs/*
 !/logs/.gitkeep
+/data/*.sqlite
+!/data/songs.sqlite
+!/data/ADB.sqlite
+!/data/ASV.sqlite
+!/data/KJV.sqlite
+!/data/KUL.sqlite
 sha.txt
+/private

@@ -48,6 +48,8 @@ class BiblePassage():
         '''.format(s_id=self.start_id, e_id=self.end_id))
         verses = cursor.fetchall()
         self.slides = []
+        self.interlinear_slides = []
+        self.interlinear_version = ""
         self.parts = []
         for verse in verses:
             self.parts.append({
@@ -148,6 +150,8 @@ class BiblePassage():
                     vs2=end_verse,
                     ver=self.version)
         bible_db.close()
+        if self.interlinear_version != "":
+            ref = ref[:-1] + " + " + self.interlinear_version + ")"
         return ref
 
     # pylint: disable=W0613 # capo is unused due to OOP coding of to_JSON method
@@ -159,7 +163,10 @@ class BiblePassage():
         return json.dumps({
             "type":"bible",
             "title":self.get_title(),
-            "slides":self.slides}, indent=2)
+            "version":self.version,
+            "slides":self.slides,
+            "interlinear_slides":self.interlinear_slides,
+            "interlinear_version":self.interlinear_version}, indent=2)
     # pylint: enable=W0613
 
     def __str__(self):
@@ -215,54 +222,171 @@ class BiblePassage():
                 missing_params.append(param)
         if missing_params:
             raise MissingStyleParameterError(', '.join(missing_params))
-        self.paginate(
-            style["aspect-ratio"],
-            style["font-size-vh"],
-            style["div-width-vw"],
-            style["max-lines"],
-            style["font-file"])
+        lines = BiblePassage.paginate_to_lines(self, 
+            style["aspect-ratio"], style["font-size-vh"], style["div-width-vw"], style["font-file"])
+        capacity = int(style["max-lines"])
+        self.slides = []
+        self.interlinear_slides = []
+        self.interlinear_version = ""
+        for i in range(math.ceil(len(lines)/capacity)):
+            self.slides.append(' '.join(lines[capacity*i:capacity*(i+1)]))
 
-    def paginate(self, aspect_ratio, font_size_vh, div_width_vw, max_lines, font_file):
-        """Paginate the current BiblePassage based on the specified style options.
+    @classmethod
+    def paginate_to_lines(cls, passage, aspect_ratio, font_size_vh, div_width_vw, font_file):
+        """Paginate a BiblePassage based on the specified style options into an array of lines of text.
 
         Arguments:
+        passage -- the BiblePassage being paginated
         aspect_ratio -- the output Screen aspect ratio (width / height).
         font_size_vh -- the font size in vh units.
         div_width_vw -- the width of the div containing the BiblePassage in vw units.
-        max_lines -- the maximum number of lines to be displayed at any one time.
         font_file -- the URL of the font being used, relative to the root of Malachi.
         """
-        window_height = 800 # Arbitrary value chosen
+        window_height = 1080 # Arbitrary value chosen
         window_width = window_height * float(aspect_ratio)
         font_size_px = window_height * int(font_size_vh) / 100
+        font_size_calc = 40 # Arbitrary value chosen
+        font_factor = font_size_px / font_size_calc
         div_width_px = window_width * int(div_width_vw) / 100
-        font = ImageFont.truetype(font_file, math.ceil(font_size_px))
-        self.slides = []
-        parts_refs_tags = ["<sup>" + v["short_ref"] + "</sup>" + v["data"] for v in self.parts]
-        parts_refs_simple = [v["short_ref"] + v["data"] for v in self.parts]
+        # font = ImageFont.truetype(font_file, math.ceil(font_size_px))
+        font = ImageFont.truetype(font_file, font_size_calc)
+        lines = []
+        parts_refs_tags = ["<sup>" + v["short_ref"] + "</sup>" + v["data"] for v in passage.parts]
+        parts_refs_simple = [v["short_ref"] + v["data"] for v in passage.parts]
         passage_tags = ' '.join(parts_refs_tags)
         passage_tags_simple = ' '.join(parts_refs_simple)
         verse_words = passage_tags_simple.split(" ")
         verse_words_tags = passage_tags.split(" ")
-        line_count, line_start, slide_start = 0, 0, 0
+        line_start = 0
         for i in range(len(verse_words)):
-            if int(max_lines) > 2 and line_count == (int(max_lines)-1) and \
-                verse_words_tags[i].find("<sup>") != -1:
-                # New verse forms part (not all) of last line of slide, break to new slide instead
-                self.slides.append(' '.join(verse_words_tags[slide_start:i]))
-                slide_start, line_count, line_start = i, 0, i
-            line_part = ' '.join(verse_words[line_start:i+1])
-            size = font.getsize(line_part)
-            if size[0] > div_width_px:
-                line_count += 1
+            line_part_tags = ' '.join(verse_words_tags[line_start:i+1])
+            lpt_sections = re.split(r"(<sup>[0-9]+</sup>)", line_part_tags)
+            size = 0
+            for section in lpt_sections:
+                if section[0:5] == "<sup>":
+                    # Processing a verse tag <sup>N</sup>, at 0.5em, with 0.5em right spacing
+                    size = size + 0.5*font_factor*(font.getsize(section[5:-6])[0] + 0.5*font_size_calc)
+                elif section != "":
+                    size += font_factor*font.getsize(section)[0]
+            if size > div_width_px:
+                lines.append(' '.join(verse_words_tags[line_start:i]))
                 line_start = i
-                if line_count == int(max_lines):
-                    self.slides.append(' '.join(verse_words_tags[slide_start:i]))
-                    slide_start, line_count = i, 0
         # Add on remaining bit of passage
-        if slide_start < (len(verse_words)):
-            self.slides.append(' '.join(verse_words_tags[slide_start:len(verse_words)]))
+        if line_start < (len(verse_words)):
+            lines.append(' '.join(verse_words_tags[line_start:len(verse_words)]))
+        return lines
 
+    @classmethod
+    def find_verse_starts(cls, lines):
+        # TODO: Add docstring
+        starts = []
+        for count, line in enumerate(lines):
+            if line.count("<sup>") > 0:
+                starts.extend([count]*line.count("<sup>"))
+        starts.append(len(lines))
+        return starts
+
+    def interlinear_paginate_from_style(self, cur_style, version2, versions):
+        #TODO: Docstring
+        # Test for existance of necessary formatting keys within params
+        missing_params = []
+        for param in ["aspect-ratio", "il-font-size-vh", "il-width-vw", "il-max-lines", "font-file"]:
+            if param not in cur_style:
+                missing_params.append(param)
+        if missing_params:
+            raise MissingStyleParameterError(', '.join(missing_params))
+        # Create BiblePassage for version2
+        start_id2 = BiblePassage.translate_verse_id(self.start_id, self.version, version2, versions)
+        end_id2 = BiblePassage.translate_verse_id(self.end_id, self.version, version2, versions)
+        passage2 = BiblePassage(version2, start_id2, end_id2, cur_style, versions)
+        self.interlinear_paginate(passage2, version2, cur_style["aspect-ratio"], cur_style["il-font-size-vh"], 
+            cur_style["il-width-vw"], cur_style["il-max-lines"], cur_style["font-file"])
+
+    def process_overflow(self, s_lines1, s_lines2, s_needed, need1, need2, capacity):
+        # Process slides where at least one translation overflows.
+        # The translation that needs the most slides is the first one (s_lines1, s_needed1, need1)
+        # Process translation that uses the most slides
+        # Initial slide
+        need1 -= (capacity - s_lines1[-1])
+        s_lines1[-1] = capacity
+        # Full slides
+        while need1 >= capacity:
+            s_lines1.append(capacity)
+            need1 -= capacity
+        # Final slide, might be empty
+        s_lines1.append(need1)
+        # Now process translation using partial slides
+        if math.ceil(need2 / s_needed) <= (capacity - s_lines2[-1]):
+            # Can fit verse partition into first slide without overflow
+            verse_partition = [need2 // s_needed] * s_needed
+            for i in range(need2 % s_needed):
+                verse_partition[i] = verse_partition[i]+1
+        else:
+            # Default verse partition would overflow first slide
+            # TODO: CHECK ASSUMPTION THAT THIS METHOD DOESN'T INCREASE NUMBER OF SLIDES NEEDED
+            first2 = capacity - s_lines2[-1]
+            need2 -= (capacity - s_lines2[-1])
+            s_needed_a  = s_needed - 1
+            verse_partition = [need2 // s_needed_a] * s_needed_a
+            for i in range(need2 % s_needed_a):
+                verse_partition[i] += 1
+            # Prepend initial slide, which uses all available capacity
+            verse_partition.insert(0, first2)
+        # Add partitioned verse to slides
+        s_lines2[-1] += verse_partition[0]
+        for i in range(1, len(verse_partition)):
+            s_lines2.append(verse_partition[i])
+
+    def interlinear_paginate(self, passage2, version2, aspect_ratio, font_size_vh, div_width_vw, max_lines, font_file):
+        #TODO: Docstring
+        lines1 = BiblePassage.paginate_to_lines(self, aspect_ratio, font_size_vh, div_width_vw, font_file)
+        lines2 = BiblePassage.paginate_to_lines(passage2, aspect_ratio, font_size_vh, div_width_vw, font_file)
+        l_starts1 = BiblePassage.find_verse_starts(lines1)
+        l_starts2 = BiblePassage.find_verse_starts(lines2)
+        capacity = int(max_lines)
+        slide_lines1, slide_lines2 = [0], [0] # Stores number of lines held on each slide
+        for v in range(len(l_starts1) - 1):
+            needed1 = l_starts1[v+1] - l_starts1[v]
+            needed2 = l_starts2[v+1] - l_starts2[v]
+            if needed1 <= capacity-slide_lines1[-1] and needed2 <= capacity-slide_lines2[-1]:
+                # Both verses fit completely on the current slide
+                slide_lines1[-1] += needed1
+                slide_lines2[-1] += needed2
+            else:
+                # One or both verses overflow the current slide
+                slides_needed1 = math.ceil((needed1+slide_lines1[-1])/capacity)
+                slides_needed2 = math.ceil((needed2+slide_lines2[-1])/capacity)
+                if slides_needed1 >= slides_needed2:
+                    self.process_overflow(slide_lines1, slide_lines2, 
+                        slides_needed1, needed1, needed2, capacity)
+                else:
+                    self.process_overflow(slide_lines2, slide_lines1, 
+                        slides_needed2, needed2, needed1, capacity)
+                # Sync check: slide_lines1 and slide_lines2 have same length
+                if len(slide_lines1) < len(slide_lines2):
+                    while len(slide_lines1) < len(slide_lines2):
+                        slide_lines1.append(0)
+                if len(slide_lines2) < len(slide_lines1):
+                    while len(slide_lines2) < len(slide_lines1):
+                        slide_lines2.append(0)
+            # End of slide encountered?
+            if slide_lines1[-1] == capacity or slide_lines2[-1] == capacity:
+                # Put start of next verse on new slide
+                slide_lines1.append(0)
+                slide_lines2.append(0)
+        slides1 = []
+        slide_idx1 = 0
+        for i in slide_lines1:
+            slides1.append(' '.join(lines1[slide_idx1:slide_idx1+i]))
+            slide_idx1 += i
+        slides2 = []
+        slide_idx2 = 0
+        for i in slide_lines2:
+            slides2.append(' '.join(lines2[slide_idx2:slide_idx2+i]))
+            slide_idx2 += i
+        self.slides = slides1
+        self.interlinear_slides = slides2
+        self.interlinear_version = version2
 
     @classmethod
     def get_books(cls, version, versions):
@@ -514,8 +638,8 @@ class BiblePassage():
             raise InvalidVersionError(dest_version)
         bible_db, cursor = BiblePassage.db_connect(src_version)
         cursor.execute('''
-            SELECT v.id, v.book_id, v.chapter, v.verse
-            FROM verse AS v
+            SELECT v.id, b.name, v.chapter, v.verse
+            FROM verse AS v INNER JOIN book AS b ON v.book_id = b.id
             WHERE v.id = {id}
         '''.format(id=src_id))
         old_verse = cursor.fetchone()
@@ -525,8 +649,8 @@ class BiblePassage():
         bible_db, cursor = BiblePassage.db_connect(dest_version)
         cursor.execute('''
             SELECT v.id
-            FROM verse AS v
-            WHERE v.book_id = {bk} AND v.chapter = {ch} AND v.verse = {vs}
+            FROM verse AS v INNER JOIN book AS b ON v.book_id = b.id
+            WHERE b.name LIKE "{bk}" AND v.chapter = {ch} AND v.verse = {vs}
         '''.format(bk=old_verse[1], ch=old_verse[2], vs=old_verse[3]))
         new_result = cursor.fetchone()
         if not new_result:

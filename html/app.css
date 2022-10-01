@@ -162,6 +162,32 @@ input {
   display: none;
 }
 
+#bible_controls {
+  padding-left: 1em;
+  padding-right: 1em;
+  display: none;
+}
+
+#bible_controls .radio_toggle_group {
+  justify-content: right;
+}
+
+#bible_controls .radio_toggle_group input + label {
+  height: 2em;
+}
+
+#bible_controls span {
+  padding-right: 1em;
+  font-size: 0.85rem;
+}
+
+#b_main_version_radios {
+  padding-bottom: 0.5em;
+}
+#b_alt_version_radios {
+  padding-bottom: 1em;
+}
+
 .playback_buttons {
   display: flex;
   gap: 0.5em;

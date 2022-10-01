@@ -2,6 +2,7 @@ let websocket;
 const MAX_LIST_ITEMS = 50;
 const MAX_VERSE_ITEMS = 2500;
 const SELECTED_COLOR = "gold";
+let saved_current_item = null;
 let service_sort_start;
 let editing_song_id;
 let action_after_save;
@@ -25,9 +26,11 @@ const DOM_KEYS = [
   "cd_time", "time_seek", "ghost_text", "drag_ghost",
   "song_list", "passage_list", "service_list", "presentation_list",
   "video_list", "loop_list", "background_list", "b_version_radios",
+  "b_main_version_radios", "b_alt_version_radios", "bible_controls",
   "e_title", "e_author", "e_book", "e_number", "e_audio", "e_copyright", "e_lyrics",
   "e_order", "e_transpose", "e_transpose_out", "e_title_span",
   "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
+  "il_width", "il_width_out", "il_font_size", "il_font_size_out", "il_lines", "il_lines_out",
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
   "cd_top", "cd_top_out", "cd_text", "d_copyright", "cp_size", "cp_size_out",
   "cp_width", "cp_width_out", "d_verseorder", "vo_size", "vo_size_out",
@@ -49,6 +52,9 @@ style_dict["cp_size"] = "copy-size-vh";
 style_dict["cp_width"] = "copy-width-vw";
 style_dict["vo_size"] = "order-size-vh";
 style_dict["vo_width"] = "order-width-vw";
+style_dict["il_width"] = "il-width-vw";
+style_dict["il_font_size"] = "il-font-size-vh";
+style_dict["il_lines"] = "il-max-lines";
 
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
 icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
@@ -562,6 +568,7 @@ function toggle_display_state() {
 }
 
 function display_current_item(current_item, slide_index) {
+  saved_current_item = current_item;
   DOM_dict["current_item_icon"].setAttribute("src", icon_dict[current_item.type]);
   DOM_dict["current_item_name"].innerHTML = current_item.title;
 
@@ -600,6 +607,14 @@ function display_current_item(current_item, slide_index) {
     DOM_dict["presentation_controls"].style.display = "none";
   }
 
+  if (current_item.type == "bible") {
+    DOM_dict["bible_controls"].style.display = "block";
+    // Indicate current version and, if applicable, interlinear version
+    indicate_bible_versions(current_item.version, current_item.interlinear_version);
+  } else {
+    DOM_dict["bible_controls"].style.display = "none";
+  }
+
   let item_list = "";
   let slide_text = "";
   for (const [idx, slide] of current_item.slides.entries()) {
@@ -630,6 +645,27 @@ function display_current_item(current_item, slide_index) {
 
   // Indicate selection of slide_index
   indicate_current_slide(slide_index);
+}
+
+function indicate_bible_versions(version, il_version) {
+  document.querySelectorAll("#b_main_version_radios input").forEach((elt) => {
+    elt.checked = false;
+  });
+  document
+    .querySelectorAll("#b_main_version_radios input[data-bv='" + version + "']")
+    .forEach((elt) => {
+      elt.checked = true;
+    });
+  document.querySelectorAll("#b_alt_version_radios input").forEach((elt) => {
+    elt.checked = false;
+  });
+  if (il_version != "") {
+    document
+      .querySelectorAll("#b_alt_version_radios input[data-bv='" + il_version + "']")
+      .forEach((elt) => {
+        elt.checked = true;
+      });
+  }
 }
 
 function indicate_current_slide(slide_index) {
@@ -683,6 +719,12 @@ function update_style_sliders(style) {
   DOM_dict["s_lines_out"].value = style[style_dict["s_lines"]];
   DOM_dict["s_margin"].value = style[style_dict["s_margin"]];
   DOM_dict["s_margin_out"].value = style[style_dict["s_margin"]];
+  DOM_dict["il_width"].value = style[style_dict["il_width"]];
+  DOM_dict["il_width_out"].value = style[style_dict["il_width"]];
+  DOM_dict["il_font_size"].value = style[style_dict["il_font_size"]];
+  DOM_dict["il_font_size_out"].value = style[style_dict["il_font_size"]];
+  DOM_dict["il_lines"].value = style[style_dict["il_lines"]];
+  DOM_dict["il_lines_out"].value = style[style_dict["il_lines"]];
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {
     elt.checked = false;
   });
@@ -1205,14 +1247,25 @@ function result_all_services(json_data) {
 
 function result_bible_versions(json_data) {
   let radios_html = "";
+  let radios_main_html = "<span>Primary version:</span>";
+  let radios_alt_html = "<span>Parallel version:</span>";
   for (const [idx, version] of json_data.params.versions.entries()) {
     radios_html += '<input type="radio" name="b_version" id="b_version_' + idx;
+    radios_main_html += '<input type="radio" name="b_main_version" id="b_main_version_' + idx;
+    radios_alt_html += '<input type="checkbox" name="b_alt_version" id="b_alt_version_' + idx;
     radios_html += '" data-bv="' + version + '" data-role="none"/>';
+    radios_main_html += '" data-bv="' + version + '" data-role="none"/>';
+    radios_alt_html += '" data-bv="' + version + '" data-role="none"/>';
     radios_html += '<label for="b_version_' + idx + '">' + version + "</label>";
+    radios_main_html += '<label for="b_main_version_' + idx + '">' + version + "</label>";
+    radios_alt_html += '<label for="b_alt_version_' + idx + '">' + version + "</label>";
   }
   DOM_dict["b_version_radios"].innerHTML = radios_html;
+  DOM_dict["b_main_version_radios"].innerHTML = radios_main_html;
+  DOM_dict["b_alt_version_radios"].innerHTML = radios_alt_html;
+
   document.querySelector('input[name="b_version"]:first-of-type').checked = true;
-  // Attach event listener
+  // Attach event listeners
   document.querySelectorAll('input[name="b_version"]').forEach((elt) => {
     elt.addEventListener("change", (e) => {
       if (
@@ -1224,6 +1277,47 @@ function result_bible_versions(json_data) {
       }
     });
   });
+  document.querySelectorAll('input[name="b_main_version"]').forEach((elt) => {
+    elt.addEventListener("change", (e) => {
+      new_version = document
+        .querySelector("input[name=b_main_version]:checked")
+        .getAttribute("data-bv");
+      console.log(new_version);
+      websocket.send(
+        JSON.stringify({
+          action: "command.change-bible-version",
+          params: {
+            version: new_version,
+          },
+        })
+      );
+    });
+  });
+  document.querySelectorAll('input[name="b_alt_version"]').forEach((elt) => {
+    elt.addEventListener("change", (e) => {
+      new_version = e.target.getAttribute("data-bv");
+      if (e.target.checked) {
+        websocket.send(
+          JSON.stringify({
+            action: "command.change-bible-il-version",
+            params: {
+              version: new_version,
+            },
+          })
+        );
+      } else {
+        websocket.send(
+          JSON.stringify({
+            action: "command.remove-bible-il-version",
+            params: {},
+          })
+        );
+      }
+    });
+  });
+  if (saved_current_item != null && saved_current_item.type == "bible") {
+    indicate_bible_versions(saved_current_item.version, saved_current_item.interlinear_version);
+  }
 }
 
 function trigger_play_video() {

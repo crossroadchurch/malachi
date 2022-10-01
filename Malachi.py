@@ -45,6 +45,7 @@ if __name__ == "__main__":
         filemode='a'
         )
     log = logging.getLogger('malachi')
+    logging.raiseExceptions = False;
     sys.stdout = StreamToLogger(log,logging.INFO)
     sys.stderr = StreamToLogger(log,logging.ERROR)
 
