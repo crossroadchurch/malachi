@@ -62,6 +62,12 @@ def patch_malachi():
     shutil.rmtree('./html')
     shutil.copytree(UPDATE_BASE + '/html', './html')
 
+    # Patching Bibles
+    print("Patching Bibles ...")
+    for obj in os.listdir(UPDATE_BASE + "/data"):
+        if obj.endswith(".sqlite") and obj not in ['songs.sqlite']:
+            file_util.copy_file(UPDATE_BASE + "/data/" + obj, "./data/" + obj)
+
     # Patch content drop-off directories, keeping user generated files
     for obj in os.listdir(UPDATE_BASE):
         if os.path.isdir(UPDATE_BASE + "/" + obj) and obj not in ['data', 'html', 'src']:

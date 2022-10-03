@@ -9,34 +9,33 @@ Provide custom Exception classes for Malachi.
 class InvalidVersionError(Exception):
     """Indicate that a specified version of the Bible is not supported in Malachi"""
     def __init__(self, version):
-        self.msg = "%s is not a recognised Bible version" % version
+        self.msg = "An unrecognised Bible version was used: %s" % version
         super(InvalidVersionError, self).__init__(self.msg)
 
 class InvalidVerseIdError(Exception):
     """Indicate that a specified verse id does not exist in a version of the Bible"""
     def __init__(self, verse_id, version):
-        self.msg = "Could not find a verse with id {id} in the {vs} version of the Bible"\
+        self.msg = "Could not find a verse with this id in this version: {id}, {vs}"\
             .format(id=verse_id, vs=version)
         super(InvalidVerseIdError, self).__init__(self.msg)
 
 class MatchingVerseIdError(Exception):
     """Indicate that a verse in one version of the Bible could not be found in another version."""
     def __init__(self, verse_id, old_version, new_version):
-        self.msg = "Could not find a corresponding verse in the {nv} version of the Bible \
-            for the verse with id {id} in the {ov} version of the Bible"\
+        self.msg = "Could not find a matching verse when changing version: {id}, {ov}, {nv}"\
             .format(id=verse_id, ov=old_version, nv=new_version)
         super(MatchingVerseIdError, self).__init__(self.msg)
 
 class MalformedReferenceError(Exception):
     """Indicate that a Bible reference does not have the correct syntax"""
     def __init__(self, ref):
-        self.msg = "%s is not a valid form for a Bible reference" % ref
+        self.msg = "An invalid format for a Bible reference was used: %s" % ref
         super(MalformedReferenceError, self).__init__(self.msg)
 
 class UnknownReferenceError(Exception):
     """Indicate that a Bible reference does not exist in the current version of the Bible."""
     def __init__(self, verse_ref):
-        self.msg = "The reference {ref} does not exist in this version of the Bible"\
+        self.msg = "An unknown reference for this version of the Bible was used: {ref}"\
             .format(ref=verse_ref)
         super(UnknownReferenceError, self).__init__(self.msg)
 

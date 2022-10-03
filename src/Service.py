@@ -8,13 +8,15 @@
 
 import os
 import json
+from json import JSONDecodeError
 from zipfile import ZipFile
 from BiblePassage import BiblePassage
 from Song import Song
 from Presentation import Presentation
 from Video import Video
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError, \
-    UnspecifiedServiceUrl, MissingStyleParameterError
+    UnspecifiedServiceUrl, MissingStyleParameterError, InvalidVersionError, \
+    MalformedReferenceError, UnknownReferenceError
 
 class Service():
     """
@@ -274,8 +276,9 @@ class Service():
             if item["type"] == "bible":
                 if "version" in item and "start_id" in item and "end_id" in item:
                     try:
-                        self.add_item(BiblePassage(item["version"], \
-                            item["start_id"], item["end_id"], cur_style, bible_versions))
+                        b = BiblePassage(item["version"], \
+                            item["start_id"], item["end_id"], cur_style, bible_versions)
+                        self.add_item(b)
                     except MissingStyleParameterError as style_e:
                         raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                 else:
@@ -283,19 +286,22 @@ class Service():
             elif item["type"] == "song":
                 if "song_id" in item:
                     try:
-                        self.add_item(Song(item["song_id"], cur_style))
+                        s = Song(item["song_id"], cur_style)
+                        self.add_item(s)
                     except MissingStyleParameterError as style_e:
                         raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key: 'song_id'")
             elif item["type"] == "video":
                 if "url" in item:
-                    self.add_item(Video(item["url"]))
+                    v = Video(item["url"])
+                    self.add_item(v)
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key: 'url'")
             elif item["type"] == "presentation":
                 if "url" in item:
-                    self.add_item(Presentation(item["url"]))
+                    p = Presentation(item["url"])
+                    self.add_item(p)
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key: 'url'")
         self.modified = False
@@ -320,7 +326,10 @@ class Service():
         with ZipFile(full_path, 'r') as z:
             if not 'manifest.json' in z.namelist():
                 raise MalformedServiceFileError(full_path, "Missing service manifest")
-            json_data = json.loads(z.read('manifest.json').decode('utf-8'))
+            try:
+                json_data = json.loads(z.read('manifest.json').decode('utf-8'))
+            except JSONDecodeError as e:
+                raise MalformedServiceFileError(full_path, "Service file couldn't be decoded")
         if "items" not in json_data:
             raise MalformedServiceFileError(full_path, "Missing key: 'items'")
         self.items = []
@@ -331,28 +340,37 @@ class Service():
             if item["type"] == "bible":
                 if "version" in item and "ref" in item:
                     try:
-                        self.add_item(BiblePassage.import_from_JSON(
-                            item, cur_style, bible_versions))
+                        b = BiblePassage.import_from_JSON(item, cur_style, bible_versions)
+                        self.add_item(b)
                     except MissingStyleParameterError as style_e:
                         raise MissingStyleParameterError(style_e.msg[42:]) from style_e
+                    except InvalidVersionError as inv_e:
+                        raise InvalidVersionError(inv_e.msg[40:]) from inv_e
+                    except MalformedReferenceError as mal_e:
+                        raise MalformedReferenceError(mal_e.msg[50:]) from mal_e
+                    except UnknownReferenceError as un_e:
+                        raise UnknownReferenceError(un_e.msg[61:]) from un_e
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key for Bible passage")
             elif item["type"] == "song":
                 if "title" in item and "lyrics_chords" in item and "verse_order" in item:
                     try:
-                        self.add_item(Song.import_from_JSON(item, cur_style))
+                        s = Song.import_from_JSON(item, cur_style)
+                        self.add_item(s)
                     except MissingStyleParameterError as style_e:
                         raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key(s) for Song")
             elif item["type"] == "video":
                 if "url" in item:
-                    self.add_item(Video.import_from_JSON(item, full_path))
+                    v = Video.import_from_JSON(item, full_path)
+                    self.add_item(v)
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key: 'url'")
             elif item["type"] == "presentation":
                 if "url" in item:
-                    self.add_item(Presentation.import_from_JSON(item, full_path))
+                    p = Presentation.import_from_JSON(item, full_path)
+                    self.add_item(p)
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key: 'url'")
         self.modified = False

@@ -30,7 +30,7 @@ const DOM_KEYS = [
   "e_title", "e_author", "e_book", "e_number", "e_audio", "e_copyright", "e_lyrics",
   "e_order", "e_transpose", "e_transpose_out", "e_title_span",
   "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
-  "il_width", "il_width_out", "il_font_size", "il_font_size_out", "il_lines", "il_lines_out",
+  "pl_width", "pl_width_out", "pl_font_size", "pl_font_size_out", "pl_lines", "pl_lines_out",
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
   "cd_top", "cd_top_out", "cd_text", "d_copyright", "cp_size", "cp_size_out",
   "cp_width", "cp_width_out", "d_verseorder", "vo_size", "vo_size_out",
@@ -52,9 +52,9 @@ style_dict["cp_size"] = "copy-size-vh";
 style_dict["cp_width"] = "copy-width-vw";
 style_dict["vo_size"] = "order-size-vh";
 style_dict["vo_width"] = "order-width-vw";
-style_dict["il_width"] = "il-width-vw";
-style_dict["il_font_size"] = "il-font-size-vh";
-style_dict["il_lines"] = "il-max-lines";
+style_dict["pl_width"] = "pl-width-vw";
+style_dict["pl_font_size"] = "pl-font-size-vh";
+style_dict["pl_lines"] = "pl-max-lines";
 
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
 icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
@@ -609,8 +609,8 @@ function display_current_item(current_item, slide_index) {
 
   if (current_item.type == "bible") {
     DOM_dict["bible_controls"].style.display = "block";
-    // Indicate current version and, if applicable, interlinear version
-    indicate_bible_versions(current_item.version, current_item.interlinear_version);
+    // Indicate current version and, if applicable, parallel version
+    indicate_bible_versions(current_item.version, current_item.parallel_version);
   } else {
     DOM_dict["bible_controls"].style.display = "none";
   }
@@ -647,7 +647,7 @@ function display_current_item(current_item, slide_index) {
   indicate_current_slide(slide_index);
 }
 
-function indicate_bible_versions(version, il_version) {
+function indicate_bible_versions(version, pl_version) {
   document.querySelectorAll("#b_main_version_radios input").forEach((elt) => {
     elt.checked = false;
   });
@@ -659,9 +659,9 @@ function indicate_bible_versions(version, il_version) {
   document.querySelectorAll("#b_alt_version_radios input").forEach((elt) => {
     elt.checked = false;
   });
-  if (il_version != "") {
+  if (pl_version != "") {
     document
-      .querySelectorAll("#b_alt_version_radios input[data-bv='" + il_version + "']")
+      .querySelectorAll("#b_alt_version_radios input[data-bv='" + pl_version + "']")
       .forEach((elt) => {
         elt.checked = true;
       });
@@ -693,8 +693,9 @@ function indicate_current_slide(slide_index) {
     const window_height = window.innerHeight;
     if (item_top < viewable_top) {
       DOM_dict["current_item"].scrollTop = item_top - list_top;
-    } else if (item_top + item_height > window_height) {
-      DOM_dict["current_item"].scrollTop = 8 + scroll_top + item_top + item_height - window_height;
+    } else if (item_top + item_height > 0.9 * window_height) {
+      DOM_dict["current_item"].scrollTop =
+        8 + scroll_top + item_top + item_height - 0.9 * window_height;
     }
   }
 }
@@ -719,12 +720,12 @@ function update_style_sliders(style) {
   DOM_dict["s_lines_out"].value = style[style_dict["s_lines"]];
   DOM_dict["s_margin"].value = style[style_dict["s_margin"]];
   DOM_dict["s_margin_out"].value = style[style_dict["s_margin"]];
-  DOM_dict["il_width"].value = style[style_dict["il_width"]];
-  DOM_dict["il_width_out"].value = style[style_dict["il_width"]];
-  DOM_dict["il_font_size"].value = style[style_dict["il_font_size"]];
-  DOM_dict["il_font_size_out"].value = style[style_dict["il_font_size"]];
-  DOM_dict["il_lines"].value = style[style_dict["il_lines"]];
-  DOM_dict["il_lines_out"].value = style[style_dict["il_lines"]];
+  DOM_dict["pl_width"].value = style[style_dict["pl_width"]];
+  DOM_dict["pl_width_out"].value = style[style_dict["pl_width"]];
+  DOM_dict["pl_font_size"].value = style[style_dict["pl_font_size"]];
+  DOM_dict["pl_font_size_out"].value = style[style_dict["pl_font_size"]];
+  DOM_dict["pl_lines"].value = style[style_dict["pl_lines"]];
+  DOM_dict["pl_lines_out"].value = style[style_dict["pl_lines"]];
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {
     elt.checked = false;
   });
@@ -1299,7 +1300,7 @@ function result_bible_versions(json_data) {
       if (e.target.checked) {
         websocket.send(
           JSON.stringify({
-            action: "command.change-bible-il-version",
+            action: "command.change-bible-pl-version",
             params: {
               version: new_version,
             },
@@ -1308,7 +1309,7 @@ function result_bible_versions(json_data) {
       } else {
         websocket.send(
           JSON.stringify({
-            action: "command.remove-bible-il-version",
+            action: "command.remove-bible-pl-version",
             params: {},
           })
         );
@@ -1316,7 +1317,7 @@ function result_bible_versions(json_data) {
     });
   });
   if (saved_current_item != null && saved_current_item.type == "bible") {
-    indicate_bible_versions(saved_current_item.version, saved_current_item.interlinear_version);
+    indicate_bible_versions(saved_current_item.version, saved_current_item.parallel_version);
   }
 }
 
@@ -1527,6 +1528,20 @@ function start_websocket() {
         break;
       case "response.change-bible-version":
         json_toast_response(json_data, "Bible version changed", "Problem changing Bible version");
+        break;
+      case "response.change-bible-pl-version":
+        json_toast_response(
+          json_data,
+          "Parallel Bible version changed",
+          "Problem changing parallel Bible version"
+        );
+        break;
+      case "response.remove-bible-pl-version":
+        json_toast_response(
+          json_data,
+          "Parallel Bible version removed",
+          "Problem removing parallel Bible version"
+        );
         break;
       case "response.remove-item":
         json_toast_response(json_data, "Item removed", "Problem removing item");

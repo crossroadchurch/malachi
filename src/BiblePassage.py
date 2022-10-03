@@ -15,6 +15,7 @@ import sqlite3
 import json
 import re
 import math
+from tkinter import _EntryIndex
 from PIL import ImageFont
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError,\
     MalformedReferenceError, MissingStyleParameterError, MatchingVerseIdError,\
@@ -48,8 +49,8 @@ class BiblePassage():
         '''.format(s_id=self.start_id, e_id=self.end_id))
         verses = cursor.fetchall()
         self.slides = []
-        self.interlinear_slides = []
-        self.interlinear_version = ""
+        self.parallel_slides = []
+        self.parallel_version = ""
         self.parts = []
         for verse in verses:
             self.parts.append({
@@ -150,8 +151,8 @@ class BiblePassage():
                     vs2=end_verse,
                     ver=self.version)
         bible_db.close()
-        if self.interlinear_version != "":
-            ref = ref[:-1] + " + " + self.interlinear_version + ")"
+        if self.parallel_version != "":
+            ref = ref[:-1] + " + " + self.parallel_version + ")"
         return ref
 
     # pylint: disable=W0613 # capo is unused due to OOP coding of to_JSON method
@@ -165,8 +166,8 @@ class BiblePassage():
             "title":self.get_title(),
             "version":self.version,
             "slides":self.slides,
-            "interlinear_slides":self.interlinear_slides,
-            "interlinear_version":self.interlinear_version}, indent=2)
+            "parallel_slides":self.parallel_slides,
+            "parallel_version":self.parallel_version}, indent=2)
     # pylint: enable=W0613
 
     def __str__(self):
@@ -191,7 +192,6 @@ class BiblePassage():
             "ref": self.get_title()[:-(len(self.version)+3)]
         })
 
-    # TODO: Add exception handling for ref_search call
     @classmethod
     def import_from_JSON(cls, json_data, cur_style, versions):
         """
@@ -201,16 +201,24 @@ class BiblePassage():
 
         Precondition: json_data["type"] == "bible"
         """
-        verses = json.loads(BiblePassage.ref_search(json_data["version"], json_data["ref"], versions))
-        start_verse = verses[0][0]
-        end_verse = verses[-1][0]
-        return BiblePassage(json_data["version"], start_verse, end_verse, cur_style, versions)
+        try:
+            verses = json.loads(BiblePassage.ref_search(json_data["version"], json_data["ref"], versions))
+            start_verse = verses[0][0]
+            end_verse = verses[-1][0]
+            return BiblePassage(json_data["version"], start_verse, end_verse, cur_style, versions)
+        except InvalidVersionError as e:
+            raise InvalidVersionError(json_data["version"])
+        except MalformedReferenceError as e:
+            raise MalformedReferenceError(json_data["ref"])
+        except UnknownReferenceError as e:
+            raise UnknownReferenceError(json_data["ref"])
+            
 
     def paginate_from_style(self, style):
         """Paginate the current BiblePassage based on the specified style.
 
         Arguments:
-        style -- the style options to be used (see paginate() for items required in this dict).
+        style -- the style options to be used (see paginate_to_lines() for items required in this dict).
 
         Possible exceptions:
         MissingStyleParameterError - raised if one or more style parameters have not been specified.
@@ -226,8 +234,8 @@ class BiblePassage():
             style["aspect-ratio"], style["font-size-vh"], style["div-width-vw"], style["font-file"])
         capacity = int(style["max-lines"])
         self.slides = []
-        self.interlinear_slides = []
-        self.interlinear_version = ""
+        self.parallel_slides = []
+        self.parallel_version = ""
         for i in range(math.ceil(len(lines)/capacity)):
             self.slides.append(' '.join(lines[capacity*i:capacity*(i+1)]))
 
@@ -248,7 +256,6 @@ class BiblePassage():
         font_size_calc = 40 # Arbitrary value chosen
         font_factor = font_size_px / font_size_calc
         div_width_px = window_width * int(div_width_vw) / 100
-        # font = ImageFont.truetype(font_file, math.ceil(font_size_px))
         font = ImageFont.truetype(font_file, font_size_calc)
         lines = []
         parts_refs_tags = ["<sup>" + v["short_ref"] + "</sup>" + v["data"] for v in passage.parts]
@@ -278,7 +285,12 @@ class BiblePassage():
 
     @classmethod
     def find_verse_starts(cls, lines):
-        # TODO: Add docstring
+        """
+        Return a list of the line indices in "lines" that contain the start of a verse.
+
+        Arguments:
+        lines -- a BiblePassage split into a list, each element being a paginated line of text.
+        """
         starts = []
         for count, line in enumerate(lines):
             if line.count("<sup>") > 0:
@@ -286,25 +298,45 @@ class BiblePassage():
         starts.append(len(lines))
         return starts
 
-    def interlinear_paginate_from_style(self, cur_style, version2, versions):
-        #TODO: Docstring
-        # Test for existance of necessary formatting keys within params
+    def parallel_paginate_from_style(self, style, version2, versions):
+        """Parallel paginate the current BiblePassage based on the specified style.
+
+        Arguments:
+        style -- the style options to be used (see parallel_paginate() for items required in this dict).
+        version2 -- the version to be used for the parallel translation
+        versions -- a list of the available Bible versions
+
+        Possible exceptions:
+        MissingStyleParameterError - raised if one or more style parameters have not been specified.
+        InvalidVersionError - raised if version2 is not a valid Bible version
+        InvalidVerseId - raised if either the start or end verse of the passage is invalid
+        MatchingVerseIdError - raised if either the start or end verse of the passage cannot be determined
+          in the new version.
+        """
         missing_params = []
-        for param in ["aspect-ratio", "il-font-size-vh", "il-width-vw", "il-max-lines", "font-file"]:
-            if param not in cur_style:
+        for param in ["aspect-ratio", "pl-font-size-vh", "pl-width-vw", "pl-max-lines", "font-file"]:
+            if param not in style:
                 missing_params.append(param)
         if missing_params:
             raise MissingStyleParameterError(', '.join(missing_params))
         # Create BiblePassage for version2
-        start_id2 = BiblePassage.translate_verse_id(self.start_id, self.version, version2, versions)
-        end_id2 = BiblePassage.translate_verse_id(self.end_id, self.version, version2, versions)
-        passage2 = BiblePassage(version2, start_id2, end_id2, cur_style, versions)
-        self.interlinear_paginate(passage2, version2, cur_style["aspect-ratio"], cur_style["il-font-size-vh"], 
-            cur_style["il-width-vw"], cur_style["il-max-lines"], cur_style["font-file"])
+        try:
+            start_id2 = BiblePassage.translate_verse_id(self.start_id, self.version, version2, versions)
+            end_id2 = BiblePassage.translate_verse_id(self.end_id, self.version, version2, versions)
+            passage2 = BiblePassage(version2, start_id2, end_id2, style, versions)
+            self.parallel_paginate(passage2, version2, style["aspect-ratio"], style["pl-font-size-vh"], 
+            style["pl-width-vw"], style["pl-max-lines"], style["font-file"])
+        except InvalidVersionError as e:
+            raise InvalidVersionError(e.msg[40:]) from e
+        except InvalidVerseIdError as e:
+            raise InvalidVerseIdError(e.msg[53:].split(", ")[0], e.msg[53:].split(", ")[1]) from e
+        except MatchingVerseIdError as e:
+            raise MatchingVerseIdError(e.msg[55:].split(", ")[0], 
+                e.msg[55:].split(", ")[1], e.msg[55:].split(", ")[2]) from e
 
     def process_overflow(self, s_lines1, s_lines2, s_needed, need1, need2, capacity):
         # Process slides where at least one translation overflows.
-        # The translation that needs the most slides is the first one (s_lines1, s_needed1, need1)
+        # The translation that needs the most slides is the first one (s_lines1, s_needed, need1)
         # Process translation that uses the most slides
         # Initial slide
         need1 -= (capacity - s_lines1[-1])
@@ -323,7 +355,6 @@ class BiblePassage():
                 verse_partition[i] = verse_partition[i]+1
         else:
             # Default verse partition would overflow first slide
-            # TODO: CHECK ASSUMPTION THAT THIS METHOD DOESN'T INCREASE NUMBER OF SLIDES NEEDED
             first2 = capacity - s_lines2[-1]
             need2 -= (capacity - s_lines2[-1])
             s_needed_a  = s_needed - 1
@@ -337,8 +368,18 @@ class BiblePassage():
         for i in range(1, len(verse_partition)):
             s_lines2.append(verse_partition[i])
 
-    def interlinear_paginate(self, passage2, version2, aspect_ratio, font_size_vh, div_width_vw, max_lines, font_file):
-        #TODO: Docstring
+    def parallel_paginate(self, passage2, version2, aspect_ratio, font_size_vh, div_width_vw, max_lines, font_file):
+        """Parallel paginate a BiblePassage based on the specified style options, updating self.slides and
+        self.parallel_slides with the paginated main and parallel translations respectively..
+
+        Arguments:
+        passage2 -- the parallel BiblePassage (self translated into version "version2")
+        version2 -- the Bible version used for passage2
+        aspect_ratio -- the output Screen aspect ratio (width / height).
+        font_size_vh -- the font size used for the parallel divs, given in vh units.
+        div_width_vw -- the width of the parallel divs in vw units.
+        font_file -- the URL of the font being used, relative to the root of Malachi.
+        """
         lines1 = BiblePassage.paginate_to_lines(self, aspect_ratio, font_size_vh, div_width_vw, font_file)
         lines2 = BiblePassage.paginate_to_lines(passage2, aspect_ratio, font_size_vh, div_width_vw, font_file)
         l_starts1 = BiblePassage.find_verse_starts(lines1)
@@ -385,8 +426,8 @@ class BiblePassage():
             slides2.append(' '.join(lines2[slide_idx2:slide_idx2+i]))
             slide_idx2 += i
         self.slides = slides1
-        self.interlinear_slides = slides2
-        self.interlinear_version = version2
+        self.parallel_slides = slides2
+        self.parallel_version = version2
 
     @classmethod
     def get_books(cls, version, versions):
@@ -477,6 +518,7 @@ class BiblePassage():
         Possible exceptions:
         InvalidVersionError -- raised if the specified version is not available.
         MalformedReferenceError -- raised if search_ref is not a valid verse reference.
+        UnknownReferenceError -- raised if search_ref is not found in the current version.
         """
         if not version in versions:
             raise InvalidVersionError(version)

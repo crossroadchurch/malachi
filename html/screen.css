@@ -62,7 +62,7 @@ body {
   text-align: center;
 }
 
-#il_columns {
+#pl_columns {
   position: fixed;
   top: 0;
   color: white;
@@ -74,14 +74,14 @@ body {
   text-align: center;
 }
 
-#il_left {
+#pl_left {
   position: fixed;
   top: 0;
   width: 40vw;
   margin-left: 5vw;
 }
 
-#il_right {
+#pl_right {
   position: fixed;
   top: 0;
   width: 40vw;

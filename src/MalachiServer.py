@@ -224,9 +224,9 @@ class MalachiServer():
                 "command.goto-item": [self.goto_item, ["index"]],
                 "command.add-bible-item": [self.add_bible_item, \
                                            ["version", "start-verse", "end-verse"]],
-                "command.change-bible-il-version": [self.change_bible_il_version, \
+                "command.change-bible-pl-version": [self.change_bible_pl_version, \
                                                     ["version"]],                      
-                "command.remove-bible-il-version": [self.remove_bible_il_version, []],                   
+                "command.remove-bible-pl-version": [self.remove_bible_pl_version, []],                   
                 "command.change-bible-version": [self.change_bible_version, ["version"]],
                 "command.add-song-item": [self.add_song_item, ["song-id"]],
                 "command.add-video": [self.add_video, ["url"]],
@@ -643,12 +643,13 @@ class MalachiServer():
         """
         status, details = "ok", ""
         try:
-            self.s.add_item(BiblePassage(
+            b = BiblePassage(
                 params["version"],
                 params["start-verse"],
                 params["end-verse"],
                 self.screen_style,
-                self.bible_versions))
+                self.bible_versions)
+            self.s.add_item(b)
         except InvalidVersionError as e:
             status, details = "invalid-version", e.msg
         except InvalidVerseIdError as e:
@@ -657,31 +658,33 @@ class MalachiServer():
             await self.server_response(websocket, "response.add-bible-item", status, details)
             await self.clients_service_items_update()
 
-    async def change_bible_il_version(self, websocket, params):
+    async def change_bible_pl_version(self, websocket, params):
         '''
-        Change the interlinear Bible version of the current item.
+        Change the parallel Bible version of the current item.
 
         Arguments:
-        params["version"] -- the neww interlinear Bible version.
+        params["version"] -- the new parallel Bible version.
         '''
         status, details = "ok", ""
         try:
             if self.s.get_current_item_type() == "BiblePassage":
-                self.s.items[self.s.item_index].interlinear_paginate_from_style(
+                self.s.items[self.s.item_index].parallel_paginate_from_style(
                     self.screen_style, params["version"], self.bible_versions)
             else:
                 status, details = "invalid-item", "Current item not a Bible passage"
         except InvalidVersionError as e:
             status, details = "invalid-version", e.msg
+        except InvalidVerseIdError as e:
+            status, details = "invalid-verse", e.msg
         except MatchingVerseIdError as e:
             status, details = "invalid-matching-verse", e.msg
         finally:
-            await self.server_response(websocket, "response.change-bible-il-version", status, details)
+            await self.server_response(websocket, "response.change-bible-pl-version", status, details)
             await self.clients_service_items_update()
 
-    async def remove_bible_il_version(self, websocket, params):
+    async def remove_bible_pl_version(self, websocket, params):
         '''
-        Remove the interlinear Bible version of the current item.
+        Remove the parallel Bible version of the current item.
         '''
         status, details = "ok", ""
         try:
@@ -690,7 +693,7 @@ class MalachiServer():
             else:
                 status, details = "invalid-item", "Current item not a Bible passage"
         finally:
-            await self.server_response(websocket, "response.remove-bible-il-version", status, details)
+            await self.server_response(websocket, "response.remove-bible-pl-version", status, details)
             await self.clients_service_items_update()
 
     async def change_bible_version(self, websocket, params):
@@ -759,7 +762,8 @@ class MalachiServer():
         """
         status, details = "ok", ""
         try:
-            self.s.add_item(Song(params["song-id"], self.screen_style))
+            s = Song(params["song-id"], self.screen_style)
+            self.s.add_item(s)
         except InvalidSongIdError as e:
             status, details = "invalid-song", e.msg
         finally:
@@ -775,7 +779,8 @@ class MalachiServer():
         """
         status, details = "ok", ""
         try:
-            self.s.add_item(Video(params["url"]))
+            v = Video(params["url"])
+            self.s.add_item(v)
         except InvalidVideoUrlError as e:
             status, details = "invalid-video", e.msg
         finally:
@@ -791,7 +796,8 @@ class MalachiServer():
         """
         status, details = "ok", ""
         try:
-            self.s.add_item(Presentation(params["url"]))
+            p = Presentation(params["url"])
+            self.s.add_item(p)
         except InvalidPresentationUrlError as e:
             status, details = "invalid-presentation", e.msg
         finally:
@@ -861,6 +867,15 @@ class MalachiServer():
             except MissingStyleParameterError as e:
                 self.s = Service()
                 status, details = "invalid-style", e.msg
+            except InvalidVersionError as e:
+                self.s = Service()
+                status, details = "invalid-version", e.msg
+            except MalformedReferenceError as e:
+                self.s = Service()
+                status, details = "malformed-reference", e.msg
+            except UnknownReferenceError as e:
+                self.s = Service()
+                status, details = "unknown-reference", e.msg
             finally:
                 await self.server_response(websocket, "response.load-service", status, details)
                 await self.clients_service_items_update()
@@ -914,12 +929,12 @@ class MalachiServer():
                     self.s.items[i].get_nonslide_data()
                     self.s.items[i].paginate_from_style(self.screen_style)
                 elif isinstance(self.s.items[i], BiblePassage):
-                    if self.s.items[i].interlinear_version == "":
+                    if self.s.items[i].parallel_version == "":
                         self.s.items[i].paginate_from_style(self.screen_style)
                     else:
-                        self.s.items[i].interlinear_paginate_from_style(
+                        self.s.items[i].parallel_paginate_from_style(
                             self.screen_style,
-                            self.s.items[i].interlinear_version,
+                            self.s.items[i].parallel_version,
                             self.bible_versions)
             await self.clients_service_items_update()
             self.save_settings()
@@ -1444,4 +1459,3 @@ class MalachiServer():
             raise MissingDataFilesError(missing_files)
         self.bible_versions = [f[:-7] for f in os.listdir('./data')
             if f.endswith('.sqlite') and f!='songs.sqlite']
-        print(self.bible_versions)

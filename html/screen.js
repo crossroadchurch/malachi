@@ -1,9 +1,7 @@
 let websocket;
 let current_item;
 let current_audio = "";
-let current_interlinear = false;
-let il_vh = 10;
-let div_vh = 10;
+let current_parallel = false;
 let loop_width = 0;
 let loop_height = 0;
 let loop_ar = 0;
@@ -24,7 +22,7 @@ const DOM_KEYS = [
   "video_item", "video_item_src", "loop_video", "loop_video_src",
   "countdown_p", "countdown_h", "countdown_area", "bg_image",
   "slide_area", "verseorder_area", "copyright_area",
-  "il_columns", "il_left", "il_right",
+  "pl_columns", "pl_left", "pl_right",
   "audio_item", "audio_item_src"
 ];
 
@@ -33,9 +31,9 @@ function display_current_slide(slide_index) {
   stop_running_video();
   let slide_text = "";
   let verseorder = "";
-  let il_left_text = "";
-  let il_right_text = "";
-  current_interlinear = false;
+  let pl_left_text = "";
+  let pl_right_text = "";
+  current_parallel = false;
   if (current_item.type == "song") {
     let slide_lines = current_slide.split(/\n/);
     verseorder = "<p>";
@@ -64,13 +62,13 @@ function display_current_slide(slide_index) {
     }
     verseorder += "</p>";
   } else if (current_item.type == "bible") {
-    if (current_item.interlinear_version == "") {
+    if (current_item.parallel_version == "") {
       slide_text = "<p>" + current_slide + "</p>";
-      current_interlinear = false;
+      current_parallel = false;
     } else {
-      il_left_text = "<p>" + current_slide + "</p>";
-      il_right_text = "<p>" + current_item.interlinear_slides[slide_index] + "</p>";
-      current_interlinear = true;
+      pl_left_text = "<p>" + current_slide + "</p>";
+      pl_right_text = "<p>" + current_item.parallel_slides[slide_index] + "</p>";
+      current_parallel = true;
     }
     verseorder = "<p></p>";
   } else if (current_item.type == "presentation") {
@@ -92,8 +90,8 @@ function display_current_slide(slide_index) {
     verseorder = "<p></p>";
   }
   DOM_dict["slide_area"].innerHTML = slide_text;
-  DOM_dict["il_left"].innerHTML = il_left_text;
-  DOM_dict["il_right"].innerHTML = il_right_text;
+  DOM_dict["pl_left"].innerHTML = pl_left_text;
+  DOM_dict["pl_right"].innerHTML = pl_right_text;
   DOM_dict["verseorder_area"].innerHTML = verseorder;
   if (current_item.copyright) {
     DOM_dict["copyright_area"].innerHTML = "<p>" + current_item.copyright + "</p>";
@@ -106,8 +104,8 @@ function display_current_slide(slide_index) {
 function clear_current_slide() {
   stop_running_video();
   DOM_dict["slide_area"].innerHTML = "";
-  DOM_dict["il_left"].innerHTML = "";
-  DOM_dict["il_right"].innerHTML = "";
+  DOM_dict["pl_left"].innerHTML = "";
+  DOM_dict["pl_right"].innerHTML = "";
 }
 
 function update_optional_areas() {
@@ -172,35 +170,33 @@ function resize_loop() {
 
 function update_from_style(style) {
   const div_width = style["div-width-vw"];
-  const col_width = style["il-width-vw"];
+  const col_width = style["pl-width-vw"];
   DOM_dict["slide_area"].style.width = div_width + "vw";
-  DOM_dict["il_left"].style.width = col_width + "vw";
-  DOM_dict["il_right"].style.width = col_width + "vw";
+  DOM_dict["pl_left"].style.width = col_width + "vw";
+  DOM_dict["pl_right"].style.width = col_width + "vw";
   DOM_dict["slide_area"].style.marginLeft = (100 - div_width) / 2 + "vw";
-  DOM_dict["il_left"].style.marginLeft = (50 - col_width) / 2 + "vw";
-  DOM_dict["il_right"].style.marginLeft = 50 + (50 - col_width) / 2 + "vw";
+  DOM_dict["pl_left"].style.marginLeft = (50 - col_width) / 2 + "vw";
+  DOM_dict["pl_right"].style.marginLeft = 50 + (50 - col_width) / 2 + "vw";
   DOM_dict["slide_area"].style.marginTop = style["margin-top-vh"] + "vh";
-  DOM_dict["il_columns"].style.marginTop = style["margin-top-vh"] + "vh";
-  div_vh = style["font-size-vh"];
-  il_vh = style["il-font-size-vh"];
+  DOM_dict["pl_columns"].style.marginTop = style["margin-top-vh"] + "vh";
   DOM_dict["slide_area"].style.fontSize = style["font-size-vh"] + "vh";
-  DOM_dict["il_columns"].style.fontSize = style["il-font-size-vh"] + "vh";
+  DOM_dict["pl_columns"].style.fontSize = style["pl-font-size-vh"] + "vh";
   DOM_dict["slide_area"].style.color = "#" + style["font-color"];
   if (style["outline-style"] == "drop-shadow") {
     DOM_dict["slide_area"].classList.remove("outline");
     DOM_dict["slide_area"].classList.add("drop_shadow");
-    DOM_dict["il_columns"].classList.remove("outline");
-    DOM_dict["il_columns"].classList.add("drop_shadow");
+    DOM_dict["pl_columns"].classList.remove("outline");
+    DOM_dict["pl_columns"].classList.add("drop_shadow");
   } else if (style["outline-style"] == "text-outline") {
     DOM_dict["slide_area"].classList.add("outline");
     DOM_dict["slide_area"].classList.remove("drop_shadow");
-    DOM_dict["il_columns"].classList.add("outline");
-    DOM_dict["il_columns"].classList.remove("drop_shadow");
+    DOM_dict["pl_columns"].classList.add("outline");
+    DOM_dict["pl_columns"].classList.remove("drop_shadow");
   } else {
     DOM_dict["slide_area"].classList.remove("outline");
     DOM_dict["slide_area"].classList.remove("drop_shadow");
-    DOM_dict["il_columns"].classList.add("outline");
-    DOM_dict["il_columns"].classList.remove("drop_shadow");
+    DOM_dict["pl_columns"].classList.add("outline");
+    DOM_dict["pl_columns"].classList.remove("drop_shadow");
   }
   DOM_dict["countdown_p"].style.fontSize = style["countdown-size-vh"] + "vh";
   DOM_dict["countdown_h"].style.fontSize = style["countdown-h-size-vh"] + "vh";
@@ -318,11 +314,11 @@ function update_display_init(json_data) {
   if (json_data.params.screen_state == "on") {
     screen_state = true;
     DOM_dict["slide_area"].style.display = "block";
-    DOM_dict["il_columns"].style.display = "block";
+    DOM_dict["pl_columns"].style.display = "block";
   } else {
     screen_state = false;
     DOM_dict["slide_area"].style.display = "none";
-    DOM_dict["il_columns"].style.display = "none";
+    DOM_dict["pl_columns"].style.display = "none";
   }
   update_optional_areas();
 }
@@ -350,11 +346,11 @@ function update_display_state(json_data) {
     screen_state = true;
     stop_countdown();
     DOM_dict["slide_area"].style.display = "block";
-    DOM_dict["il_columns"].style.display = "block";
+    DOM_dict["pl_columns"].style.display = "block";
   } else {
     screen_state = false;
     DOM_dict["slide_area"].style.display = "none";
-    DOM_dict["il_columns"].style.display = "none";
+    DOM_dict["pl_columns"].style.display = "none";
   }
   update_optional_areas();
 }
