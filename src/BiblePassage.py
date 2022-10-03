@@ -15,7 +15,6 @@ import sqlite3
 import json
 import re
 import math
-from tkinter import _EntryIndex
 from PIL import ImageFont
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError,\
     MalformedReferenceError, MissingStyleParameterError, MatchingVerseIdError,\
