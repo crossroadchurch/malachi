@@ -278,6 +278,8 @@ class Service():
                     try:
                         b = BiblePassage(item["version"], \
                             item["start_id"], item["end_id"], cur_style, bible_versions)
+                        if "parallel_version" in item and item["parallel_version"] != "":
+                            b.parallel_paginate_from_style(cur_style, item["parallel_version"], bible_versions)
                         self.add_item(b)
                     except MissingStyleParameterError as style_e:
                         raise MissingStyleParameterError(style_e.msg[42:]) from style_e

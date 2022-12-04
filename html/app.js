@@ -1283,7 +1283,6 @@ function result_bible_versions(json_data) {
       new_version = document
         .querySelector("input[name=b_main_version]:checked")
         .getAttribute("data-bv");
-      console.log(new_version);
       websocket.send(
         JSON.stringify({
           action: "command.change-bible-version",

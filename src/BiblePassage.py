@@ -177,6 +177,7 @@ class BiblePassage():
         return json.dumps({
             "type": "bible",
             "version": self.version,
+            "parallel_version": self.parallel_version,
             "start_id": self.start_id,
             "end_id": self.end_id})
 
@@ -204,7 +205,10 @@ class BiblePassage():
             verses = json.loads(BiblePassage.ref_search(json_data["version"], json_data["ref"], versions))
             start_verse = verses[0][0]
             end_verse = verses[-1][0]
-            return BiblePassage(json_data["version"], start_verse, end_verse, cur_style, versions)
+            passage = BiblePassage(json_data["version"], start_verse, end_verse, cur_style, versions)
+            if "parallel_version" in json_data and json_data["parallel_version"] != "":
+                passage.parallel_paginate_from_style(cur_style, json_data["parallel_version"], versions)
+            return passage
         except InvalidVersionError as e:
             raise InvalidVersionError(json_data["version"])
         except MalformedReferenceError as e:

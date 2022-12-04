@@ -234,6 +234,7 @@ class MalachiServer():
                 "command.remove-item": [self.remove_item, ["index"]],
                 "command.move-item": [self.move_item, ["from-index", "to-index"]],
                 "command.set-display-state": [self.set_display_state, ["state"]],
+                "command.toggle-display-state": [self.toggle_display_state, []],
                 "command.new-service": [self.new_service, ["force"]],
                 "command.load-service": [self.load_service, ["filename", "force"]],
                 "command.save-service": [self.save_service, []],
@@ -817,6 +818,20 @@ class MalachiServer():
         })
         await self.server_response(websocket, "response.set-display-state", "ok", "")
 
+    async def toggle_display_state(self, websocket, params):
+        """
+        Toggle the current display state and send update to appropriate clients.
+        """
+        if self.screen_state == "on":
+            new_state = "off"
+        else:
+            new_state = "on"
+        self.screen_state = new_state
+        await self.broadcast(self.DISPLAY_STATE_SOCKETS, "update.display-state", {
+            "state": new_state
+        })
+        await self.server_response(websocket, "response.toggle-display-state", "ok", "")
+        
     async def new_service(self, websocket, params):
         """
         Start a new Service and send update to appropriate clients.
