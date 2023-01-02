@@ -1551,6 +1551,9 @@ function start_websocket() {
       case "response.start-capture":
         json_toast_response(json_data, "Capturing started", "Problem starting capture");
         break;
+      case "response.start-presentation":
+        json_toast_response(json_data, "Starting presentation...", "Problem starting presentation");
+        break;
       case "update.video-loop":
       case "update.capture-update":
       case "update.start-capture":
@@ -1569,7 +1572,6 @@ function start_websocket() {
       case "response.play-audio":
       case "response.pause-audio":
       case "response.stop-audio":
-      case "response.start-presentation":
       case "response.edit-style-param":
       case "response.edit-style-params":
       case "response.change-capture-rate":

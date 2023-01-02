@@ -16,6 +16,7 @@ import json
 from json.decoder import JSONDecodeError
 import os
 import re
+import shutil
 import subprocess
 from websockets.exceptions import ConnectionClosed
 import cv2
@@ -1148,11 +1149,15 @@ class MalachiServer():
         """Call LibreOffice to start the presentation of the current service item."""
         status, details = "ok", ""
         if self.s.get_current_item_type() == "Presentation":
-            # Suspend any running loop
-            await self.broadcast(self.MEDIA_SOCKETS, "trigger.suspend-loop", {})
-            # Start presentation in LibreOffice
-            url = self.s.items[self.s.item_index].get_url()
-            subprocess.Popen(['soffice', '--show', url])
+            # Check that soffice is accessible
+            if shutil.which('soffice') is None:
+                status, details = "no-soffice", "Couldn't access LibreOffice, please check Malachi installation instructions for more details"
+            else:
+                # Suspend any running loop
+                await self.broadcast(self.MEDIA_SOCKETS, "trigger.suspend-loop", {})
+                # Start presentation in LibreOffice
+                url = self.s.items[self.s.item_index].get_url()
+                subprocess.Popen(['soffice', '--show', url])
         else:
             status, details = "invalid-item", "Current service item is not a presentation"
         await self.server_response(websocket, "response.start-presentation", status, details)
