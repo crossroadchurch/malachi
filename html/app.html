@@ -245,8 +245,11 @@
 
         <div id="styles_element" class="element_panel">
           <h3>Settings</h3>
-          <h4 class="style_header">Main area</h4>
-          <div class="style_group">
+          <div id="sh_mainarea" class="ml_row style_header">
+            <div class="sl_text">Main area</div>
+            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('mainarea')"></a>
+          </div>
+          <div id="sg_mainarea" class="style_group">
             <div class="mi_range">
               <label for="s_width">Song area width (% of screen):</label>
               <input
@@ -313,8 +316,11 @@
               <label for="o_style_3">None</label>
             </div>
           </div>
-          <h4 class="style_header">Parallel Bible passages</h4>
-          <div class="style_group">
+          <div id="sh_parallel" class="ml_row style_header">
+            <div class="sl_text">Parallel Bible passages</div>
+            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('parallel')"></a>
+          </div>
+          <div id="sg_parallel" class="style_group">
             <div class="mi_range">
               <label for="pl_width">Column width (% of screen):</label>
               <input
@@ -355,8 +361,11 @@
               <output id="pl_lines_out"></output>
             </div>
           </div>
-          <h4 class="style_header">Countdowns</h4>
-          <div class="style_group">
+          <div id="sh_countdowns" class="ml_row style_header">
+            <div class="sl_text">Countdowns</div>
+            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('countdowns')"></a>
+          </div>
+          <div id="sg_countdowns" class="style_group">
             <div class="mi_range">
               <label for="ch_size">Header font size (% of screen height):</label>
               <input
@@ -401,8 +410,11 @@
               <output id="cd_top_out"></output>
             </div>
           </div>
-          <h4 class="style_header">Copyright area</h4>
-          <div class="style_group">
+          <div id="sh_copyright" class="ml_row style_header">
+            <div class="sl_text">Copyright area</div>
+            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('copyright')"></a>
+          </div>
+          <div id="sg_copyright" class="style_group">
             <div class="mi_toggle_div">
               <span>Display copyright:</span>
               <div class="mi_toggle">
@@ -437,8 +449,11 @@
               <output id="cp_width_out"></output>
             </div>
           </div>
-          <h4 class="style_header">Verse order area</h4>
-          <div class="style_group">
+          <div id="sh_verseorder" class="ml_row style_header">
+            <div class="sl_text">Verse order area</div>
+            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('verseorder')"></a>
+          </div>
+          <div id="sg_verseorder" class="style_group">
             <div class="mi_toggle_div">
               <span>Display verse order:</span>
               <div class="mi_toggle">
@@ -473,7 +488,7 @@
               <output id="vo_width_out"></output>
             </div>
           </div>
-          <h4 class="style_header">About Malachi</h4>
+          <h4>About Malachi</h4>
           <p>
             Malachi is open-source software, released under a
             <a href="https://www.gnu.org/licenses/gpl-3.0-standalone.html" target="_blank"

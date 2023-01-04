@@ -909,6 +909,17 @@ function load_element(short_elt) {
   document.getElementById(short_elt + "_elt_button").classList.add("active_element");
 }
 
+function expand_section(short_elt) {
+  document.querySelectorAll(".style_header").forEach((elt) => {
+    elt.classList.remove("style_header_expanded");
+  });
+  document.querySelectorAll(".style_group").forEach((elt) => {
+    elt.classList.remove("style_group_expanded");
+  });
+  document.getElementById("sh_" + short_elt).classList.add("style_header_expanded");
+  document.getElementById("sg_" + short_elt).classList.add("style_group_expanded");
+}
+
 function drag_start(event) {
   const drag_target = event.target;
   if (event.target.tagName == "IMG") {
