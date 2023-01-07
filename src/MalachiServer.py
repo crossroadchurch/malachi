@@ -259,6 +259,8 @@ class MalachiServer():
                 "command.stop-presentation": [self.stop_presentation, []],
                 "command.next-presentation-slide": [self.next_presentation_slide, []],
                 "command.prev-presentation-slide": [self.prev_presentation_slide, []],
+                "command.generic-play": [self.generic_play, []],
+                "command.generic-stop": [self.generic_stop, []],
                 "command.transpose-by": [self.transpose_by, ["amount"]],
                 "command.start-capture": [self.start_capture, ["monitor"]],
                 "command.stop-capture": [self.stop_capture, []],
@@ -499,25 +501,31 @@ class MalachiServer():
     async def next_slide(self, websocket, params):
         """Advance to next slide and send update to appropriate clients."""
         status, details = "ok", ""
-        s_result = self.s.next_slide()
-        if s_result == 1:
-            await self.clients_slide_index_update()
-        elif s_result == 0:
-            status, details = "invalid-index", "Already at last slide"
-        else:
-            status = "no-current-item"
+        if self.s.get_current_item_type() in ["Song", "BiblePassage"]:
+            s_result = self.s.next_slide()
+            if s_result == 1:
+                await self.clients_slide_index_update()
+            elif s_result == 0:
+                status, details = "invalid-index", "Already at last slide"
+            else:
+                status = "no-current-item"
+        if self.s.get_current_item_type() == "Presentation":
+            pyautogui.press("pagedown")
         await self.server_response(websocket, "response.next-slide", status, details)
 
     async def previous_slide(self, websocket, params):
         """Advance to previous slide and send update to appropriate clients."""
         status, details = "ok", ""
-        s_result = self.s.previous_slide()
-        if s_result == 1:
-            await self.clients_slide_index_update()
-        elif s_result == 0:
-            status, details = "invalid-index", "Already at first slide"
-        else:
-            status = "no-current-item"
+        if self.s.get_current_item_type() in ["Song", "BiblePassage"]:
+            s_result = self.s.previous_slide()
+            if s_result == 1:
+                await self.clients_slide_index_update()
+            elif s_result == 0:
+                status, details = "invalid-index", "Already at first slide"
+            else:
+                status = "no-current-item"
+        if self.s.get_current_item_type() == "Presentation":
+            pyautogui.press("pageup")
         await self.server_response(websocket, "response.previous-slide", status, details)
 
     async def goto_slide(self, websocket, params):
@@ -1192,6 +1200,32 @@ class MalachiServer():
         status, details = "ok", ""
         pyautogui.press('pageup')
         await self.server_response(websocket, "response.prev-presentation-slide", status, details)
+
+    async def generic_play(self, websocket, params):
+        """
+        Play the current service item - the actual action carried out depends on the type of
+        service item.  The server response will be sent by the called function, rather than
+        being of the form "response.generic-play".
+        """
+        if self.s.get_current_item_type() == "Presentation":
+            await self.start_presentation(websocket, params)
+        if self.s.get_current_item_type() == "Video":
+            await self.play_video(websocket, params)
+        if self.s.get_current_item_type() == "Song":
+            await self.play_audio(websocket, params)
+
+    async def generic_stop(self, websocket, params):
+        """
+        Stop playing the current service item - the actual action carried out depends on the type
+        of service item.  The server response will be sent by the called function, rather than
+        being of the form "response.generic-stop".
+        """
+        if self.s.get_current_item_type() == "Presentation":
+            await self.stop_presentation(websocket, params)
+        if self.s.get_current_item_type() == "Video":
+            await self.stop_video(websocket, params)
+        if self.s.get_current_item_type() == "Song":
+            await self.stop_audio(websocket, params)
 
     async def transpose_by(self, websocket, params):
         """
