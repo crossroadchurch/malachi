@@ -274,7 +274,7 @@ function update_basic_init(json_data) {
 
 function update_service_overview_update(json_data) {
   slide_index = json_data.params.slide_index;
-  if (JSON.stringify(json_data.params.current_item != "{}")) {
+  if (JSON.stringify(json_data.params.current_item) != "{}") {
     slide_type = json_data.params.current_item.type;
     current_slides = json_data.params.current_item.slides;
     current_title = json_data.params.current_item["title"];

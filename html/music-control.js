@@ -510,7 +510,7 @@ function update_service_overview_update(json_data) {
   item_index = json_data.params.item_index;
   slide_index = json_data.params.slide_index;
   service_items = json_data.params.items;
-  if (JSON.stringify(json_data.params.current_item != "{}")) {
+  if (JSON.stringify(json_data.params.current_item) != "{}") {
     slide_type = json_data.params.current_item.type;
     current_slides = json_data.params.current_item.slides;
     if (slide_type == "song") {

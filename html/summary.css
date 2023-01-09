@@ -1,0 +1,99 @@
+@font-face {
+  font-family: "Inter Semi Bold";
+  font-style: normal;
+  src: local("Inter-SemiBold"), url(/html/fonts/Inter-SemiBold.otf) format("opentype");
+}
+
+@font-face {
+  font-family: "Ubuntu Condensed";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Ubuntu Condensed"), url(/html/fonts/Ubuntu-C.ttf) format("truetype");
+}
+
+:root {
+  font-size: 16px;
+}
+
+p {
+  line-height: 1.2;
+}
+
+body {
+  background-color: rgb(20, 22, 29);
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  :root {
+    font-size: 10px;
+  }
+}
+
+#songarea {
+  position: absolute;
+  top: 0;
+  max-width: 95%;
+  height: calc(100% - 7.5em);
+  margin: 0 auto;
+  padding: 0.25em;
+  font-size: 2rem;
+}
+
+#currentitem {
+  position: absolute;
+  top: calc(100% - 4em);
+  left: 0;
+  width: 100%;
+  background-color: #4caf50;
+  color: black;
+  font-size: 1.5em;
+  height: 2em;
+  line-height: 2em;
+  padding: 0 1em;
+}
+
+#previtem {
+  position: absolute;
+  top: calc(100% - 6em);
+  left: 0;
+  width: 100%;
+  background-color: #333;
+  color: yellow;
+  font-size: 1.5em;
+  height: 2em;
+  line-height: 2em;
+  padding: 0 1em;
+}
+
+#nextitem {
+  position: absolute;
+  top: calc(100% - 2em);
+  left: 0;
+  width: 100%;
+  background-color: #333;
+  color: yellow;
+  font-size: 1.5em;
+  height: 2em;
+  line-height: 2em;
+  padding: 0 1em;
+}
+
+#currentslide {
+  font-family: "Inter Semi Bold", sans-serif;
+  color: white;
+}
+
+#currentslide p {
+  margin: 0;
+}
+
+#nextslide {
+  font-family: "Inter Semi Bold", sans-serif;
+  color: #999;
+}
+
+#nextslide p {
+  margin: 0;
+}

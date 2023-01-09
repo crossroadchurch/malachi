@@ -124,7 +124,7 @@ function update_service_overview_update(json_data) {
   slide_index = json_data.params.slide_index;
   service_items = json_data.params.items;
   current_item = json_data.params.current_item;
-  if (JSON.stringify(json_data.params.current_item != "{}")) {
+  if (JSON.stringify(json_data.params.current_item) != "{}") {
     slide_type = current_item.type;
     current_slides = current_item.slides;
     current_title = current_item.title;
