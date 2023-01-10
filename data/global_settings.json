@@ -26,7 +26,8 @@
     "song-background-h": 1,
     "bible-background-url": "none",
     "bible-background-w": 1,
-    "bible-background-h": 1
+    "bible-background-h": 1,
+    "default-version": "KJV"
   },
   "capture_refresh": 250
 }

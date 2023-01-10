@@ -316,13 +316,16 @@
               <label for="o_style_3">None</label>
             </div>
           </div>
-          <div id="sh_parallel" class="ml_row style_header">
-            <div class="sl_text">Parallel Bible passages</div>
-            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('parallel')"></a>
+          <div id="sh_bible" class="ml_row style_header">
+            <div class="sl_text">Bible passages</div>
+            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('bible')"></a>
           </div>
-          <div id="sg_parallel" class="style_group">
+          <div id="sg_bible" class="style_group">
+            <div id="d_version_radios" class="radio_toggle_group">
+              <span>Default Bible version:</span>
+            </div>
             <div class="mi_range">
-              <label for="pl_width">Column width (% of screen):</label>
+              <label for="pl_width">Parallel column width (% of screen):</label>
               <input
                 id="pl_width"
                 type="range"
@@ -335,7 +338,7 @@
               <output id="pl_width_out"></output>
             </div>
             <div class="mi_range">
-              <label for="pl_font_size">Font size (% of screen height):</label>
+              <label for="pl_font_size">Parallel font size (% of screen height):</label>
               <input
                 id="pl_font_size"
                 type="range"
@@ -348,7 +351,7 @@
               <output id="pl_font_size_out"></output>
             </div>
             <div class="mi_range">
-              <label for="pl_lines">Max lines per slide:</label>
+              <label for="pl_lines">Parallel max lines per slide:</label>
               <input
                 id="pl_lines"
                 type="range"

@@ -910,12 +910,18 @@ p.ml_bibleverse {
   width: 10em;
 }
 
-#o_style_div {
+#o_style_div,
+#d_version_radios {
   justify-content: left;
 }
 
-#o_style_div span {
+#o_style_div span,
+#d_version_radios span {
   padding-right: 1em;
+}
+
+#d_version_radios {
+  padding-bottom: 1em;
 }
 
 #popup_edit_song {
