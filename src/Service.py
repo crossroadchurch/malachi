@@ -425,6 +425,8 @@ class Service():
     def get_all_services(cls):
         """Return a list of all saved services within the ./services directory."""
         fnames = [f for f in os.listdir('./services') if f.endswith('.json') or f.endswith('.zip')]
+        if fnames:
+            fnames.sort()
         return fnames
 
 ### TESTING ONLY ###
