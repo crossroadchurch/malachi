@@ -384,14 +384,14 @@ class Song():
         Return all matching Songs (id and title) in a JSON array.
 
         Arguments:
-        search_text -- the text to search for, in either the song's title and/or lyrics.
+        search_text -- the text to search for, in either the song's title, lyrics or song number.
         remote -- 0 = search local songs, 1 = search remote songs
         """
         song_db, cursor = Song.db_connect()
         cursor.execute('''
             SELECT s.id, s.title
             FROM songs AS s
-            WHERE (s.search_title LIKE "%{txt}%" OR s.search_lyrics LIKE "%{txt}%")
+            WHERE (s.search_title LIKE "%{txt}%" OR s.search_lyrics LIKE "%{txt}%" OR s.song_number LIKE "{txt}")
             AND (s.remote = {rem})
             ORDER BY s.title ASC
         '''.format(txt=search_text, rem=remote))

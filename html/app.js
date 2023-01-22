@@ -35,7 +35,8 @@ const DOM_KEYS = [
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
   "cd_top", "cd_top_out", "cd_text", "d_copyright", "cp_size", "cp_size_out",
   "cp_width", "cp_width_out", "d_verseorder", "vo_size", "vo_size_out",
-  "vo_width", "vo_width_out", "t_color", "song_bg_icon", "bible_bg_icon",
+  "vo_width", "vo_width_out", "song_bg_icon", "bible_bg_icon",
+  "tc_red", "tc_red_out", "tc_green", "tc_green_out", "tc_blue", "tc_blue_out", "tc_preview",
   "popup_new_service", "popup_load_service", "popup_save_before_load_service",
   "popup_save_service_as", "popup_export_service_as", "f_name", "exp_name",
   "popup_edit_mode", "popup_edit_song", "load_files_radio",
@@ -46,6 +47,7 @@ style_dict["s_width"] = "div-width-vw";
 style_dict["s_font_size"] = "font-size-vh";
 style_dict["s_lines"] = "max-lines";
 style_dict["s_margin"] = "margin-top-vh";
+style_dict["font_color"] = "font-color";
 style_dict["ch_size"] = "countdown-h-size-vh";
 style_dict["cd_size"] = "countdown-size-vh";
 style_dict["cd_top"] = "countdown-top-vh";
@@ -723,6 +725,13 @@ function update_style_sliders(style) {
   DOM_dict["s_lines_out"].value = style[style_dict["s_lines"]];
   DOM_dict["s_margin"].value = style[style_dict["s_margin"]];
   DOM_dict["s_margin_out"].value = style[style_dict["s_margin"]];
+  DOM_dict["tc_red"].value = parseInt(style[style_dict["font_color"]].slice(0, 2), 16);
+  DOM_dict["tc_red_out"].value = parseInt(style[style_dict["font_color"]].slice(0, 2), 16);
+  DOM_dict["tc_green"].value = parseInt(style[style_dict["font_color"]].slice(2, 4), 16);
+  DOM_dict["tc_green_out"].value = parseInt(style[style_dict["font_color"]].slice(2, 4), 16);
+  DOM_dict["tc_blue"].value = parseInt(style[style_dict["font_color"]].slice(4, 6), 16);
+  DOM_dict["tc_blue_out"].value = parseInt(style[style_dict["font_color"]].slice(4, 6), 16);
+  update_color_preview();
   document.querySelectorAll("input[name='d_version']").forEach((elt) => {
     elt.checked = false;
   });
@@ -758,7 +767,6 @@ function update_style_sliders(style) {
   DOM_dict["vo_size_out"].value = style[style_dict["vo_size"]];
   DOM_dict["vo_width"].value = style[style_dict["vo_width"]];
   DOM_dict["vo_width_out"].value = style[style_dict["vo_width"]];
-  DOM_dict["t_color"].value = style["font-color"];
   // Update background status items
   if (style["song-background-url"] == "none") {
     DOM_dict["song_bg_icon"].setAttribute("src", "");
@@ -890,6 +898,35 @@ function style_slider_change(elt) {
       params: {
         param: style_dict[elt.id],
         value: elt.value,
+      },
+    })
+  );
+}
+
+function update_color_preview() {
+  p_color =
+    "#" +
+    parseInt(DOM_dict["tc_red"].value).toString(16).padStart(2, "0") +
+    parseInt(DOM_dict["tc_green"].value).toString(16).padStart(2, "0") +
+    parseInt(DOM_dict["tc_blue"].value).toString(16).padStart(2, "0");
+  DOM_dict["tc_preview"].style.backgroundColor = p_color;
+}
+
+function color_slider_change(elt) {
+  update_color_preview();
+}
+
+function save_color_sliders() {
+  s_color =
+    parseInt(DOM_dict["tc_red"].value).toString(16).padStart(2, "0") +
+    parseInt(DOM_dict["tc_green"].value).toString(16).padStart(2, "0") +
+    parseInt(DOM_dict["tc_blue"].value).toString(16).padStart(2, "0");
+  websocket.send(
+    JSON.stringify({
+      action: "command.edit-style-param",
+      params: {
+        param: style_dict["font_color"],
+        value: s_color,
       },
     })
   );
@@ -1087,6 +1124,7 @@ function update_service_overview_update(json_data) {
 function update_display_state(json_data) {
   screen_state = json_data.params.state;
   DOM_dict["flip_screen_state"].checked = screen_state === "on";
+  document.activeElement?.blur();
 }
 
 function result_all_presentations(json_data) {
@@ -1698,22 +1736,6 @@ ready(() => {
   DOM_dict["e_transpose"].addEventListener("change", update_transpose_slider);
   document.querySelectorAll('input[name="e_key"]').forEach((elt) => {
     elt.addEventListener("change", update_transpose_slider);
-  });
-
-  DOM_dict["t_color"].addEventListener("keypress", (e) => {
-    const key_code = e.which ? e.which : e.keyCode;
-    if (key_code == 13) {
-      e.target.style.backgroundColor = "#" + e.target.value;
-      websocket.send(
-        JSON.stringify({
-          action: "command.edit-style-param",
-          params: {
-            param: "font-color",
-            value: e.target.value,
-          },
-        })
-      );
-    }
   });
 
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {

@@ -13,7 +13,7 @@
     "countdown-h-size-vh": "25",
     "countdown-h-text": "Welcome!",
     "font-file": "./html/fonts/Inter-SemiBold.otf",
-    "font-color": "FFFFFF",
+    "font-color": "ffffff",
     "outline-style": "drop-shadow",
     "display-copyright": false,
     "copy-size-vh": "20",

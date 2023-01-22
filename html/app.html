@@ -302,9 +302,55 @@
               />
               <output id="s_margin_out"></output>
             </div>
-            <div id="t_color_picker">
-              <label for="t_color">Song and Bible text colour:</label>
-              <input type="text" id="t_color" class="mi_textinput" />
+            <span>Song and Bible text colour:</span>
+            <div id="rgb_container">
+              <div id="rgb_sliders">
+                <div class="mi_range mi_range_compact">
+                  <span style="color: red"><strong>R</strong></span>
+                  <input
+                    id="tc_red"
+                    type="range"
+                    min="0"
+                    max="255"
+                    step="1"
+                    oninput="style_slider_input(this)"
+                    onchange="color_slider_change(this)"
+                  />
+                  <output id="tc_red_out"></output>
+                </div>
+                <div class="mi_range mi_range_compact">
+                  <span style="color: green"><strong>G</strong></span>
+                  <input
+                    id="tc_green"
+                    type="range"
+                    min="0"
+                    max="255"
+                    step="1"
+                    oninput="style_slider_input(this)"
+                    onchange="color_slider_change(this)"
+                  />
+                  <output id="tc_green_out"></output>
+                </div>
+                <div class="mi_range mi_range_compact">
+                  <span style="color: blue"><strong>B</strong></span>
+                  <input
+                    id="tc_blue"
+                    type="range"
+                    min="0"
+                    max="255"
+                    step="1"
+                    oninput="style_slider_input(this)"
+                    onchange="color_slider_change(this)"
+                  />
+                  <output id="tc_blue_out"></output>
+                </div>
+              </div>
+              <div id="rgb_preview_panel">
+                <div id="tc_preview"></div>
+                <div id="tc_save" class="cmd_button small_button" onclick="save_color_sliders()">
+                  Save colour
+                </div>
+              </div>
             </div>
             <div id="o_style_div" class="radio_toggle_group">
               <span>Text outline:</span>

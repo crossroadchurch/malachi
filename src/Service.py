@@ -427,6 +427,7 @@ class Service():
         fnames = [f for f in os.listdir('./services') if f.endswith('.json') or f.endswith('.zip')]
         if fnames:
             fnames.sort()
+            fnames.reverse()
         return fnames
 
 ### TESTING ONLY ###
