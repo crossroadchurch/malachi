@@ -311,6 +311,10 @@ class Song():
         if self.parts != {}:
             slide_temp = [self.parts[x] for x in self.saved_verse_order.split(" ") if x in self.parts]
             self.verse_order = ' '.join([x for x in self.saved_verse_order.split(" ") if x in self.parts])
+            if self.verse_order == "":
+                # Fix completely invalid verse order
+                slide_temp = [self.parts[x] for x in self.parts]
+                self.verse_order = ' '.join([x for x in self.parts])
         else:
             slide_temp = []
             self.verse_order = self.saved_verse_order

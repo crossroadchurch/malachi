@@ -458,8 +458,16 @@ function save_song() {
           parts.push(part_obj);
         }
         // Start new part
-        current_part = line.substr(1, line.length - 2).toLowerCase();
+        if (line[line.length - 1] == ">") {
+          current_part = line.substr(1, line.length - 2).toLowerCase();
+        } else {
+          // Tag has not been ended
+          current_part = line.substr(1, line.length - 1).toLowerCase();
+        }
         current_lines = [];
+      } else if (line[0] == "[") {
+        // Only [br] lines should start with [, this ensures no mismatched brackets occur
+        current_lines.push("[br]");
       } else {
         if (line != "") {
           // Skip completely blank lines

@@ -94,3 +94,8 @@ body {
   display: none;
   position: absolute;
 }
+
+sup {
+  padding-right: 0.5em;
+  font-size: 0.5em;
+}

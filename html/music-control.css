@@ -349,3 +349,8 @@ span {
 #key-buttons {
   margin-bottom: 2rem;
 }
+
+sup {
+  padding-right: 0.5em;
+  font-size: 0.5em;
+}
