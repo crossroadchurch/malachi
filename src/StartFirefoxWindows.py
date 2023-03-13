@@ -6,7 +6,7 @@
 import time
 import subprocess
 import warnings
-from pywinauto import Application
+from pywinauto import Application, mouse
 
 warnings.simplefilter('ignore', category=UserWarning)
 
@@ -23,3 +23,5 @@ screen_window = screen.window(title="Malachi Screen — Mozilla Firefox")
 screen_window.move_window(x=2000, y=0, width=600, height=400)
 screen_window.set_focus()
 screen_window.type_keys("{F11}")
+mouse.click(button='left', coords=(2000,500))
+mouse.move(coords=(400,400))
