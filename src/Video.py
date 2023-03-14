@@ -11,7 +11,7 @@ import cv2
 import binascii
 from datetime import datetime
 from zipfile import ZipFile
-from MalachiExceptions import InvalidVideoUrlError
+from MalachiExceptions import InvalidVideoUrlError, InvalidVideoError
 
 class Video():
     """Represent a Video object in Malachi"""
@@ -28,6 +28,8 @@ class Video():
         self.title = os.path.basename(self.url)
         vid = cv2.VideoCapture(self.url)
         self.fps = vid.get(cv2.CAP_PROP_FPS)
+        if self.fps == 0:
+            raise InvalidVideoError(url)
         frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
         self.duration = math.floor(frames/self.fps)
         mins, secs = divmod(self.duration, 60)
@@ -150,7 +152,11 @@ class Video():
                   if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
         for url in loops + videos:
             if not os.path.isfile(url + ".jpg") or not os.path.isfile(url + "_still.jpg"):
-                Video(url)
+                try:
+                    Video(url)
+                except InvalidVideoError as e:
+                    print(e.msg)
+                    pass # Fail gracefully by ignoring video
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

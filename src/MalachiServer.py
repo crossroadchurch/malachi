@@ -33,7 +33,7 @@ from MalachiExceptions import InvalidVersionError, InvalidVerseIdError
 from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError, UnknownReferenceError
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
-from MalachiExceptions import InvalidVideoUrlError, UnspecifiedServiceUrl
+from MalachiExceptions import InvalidVideoUrlError, InvalidVideoError, UnspecifiedServiceUrl
 from MalachiExceptions import InvalidBackgroundUrlError
 from MalachiExceptions import MissingStyleParameterError, MissingDataFilesError
 from MalachiExceptions import InvalidPresentationUrlError
@@ -793,6 +793,8 @@ class MalachiServer():
             self.s.add_item(v)
         except InvalidVideoUrlError as e:
             status, details = "invalid-video", e.msg
+        except InvalidVideoError as e:
+            status, details = "invalid-video", e.msg
         finally:
             await self.server_response(websocket, "response.add-video", status, details)
             await self.clients_service_items_update()
@@ -1016,13 +1018,16 @@ class MalachiServer():
                 (url.endswith('.mpg') or url.endswith('mp4') or url.endswith('mov')):
             self.video_loop = url
             vid = cv2.VideoCapture(url)
-            self.loop_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
-            self.loop_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            await self.broadcast(self.MEDIA_SOCKETS, "update.video-loop", {
-                "url": self.video_loop,
-                "loop-width": self.loop_width,
-                "loop-height": self.loop_height
-            })
+            if vid.get(cv2.CAP_PROP_FPS) == 0:
+                status, details = "invalid-loop", "Specified url {url} is not a valid video".format(url=url)
+            else: 
+                self.loop_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
+                self.loop_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                await self.broadcast(self.MEDIA_SOCKETS, "update.video-loop", {
+                    "url": self.video_loop,
+                    "loop-width": self.loop_width,
+                    "loop-height": self.loop_height
+                })
         else:
             status, details = "invalid-url", "Specified url doesn't exist or is not a video"
         await self.server_response(websocket, "response.set-loop", status, details)
