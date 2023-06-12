@@ -104,7 +104,7 @@ class Presentation():
     def get_all_presentations(cls):
         """Return a list of all presentation URLs in the ./presentations directory."""
         urls = ['./presentations/' + f for f in os.listdir('./presentations')
-                if f.endswith('.ppt') or f.endswith('pptx') or f.endswith('odp')]
+                if f.endswith('.ppt') or f.endswith('pptx') or f.endswith('odp') or f.endswith('ppsx')]
         if urls:
             urls.sort()
         return urls
