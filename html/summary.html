@@ -10,6 +10,16 @@
     <script type="text/javascript" src="/html/summary.js"></script>
   </head>
   <body>
+    <div id="buttonarea">
+      <button class="cmd_button icon_button toggle_icon" onclick="toggle_screen()"></button>
+      <button class="cmd_button icon_button prev_list_icon" onclick="prev_item()"></button>
+      <button class="cmd_button icon_button next_list_icon" onclick="next_item()"></button>
+      <button class="cmd_button icon_button prev_slide_icon" onclick="prev_slide()"></button>
+      <button class="cmd_button icon_button next_slide_icon" onclick="next_slide()"></button>
+      <button class="cmd_button icon_button stop_icon" onclick="generic_stop()"></button>
+      <button class="cmd_button icon_button refresh_icon" onclick="restore_loop()"></button>
+      <button class="cmd_button icon_button play_icon" onclick="generic_play()"></button>
+    </div>
     <div id="songarea">
       <div id="currentslide"></div>
       <div id="nextslide"></div>

@@ -113,6 +113,38 @@ function update_item_index_update(json_data) {
   update_music();
 }
 
+function toggle_screen() {
+  websocket.send(JSON.stringify({ action: "command.toggle-display-state", params: {} }));
+}
+
+function prev_item() {
+  websocket.send(JSON.stringify({ action: "command.previous-item", params: {} }));
+}
+
+function next_item() {
+  websocket.send(JSON.stringify({ action: "command.next-item", params: {} }));
+}
+
+function prev_slide() {
+  websocket.send(JSON.stringify({ action: "command.previous-slide", params: {} }));
+}
+
+function next_slide() {
+  websocket.send(JSON.stringify({ action: "command.next-slide", params: {} }));
+}
+
+function generic_stop() {
+  websocket.send(JSON.stringify({ action: "command.generic-stop", params: {} }));
+}
+
+function generic_play() {
+  websocket.send(JSON.stringify({ action: "command.generic-play", params: {} }));
+}
+
+function restore_loop() {
+  websocket.send(JSON.stringify({ action: "command.restore-loop", params: {} }));
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/monitor");
