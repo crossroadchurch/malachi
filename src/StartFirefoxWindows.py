@@ -3,12 +3,11 @@
 
 """Start the Malachi app and screen windows (Windows OS only)"""
 
-import time
 import os
 import ctypes
 import subprocess
 import warnings
-from pywinauto import Application, mouse
+from pywinauto import Application, ElementNotFoundError, mouse
 
 warnings.simplefilter('ignore', category=UserWarning)
 
@@ -23,22 +22,38 @@ user32 = ctypes.windll.user32
 if user32.GetSystemMetrics(0) == user32.GetSystemMetrics(78):
     print("Single screen detected - only opening Malachi App")
     subprocess.Popen([FIREFOX_PATH, "-new-window", "http://localhost:8000/app"])
-    time.sleep(10)  # This may need to be increased if running on a slower system
-    app = Application(backend="win32").connect(
-        title="Malachi App — Mozilla Firefox")
+    app_loaded = False
+    while not app_loaded:
+        try:
+            app = Application(backend="win32").connect(
+                title="Malachi App — Mozilla Firefox")
+            app_loaded = True
+        except ElementNotFoundError as e:
+            pass
     app_window = app.window(title="Malachi App — Mozilla Firefox")
     app_window.move_window(x=0, y=0, width=1366, height=768)
 else:
     print("Multiple screens detected - opening Malachi App and Malachi Screen")
     subprocess.Popen([FIREFOX_PATH, "-new-window", "http://localhost:8000/app"])
     subprocess.Popen([FIREFOX_PATH, "-new-window", "http://localhost:8000/screen"])
-    time.sleep(10)  # This may need to be increased if running on a slower system
-    app = Application(backend="win32").connect(
-        title="Malachi App — Mozilla Firefox")
+    app_loaded = False
+    while not app_loaded:
+        try:
+            app = Application(backend="win32").connect(
+                title="Malachi App — Mozilla Firefox")
+            app_loaded = True
+        except ElementNotFoundError as e:
+            pass    
     app_window = app.window(title="Malachi App — Mozilla Firefox")
     app_window.move_window(x=0, y=0, width=1366, height=768)
-    screen = Application(backend="win32").connect(
-        title="Malachi Screen — Mozilla Firefox")
+    screen_loaded = False
+    while not screen_loaded:
+        try:
+            screen = Application(backend="win32").connect(
+                title="Malachi Screen — Mozilla Firefox")
+            screen_loaded = True
+        except ElementNotFoundError as e:
+            pass
     screen_window = screen.window(title="Malachi Screen — Mozilla Firefox")
     screen_window.move_window(x=2000, y=0, width=600, height=400)
     screen_window.set_focus()
