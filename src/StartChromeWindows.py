@@ -37,6 +37,11 @@ if user32.GetSystemMetrics(0) == user32.GetSystemMetrics(78):
             pass
     app_window = app.window(title="Malachi App - Google Chrome")
     app_window.move_window(x=0, y=0, width=1366, height=768)
+    # Restore and then maximise app window
+    app_window.type_keys("%{VK_SPACE}")
+    app_window.type_keys('R')
+    app_window.type_keys("%{VK_SPACE}")
+    app_window.type_keys('X')
 else:
     print("Multiple screens detected - opening Malachi App and Malachi Screen")
     subprocess.Popen([chrome_path, "http://localhost:8000/app", "--new-window"])
@@ -65,3 +70,8 @@ else:
     screen_window.type_keys("{F11}")
     mouse.click(button='left', coords=(2000,500))
     mouse.move(coords=(400,400))
+    # Restore and then maximise app window
+    app_window.type_keys("%{VK_SPACE}")
+    app_window.type_keys('R')
+    app_window.type_keys("%{VK_SPACE}")
+    app_window.type_keys('X')
