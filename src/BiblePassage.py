@@ -590,7 +590,7 @@ class BiblePassage():
             verse2_split = dash_split[1].replace(' ', '').split(":")
             if len(verse2_split) == 1 and verse2_split[0].isdigit():
                 # Second reference is just a verse in the same chapter
-                if verse2_split[0] > verse_split[1]:
+                if int(verse2_split[0]) > int(verse_split[1]):
                     # e.g. (1 )John 2:1-5
                     where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
                         AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse2_split[0])
@@ -602,14 +602,14 @@ class BiblePassage():
             elif len(verse2_split) == 2 and verse2_split[0].isdigit() \
                 and verse2_split[1].isdigit():
                 # Second reference is a chapter and verse
-                if verse2_split[0] > verse_split[0]:
+                if int(verse2_split[0]) > int(verse_split[0]):
                     # Second chapter is strictly after first chapter
                     # e.g. (1 )John 2:1-3:1
                     where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
                         v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
                 elif verse2_split[0] == verse_split[0]:
                     # Second chapter is same as first chapter
-                    if verse2_split[1] > verse_split[1]:
+                    if int(verse2_split[1]) > int(verse_split[1]):
                         # e.g. (1 )John 2:1-2:5
                         where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
                         v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
