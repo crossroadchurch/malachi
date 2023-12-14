@@ -26,5 +26,6 @@
 !/data/ASV.sqlite
 !/data/KJV.sqlite
 !/data/UKR.sqlite
+/data/*.pkl
 sha.txt
 /private

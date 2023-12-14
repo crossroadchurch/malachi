@@ -15,6 +15,7 @@ import sqlite3
 import json
 import re
 import math
+import pickle
 from PIL import ImageFont
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError,\
     MalformedReferenceError, MissingStyleParameterError, MatchingVerseIdError,\
@@ -26,6 +27,8 @@ class BiblePassage():
     Represent a Bible verse or range of verses in Malachi and provide
     utility methods for searching within Bible versions.
     """
+
+    version_length_data = dict()
 
     def __init__(self, version, start_id, end_id, cur_style, versions):
         if not version in versions:
@@ -253,13 +256,10 @@ class BiblePassage():
         div_width_vw -- the width of the div containing the BiblePassage in vw units.
         font_file -- the URL of the font being used, relative to the root of Malachi.
         """
-        window_height = 1080 # Arbitrary value chosen
-        window_width = window_height * float(aspect_ratio)
-        font_size_px = window_height * int(font_size_vh) / 100
-        font_size_calc = 40 # Arbitrary value chosen
-        font_factor = font_size_px / font_size_calc
-        div_width_px = window_width * int(div_width_vw) / 100
-        font = ImageFont.truetype(font_file, font_size_calc)
+        # Max width of div based on font size of 32 (used in size calculations stored in pickle)
+        MAX_WIDTH = 32 * float(aspect_ratio) * int(div_width_vw) / int(font_size_vh)
+        SPACE_WIDTH = 7.9375
+        font = ImageFont.truetype(font_file, 32)
         lines = []
         parts_refs_tags = ["<sup>" + v["short_ref"] + "</sup>" + v["data"] for v in passage.parts]
         parts_refs_simple = [v["short_ref"] + v["data"] for v in passage.parts]
@@ -268,19 +268,27 @@ class BiblePassage():
         verse_words = passage_tags_simple.split(" ")
         verse_words_tags = passage_tags.split(" ")
         line_start = 0
-        for i in range(len(verse_words)):
-            line_part_tags = ' '.join(verse_words_tags[line_start:i+1])
-            lpt_sections = re.split(r"(<sup>[0-9]+</sup>)", line_part_tags)
-            size = 0
-            for section in lpt_sections:
-                if section[0:5] == "<sup>":
-                    # Processing a verse tag <sup>N</sup>, at 0.5em, with 0.5em right spacing
-                    size = size + 0.5*font_factor*(font.getsize(section[5:-6])[0] + 0.5*font_size_calc)
+        line_length = -1 * SPACE_WIDTH
+        for idx, tagged_word in enumerate(verse_words_tags):
+            tagged_sections = re.split(r"(<sup>[0-9]+</sup>)", tagged_word)
+            for section in tagged_sections:
+                line_length += SPACE_WIDTH
+                if section in BiblePassage.version_length_data[passage.version]:
+                    section_length = BiblePassage.version_length_data[passage.version][section]
                 elif section != "":
-                    size += font_factor*font.getsize(section)[0]
-            if size > div_width_px:
-                lines.append(' '.join(verse_words_tags[line_start:i]))
-                line_start = i
+                    print("Not found in dict: {s}".format(s=section))
+                    if section[0:5] == "<sup>":
+                        # Processing a verse tag <sup>N</sup>, at 0.5em, with 0.5em right spacing
+                        section_length = 0.5*font.getlength(section[5:-6]) + 16
+                    else:
+                        section_length = font.getlength(section)
+                else: # section == "", so negate the addition of the space
+                    section_length = SPACE_WIDTH
+                line_length += section_length
+                if line_length > MAX_WIDTH:
+                    lines.append(' '.join(verse_words_tags[line_start:idx]))
+                    line_start = idx
+                    line_length = section_length
         # Add on remaining bit of passage
         if line_start < (len(verse_words)):
             lines.append(' '.join(verse_words_tags[line_start:len(verse_words)]))
@@ -525,107 +533,45 @@ class BiblePassage():
         """
         if not version in versions:
             raise InvalidVersionError(version)
-        # Determine if this search if for a range of verses or a single verse
-        dash_split = search_ref.split("-")
-        if len(dash_split) > 2:
-            raise MalformedReferenceError(search_ref) # Too many dashes in reference
-
-        # Process part of reference before dash
-        # Split into book | (chapter verse)
-        ref1 = ' '.join(re.split(r"\s+", dash_split[0]))
-        word_split = ref1.split(" ")
-        if word_split[0].isdigit() and len(word_split) >= 2:
-            # Book that starts with a digit
-            book = word_split[0] + " " + word_split[1]
-            if len(word_split) == 2:
-                # Just a book that starts with a digit
-                where_clause = 'WHERE b.name LIKE "{bk}%"'.format(bk=book) # e.g. 1 John
-            else:
-                ch_verse_part = (''.join(word_split[2:])).replace(' ', '')
-                verse_split = ch_verse_part.split(":")
-                if len(verse_split) == 1 and verse_split[0].isdigit():
-                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch}'\
-                        .format(bk=book, ch=verse_split[0]) # e.g. 1 John 2
-                elif len(verse_split) == 2 and verse_split[0].isdigit() \
-                    and verse_split[1].isdigit():
-                    # e.g. 1 John 2:1
-                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
-                        AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse_split[1])
-                else:
-                    raise MalformedReferenceError(search_ref)
-
-        elif not word_split[0].isdigit():
-            # Book that does not start with a digit
-            book = word_split[0]
-            if len(word_split) == 1:
-                # Just a book
-                where_clause = 'WHERE b.name LIKE "{bk}%"'.format(bk=book) # e.g. Acts
-            else:
-                ch_verse_part = (''.join(word_split[1:])).replace(' ', '')
-                verse_split = ch_verse_part.split(":")
-                if len(verse_split) == 1 and verse_split[0].isdigit():
-                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch}'\
-                        .format(bk=book, ch=verse_split[0]) # e.g. Acts 2
-                elif len(verse_split) == 2 and verse_split[0].isdigit() \
-                    and verse_split[1].isdigit():
-                    # e.g. Acts 2:1
-                    where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
-                        AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse_split[1])
-                else:
-                    raise MalformedReferenceError(search_ref)
+        # Result groups of regex are:
+        #   0: Book
+        #   1,2,3,4: Chapter_1, Verse_1, Chapter_2, Verse_2 for multi chapter reference e.g. Eph 3:1-4:5
+        #   5,6,7: Chapter, Verse_1, Verse_2 for single chapter reference e.g. Eph 3:1-5
+        #   8,9: Chapter, Verse for single verse reference e.g. Eph 3:1
+        #   10: Chapter for complete chapter reference e.g. Eph 3
+        #   1-4,5-7,8-9,10 are mutually exclusive, 0 appears in all results
+        ref_regex = r"([123 ]{0,2}\D+)(?:(?:(\d+):(\d+)\s*-\s*(\d+):(\d+))|(?:(\d+):(\d+)\s*-\s*(\d+))|(?:(\d+):(\d+))|(\d+)|$)"
+        result = re.search(ref_regex, search_ref)
+        groups = result.groups()
+        book = groups[0].strip()
+        where_clause2 = ''
+        if groups[1]: # Multi chapter reference e.g. Eph 3:1-4:5
+            if int(groups[1]) > int(groups[3]): # Error e.g Eph 4:1-3:1
+                raise MalformedReferenceError(search_ref)
+            elif int(groups[1]) == int(groups[3]) and int(groups[2])>int(groups[4]): # Error e.g. Eph 3:5-3:1
+                raise MalformedReferenceError(search_ref)
+            where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} '\
+                'AND v.verse={vs}'.format(bk=book, ch=groups[1], vs=groups[2])
+            where_clause2 = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} '\
+                'AND v.verse={vs}'.format(bk=book, ch=groups[3], vs=groups[4])
+        elif groups[5]: # Single chapter reference e.g. Eph 3:1-5
+            if int(groups[6]) > int(groups[7]): # Error e.g. Eph 3:5-1
+                raise MalformedReferenceError(search_ref)
+            where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} '\
+                'AND v.verse={vs}'.format(bk=book, ch=groups[5], vs=groups[6])
+            where_clause2 = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} '\
+                'AND v.verse={vs}'.format(bk=book, ch=groups[5], vs=groups[7])
+        elif groups[8]: # Single verse reference e.g. Eph 3:1
+            where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} '\
+                'AND v.verse={vs}'.format(bk=book, ch=groups[8], vs=groups[9])
+        elif groups[10]: # Complete chapter reference e.g. Eph 3
+            where_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch}'\
+                .format(bk=book, ch=groups[10])
         else:
-            # Just digits
-            raise MalformedReferenceError(search_ref)
-
-        where2_clause = ''
-        if len(dash_split) == 2:
-            # Process end of reference and add to where_clause
-            # If specifying a second reference then the first reference
-            #  must be of the form book chapter verse
-            if not("b.name" in where_clause and "v.chapter" in where_clause \
-                and "v.verse" in where_clause):
-                raise MalformedReferenceError(search_ref)
-
-            # Only allowing references within the same book
-            verse2_split = dash_split[1].replace(' ', '').split(":")
-            if len(verse2_split) == 1 and verse2_split[0].isdigit():
-                # Second reference is just a verse in the same chapter
-                if int(verse2_split[0]) > int(verse_split[1]):
-                    # e.g. (1 )John 2:1-5
-                    where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} \
-                        AND v.verse={vs}'.format(bk=book, ch=verse_split[0], vs=verse2_split[0])
-                elif verse2_split[0] == verse_split[1]:
-                    where2_clause = '' # e.g. (1 )John 2:1-1
-                else:
-                    # Second verse comes before first verse
-                    raise MalformedReferenceError(search_ref)
-            elif len(verse2_split) == 2 and verse2_split[0].isdigit() \
-                and verse2_split[1].isdigit():
-                # Second reference is a chapter and verse
-                if int(verse2_split[0]) > int(verse_split[0]):
-                    # Second chapter is strictly after first chapter
-                    # e.g. (1 )John 2:1-3:1
-                    where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
-                        v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
-                elif verse2_split[0] == verse_split[0]:
-                    # Second chapter is same as first chapter
-                    if int(verse2_split[1]) > int(verse_split[1]):
-                        # e.g. (1 )John 2:1-2:5
-                        where2_clause = 'WHERE b.name LIKE "{bk}%" AND v.chapter={ch} AND \
-                        v.verse={vs}'.format(bk=book, ch=verse2_split[0], vs=verse2_split[1])
-                    elif verse2_split[1] == verse_split[1]:
-                        where2_clause = '' # e.g. (1 )John 2:1-2:1
-                    else:
-                        # Second verse comes before first verse
-                        raise MalformedReferenceError(search_ref)
-                else:
-                    # Second chapter comes before first chapter
-                    raise MalformedReferenceError(search_ref)
-            else:
-                raise MalformedReferenceError(search_ref)
+            where_clause = 'WHERE b.name LIKE "{bk}%"'.format(bk=book)
         # Now to do the actual searching!
         bible_db, cursor = BiblePassage.db_connect(version)
-        if where2_clause == '':
+        if where_clause2 == '':
             cursor.execute('''
                 SELECT v.id, b.name, v.chapter, v.verse, v.text
                 FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
@@ -634,7 +580,7 @@ class BiblePassage():
             '''.format(where=where_clause))
             verses = cursor.fetchall()
             if verses == []:
-                raise UnknownReferenceError(search_ref)
+                raise UnknownReferenceError(search_ref)        
         else:
             cursor.execute('''
                 SELECT v.id
@@ -646,7 +592,7 @@ class BiblePassage():
                 SELECT v.id
                 FROM verse AS v INNER JOIN book AS b on b.id = v.book_id
                 {where}
-            '''.format(where=where2_clause))
+            '''.format(where=where_clause2))
             verse2 = cursor.fetchone()
             if (verse1 is None or verse2 is None):
                 raise UnknownReferenceError(search_ref)
@@ -660,7 +606,7 @@ class BiblePassage():
                 verses = cursor.fetchall()
         bible_db.close()
         return json.dumps(verses, indent=2)
-
+    
     @classmethod
     def translate_verse_id(cls, src_id, src_version, dest_version, bible_versions):
         """
@@ -708,6 +654,49 @@ class BiblePassage():
         bible_db = sqlite3.connect('./data/' + version + '.sqlite')
         cursor = bible_db.cursor()
         return bible_db, cursor
+
+    @classmethod
+    def generate_word_sizes(cls, version, font_file):
+        # TODO: Add exception handling if version or font don't exist
+        bible_db, cursor = BiblePassage.db_connect(version)
+        
+        cursor.execute('''
+            SELECT v.id, v.text
+            FROM verse AS v
+            ORDER BY v.id
+        ''')
+        verses = cursor.fetchall()
+        words = set()
+        word_count = 0
+        for verse in verses:
+            word_count += len(verse[1].split(' '))
+            words.update(verse[1].split(' '))
+        print('{u} unique words detected in {v} ({t} total)'.format(u=len(words),t=word_count,v=version))
+        print('Saving word sizes...')
+        bible_db.close()
+        # Store sizes of (unique) words found in Bible version
+        font = ImageFont.truetype(font_file, 32)
+        word_sizes = dict()
+        for word in words:
+            word_sizes[word] = font.getlength(word)
+        # Store sizes of verse numbers, displayed at 0.5em with right spacing
+        ref_font = ImageFont.truetype(font_file, 16)
+        for v_num in range(1,177):
+            word_sizes["<sup>{v}</sup>".format(v=v_num)] = ref_font.getlength(str(v_num)) + 16
+        # Store size dict
+        font_name = font_file[(font_file.rindex('/')+1):].split(".")[0]
+        pickle_file = './data/{vs}_{fn}.pkl'.format(vs=version, fn=font_name)
+        with open(pickle_file, 'wb') as out:
+            pickle.dump(word_sizes, out)
+        print("Word sizes saved to {p}".format(p=pickle_file))
+
+    @classmethod
+    def load_length_data(cls, font_name, versions):
+        for version in versions:
+            pickle_file = './data/{vs}_{fn}.pkl'.format(vs=version, fn=font_name)
+            print("Loading version data for {v} version...".format(v=version))
+            with open(pickle_file, 'rb') as pkf:
+                BiblePassage.version_length_data[version] = pickle.load(pkf)
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

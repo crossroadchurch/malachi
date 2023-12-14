@@ -1518,3 +1518,18 @@ class MalachiServer():
             raise MissingDataFilesError(missing_files)
         self.bible_versions = [f[:-7] for f in os.listdir('./data')
             if f.endswith('.sqlite') and f!='songs.sqlite']
+        # Check that all Bible versions have word size data in the current style's font
+        with open(MalachiServer.GLOBAL_SETTINGS_FILE) as f:
+            json_data = json.load(f)
+        font_file = json_data["style"]["font-file"]
+        font_name = font_file[(font_file.rindex('/')+1):].split(".")[0]
+        for version in self.bible_versions:
+            if not os.path.isfile("./data/{v}_{f}.pkl".format(v=version,f=font_name)):
+                print("Processing {v} version...".format(v=version), end=" ")
+                BiblePassage.generate_word_sizes(version, font_file)
+        # Load version pickles as class variable of BiblePassage
+        BiblePassage.load_length_data(font_name, self.bible_versions)
+        #Check that word size data for the song database exists in the current style's font
+        Song.generate_word_sizes(font_file)
+        Song.load_length_data(font_name)
+        print("Malachi has loaded successfully!")

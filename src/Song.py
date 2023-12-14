@@ -11,8 +11,9 @@
 
 import sqlite3
 import json
+import os
+import pickle
 import re
-import math
 from PIL import ImageFont
 from Chords import Chords
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError, MissingStyleParameterError
@@ -24,6 +25,7 @@ class Song():
     STR_FIELDS = ['song_book_name', 'title', 'author', 'song_key',
                   'verse_order', 'copyright', 'song_number', 'search_title', 'audio']
     INT_FIELDS = ['transpose_by', 'remote']
+    length_data = dict()
 
     def __init__(self, song_id, cur_style):
         """Initiate a Song object.
@@ -284,12 +286,11 @@ class Song():
         max_lines -- the maximum number of lines to be displayed at any one time.
         font_file -- the URL of the font being used, relative to the root of Malachi.
         """
-        window_height = 800  # Arbitrary value chosen
-        window_width = window_height * float(aspect_ratio)
-        font_size_px = window_height * int(font_size_vh) / 100
-        div_width_px = window_width * int(div_width_vw) / 100
-        font = ImageFont.truetype(font_file, math.ceil(font_size_px))
-
+        # Max width of div based on font size of 32 (used in size calculations stored in pickle)
+        MAX_WIDTH = 32 * float(aspect_ratio) * int(div_width_vw) / int(font_size_vh)
+        SPACE_WIDTH = 7.9375
+        font = ImageFont.truetype(font_file, 32)
+        
         # Need to track chords along with words, but not include chords in width calculations
         song_db, cursor = Song.db_connect()
         cursor.execute('''
@@ -340,26 +341,28 @@ class Song():
                 for line in section_lines:
                     # Determine how many display lines are used for this line
                     line_words = line.split(" ")
-                    line_count, line_start, slide_start = 0, 0, 0
-                    for i in range(len(line_words)):
-                        line_part_chorded = ' '.join(
-                            line_words[line_start:i+1])
-                        line_part = re.sub(
-                            r'\[[\w\+#\/]*\]', '', line_part_chorded)
-                        if line_part:
-                            size = font.getsize(line_part)
-                        else:  # Zero length line
-                            size = [0, 0]
-                        if size[0] > div_width_px:
+                    line_count, slide_start = 0, 0
+                    line_length = -1 * SPACE_WIDTH
+                    for idx, word_and_chords in enumerate(line_words):
+                        word = re.sub(r'\[[\w\+#\/]*\]', '', word_and_chords)
+                        if word != "":
+                            if word in Song.length_data:
+                                word_length = Song.length_data[word]
+                            else:
+                                print("Not found in dict: {w}".format(w=word))
+                                word_length = font.getlength(word)
+                            line_length += SPACE_WIDTH
+                            line_length += word_length
+                        if line_length > MAX_WIDTH:
                             line_count += 1
-                            line_start = i
+                            line_length = word_length
                             # Line is longer than an entire slide, so break over two slides
                             # This is a very unlikely case...!
                             if line_count == int(max_lines):
-                                self.slides.append(
-                                    ' '.join(line_words[slide_start:i]))
+                                self.slides.append(' '.join(line_words[slide_start:idx]))
                                 section_length += 1
-                                slide_start, line_count = i, 0
+                                slide_start, line_count = idx, 0
+                                line_length = -1 * SPACE_WIDTH
                     line_count += 1
                     if (cur_slide_lines + line_count) <= int(max_lines):
                         # Add current line to current slide
@@ -641,6 +644,51 @@ class Song():
 
         cursor.close()
         song_db.close()
+
+    @classmethod
+    def generate_word_sizes(cls, font_file):
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            SELECT s.id, s.lyrics_chords
+            FROM songs AS s
+        ''')
+        results = cursor.fetchall()
+        song_db.close()
+
+        all_words = set()
+        for idx, song in enumerate(results):
+            song_json = json.loads(song[1])
+            for part in song_json:
+                part_words = part["data"].split()
+                for word in part_words:
+                    no_chord_word = re.sub(r'\[.*?\]', '', word)
+                    all_words.add(no_chord_word)
+        # Remove excess empty string
+        all_words.remove("")
+        print('{u} unique words detected in songs'.format(u=len(all_words)))
+        print('Saving word sizes...')
+        # Update dict of song word lengths and store as pickle
+        all_lengths = dict()
+        font_file = "./html/fonts/Inter-SemiBold.otf" # Becomes parameter to function
+        font_name = font_file[(font_file.rindex('/')+1):].split(".")[0]
+        pickle_file = './data/songs_{fn}.pkl'.format(fn=font_name)
+        font = ImageFont.truetype(font_file, 32)
+        if os.path.isfile(pickle_file):
+            with open(pickle_file, 'rb') as pkf:
+                all_lengths = pickle.load(pkf)
+        for word in all_words:
+            if not word in all_lengths:
+                all_lengths[word] = font.getlength(word)
+        with open(pickle_file, 'wb') as out:
+            pickle.dump(all_lengths, out)
+        print("Word sizes saved to {p}".format(p=pickle_file))
+
+    @classmethod
+    def load_length_data(cls, font_name):
+        pickle_file = './data/songs_{fn}.pkl'.format(fn=font_name)
+        print("Loading data for songs...")
+        with open(pickle_file, 'rb') as pkf:
+            Song.length_data = pickle.load(pkf)
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

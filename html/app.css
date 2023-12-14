@@ -308,6 +308,10 @@ input {
   display: flex;
 }
 
+.ml_row:nth-child(2n) {
+  background-color: #f0f0f0;
+}
+
 .ml_expand_row {
   height: fit-content;
 }
