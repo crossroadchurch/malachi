@@ -27,7 +27,8 @@
     "bible-background-url": "none",
     "bible-background-w": 1,
     "bible-background-h": 1,
-    "default-version": "KJV"
+    "default-version": "KJV",
+    "app-text-scale": "1.2"
   },
   "capture_refresh": 250
 }

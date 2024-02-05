@@ -35,7 +35,7 @@ const DOM_KEYS = [
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
   "cd_top", "cd_top_out", "cd_text", "d_copyright", "cp_size", "cp_size_out",
   "cp_width", "cp_width_out", "d_verseorder", "vo_size", "vo_size_out",
-  "vo_width", "vo_width_out", "song_bg_icon", "bible_bg_icon",
+  "vo_width", "vo_width_out", "at_scale", "at_scale_out", "song_bg_icon", "bible_bg_icon",
   "tc_red", "tc_red_out", "tc_green", "tc_green_out", "tc_blue", "tc_blue_out", "tc_preview",
   "popup_new_service", "popup_load_service", "popup_save_before_load_service",
   "popup_save_service_as", "popup_export_service_as", "f_name", "exp_name",
@@ -59,6 +59,7 @@ style_dict["pl_width"] = "pl-width-vw";
 style_dict["pl_font_size"] = "pl-font-size-vh";
 style_dict["pl_lines"] = "pl-max-lines";
 style_dict["d_version"] = "default-version";
+style_dict["at_scale"] = "app-text-scale";
 
 icon_dict["bible"] = "/html/icons/icons8-literature-48.png";
 icon_dict["song"] = "/html/icons/icons8-musical-notes-48.png";
@@ -81,7 +82,7 @@ function change_screen_state_flip() {
 }
 
 function add_verses() {
-  let verses = document.querySelectorAll("input[name=v_list]:checked");
+  let verses = document.querySelectorAll("#passage_list .ml_row.selected .ml_text");
   const version = document.querySelector("input[name=b_version]:checked").getAttribute("data-bv");
   if (verses.length > 0) {
     let range_start = verses[0].id.substring(2);
@@ -123,14 +124,18 @@ function add_verses() {
 }
 
 function select_all_verses() {
-  document.querySelectorAll("#passage_list input[type=checkbox]").forEach((elt) => {
-    elt.checked = true;
+  document.querySelectorAll("#passage_list .ml_row").forEach((elt) => {
+    if (!elt.classList.contains("selected")) {
+      elt.classList.add("selected");
+    }
   });
 }
 
 function select_none_verses() {
-  document.querySelectorAll("#passage_list input[type=checkbox]").forEach((elt) => {
-    elt.checked = false;
+  document.querySelectorAll("#passage_list .ml_row").forEach((elt) => {
+    if (elt.classList.contains("selected")) {
+      elt.classList.remove("selected");
+    }
   });
 }
 
@@ -723,6 +728,11 @@ function indicate_current_item(item_index) {
   }
 }
 
+function update_text_scale(style) {
+  DOM_dict["current_item_list"].style.fontSize = style[style_dict["at_scale"]] + "em";
+  DOM_dict["passage_list"].style.fontSize = style[style_dict["at_scale"]] + "em";
+}
+
 function update_style_sliders(style) {
   saved_style = style;
   DOM_dict["s_width"].value = style[style_dict["s_width"]];
@@ -775,6 +785,8 @@ function update_style_sliders(style) {
   DOM_dict["vo_size_out"].value = style[style_dict["vo_size"]];
   DOM_dict["vo_width"].value = style[style_dict["vo_width"]];
   DOM_dict["vo_width_out"].value = style[style_dict["vo_width"]];
+  DOM_dict["at_scale"].value = style[style_dict["at_scale"]];
+  DOM_dict["at_scale_out"].value = style[style_dict["at_scale"]];
   // Update background status items
   if (style["song-background-url"] == "none") {
     DOM_dict["song_bg_icon"].setAttribute("src", "");
@@ -1042,6 +1054,7 @@ function update_app_init(json_data) {
 
   // Display style parameters in style tab
   update_style_sliders(json_data.params.style);
+  update_text_scale(json_data.params.style);
 
   // Populate service plan list
   let service_list = "";
@@ -1450,17 +1463,24 @@ function result_bible_verses(json_data) {
   for (const [idx, verse] of json_data.params.verses.entries()) {
     if (idx < MAX_VERSE_ITEMS) {
       bible_ref = verse[1] + " " + verse[2] + ":" + verse[3];
-      bible_list += "<div class='ml_row ml_expand_row'>";
-      bible_list += "<div class='ml_check_div'>";
-      bible_list += "<input type='checkbox' data-role='none' checked='checked' ";
-      bible_list += "name='v_list' id='v-" + verse[0] + "' /></div>";
-      bible_list += "<div class='ml_text ml_multitext'><p class='ml_bibleverse'>";
+      bible_list += "<div class='ml_row ml_expand_row selected'>";
+      bible_list += "<div class='ml_text ml_multitext' name='v_list' ";
+      bible_list += "id='v-" + verse[0] + "' onclick='toggle_verse(" + idx;
+      bible_list += ")'><p class='ml_bibleverse'>";
       bible_list += "<strong>" + bible_ref + "</strong>&nbsp; " + verse[4];
       bible_list += "</p></div>";
       bible_list += "</div>";
     }
   }
   DOM_dict["passage_list"].innerHTML = bible_list;
+}
+
+function toggle_verse(idx) {
+  if (DOM_dict["passage_list"].childNodes[idx].classList.contains("selected")) {
+    DOM_dict["passage_list"].childNodes[idx].classList.remove("selected");
+  } else {
+    DOM_dict["passage_list"].childNodes[idx].classList.add("selected");
+  }
 }
 
 function remove_audio() {
@@ -1537,6 +1557,7 @@ function start_websocket() {
         break;
       case "update.style-update":
         update_style_sliders(json_data.params.style);
+        update_text_scale(json_data.params.style);
         break;
       case "result.all-audio":
         show_audio_popup(json_data);
