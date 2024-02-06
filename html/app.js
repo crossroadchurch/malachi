@@ -146,18 +146,13 @@ function load_service_preload() {
 function load_service(force) {
   DOM_dict["popup_save_before_load_service"].style.display = "none";
   DOM_dict["popup_load_service"].style.display = "none";
-  if (document.querySelectorAll("input[name=files]").length > 0) {
-    const sel_radio = parseInt(document.querySelector("input[name=files]:checked").id.substring(6));
-    const sel_text = document.querySelector(
-      "#load_files_radio .ml_row:nth-child(" + (sel_radio + 1) + ") .ml_text"
-    ).innerText;
-    websocket.send(
-      JSON.stringify({
-        action: "command.load-service",
-        params: { filename: sel_text, force: force },
-      })
-    );
-  }
+  const sel_text = document.querySelector("#load_files_radio .selected .ml_text").innerText;
+  websocket.send(
+    JSON.stringify({
+      action: "command.load-service",
+      params: { filename: sel_text, force: force },
+    })
+  );
 }
 
 function open_save_service_popup() {
@@ -1303,28 +1298,33 @@ function response_save_service(json_data) {
   }
 }
 
+function select_file(idx) {
+  document.querySelectorAll("#load_files_radio .ml_row").forEach((elt) => {
+    if (elt.classList.contains("selected")) {
+      elt.classList.remove("selected");
+    }
+  });
+  DOM_dict["load_files_radio"].childNodes[idx].classList.add("selected");
+}
+
 function result_all_services(json_data) {
   let files_list = "";
   if (json_data.params.filenames.length != 0) {
     for (const [idx, file] of json_data.params.filenames.entries()) {
-      files_list += "<div class='ml_row'>";
-      files_list += "<div class='ml_radio_div'>";
-      files_list += "<input type='radio' data-role='none' ";
-      files_list += "name='files' id='files-" + idx + "' /></div>";
+      files_list += "<div class='ml_row' id='files-" + idx + "' ";
+      files_list += "onclick=select_file(" + idx + ")>";
       files_list += "<div class='ml_text'>" + file + "</div>";
       files_list += "</div>";
     }
     DOM_dict["load_files_radio"].innerHTML = files_list;
-    document.querySelectorAll("#load_files_radio input[type=radio]").forEach((elt) => {
-      elt.checked = false;
-    });
-    document.getElementById("files-0").checked = true;
+    document.getElementById("files-0").classList.add("selected");
   } else {
     files_list += "<div class='ml_row'><div class='ml_text'>";
     files_list += "<em>No saved service plans</em></div><div>";
     DOM_dict["load_files_radio"].innerHTML = files_list;
   }
   DOM_dict["popup_load_service"].style.display = "flex";
+  DOM_dict["load_files_radio"].scrollTop = 0;
 }
 
 function result_bible_versions(json_data) {
@@ -1491,22 +1491,26 @@ function audio_popup_preload() {
   websocket.send(JSON.stringify({ action: "request.all-audio", params: {} }));
 }
 
+function select_audio(idx) {
+  document.querySelectorAll("#attach_audio_radio .ml_row").forEach((elt) => {
+    if (elt.classList.contains("selected")) {
+      elt.classList.remove("selected");
+    }
+  });
+  DOM_dict["attach_audio_radio"].childNodes[idx].classList.add("selected");
+}
+
 function show_audio_popup(json_data) {
   let mp3_list = "";
   if (json_data.params.urls.length != 0) {
     for (const [idx, url] of json_data.params.urls.entries()) {
-      mp3_list += "<div class='ml_row'>";
-      mp3_list += "<div class='ml_radio_div'>";
-      mp3_list += "<input type='radio' data-role='none' ";
-      mp3_list += "name='mp3s' id='mp3-" + idx + "' /></div>";
+      mp3_list += "<div class='ml_row' id='mp3-" + idx + "' ";
+      mp3_list += "onclick=select_audio(" + idx + ")>";
       mp3_list += "<div class='ml_text'>" + url + "</div>";
       mp3_list += "</div>";
     }
     DOM_dict["attach_audio_radio"].innerHTML = mp3_list;
-    document.querySelectorAll("#attach_audio_radio input[type=radio]").forEach((elt) => {
-      elt.checked = false;
-    });
-    document.getElementById("mp3-0").checked = true;
+    document.getElementById("mp3-0").classList.add("selected");
   } else {
     mp3_list += "<div class='ml_row'><div class='ml_text'>";
     mp3_list += "<em>No audio files found</em></div><div>";
@@ -1514,16 +1518,14 @@ function show_audio_popup(json_data) {
   }
   DOM_dict["popup_edit_song"].style.display = "none";
   DOM_dict["popup_attach_audio"].style.display = "flex";
+  DOM_dict["popup_attach_audio"].scrollTop = 0;
 }
 
 function attach_audio() {
-  if (document.querySelectorAll("input[name=mp3s]").length > 0) {
-    const sel_mp3 = parseInt(document.querySelector("input[name=mp3s]:checked").id.substring(4));
-    const sel_text = document.querySelector(
-      "#attach_audio_radio .ml_row:nth-child(" + (sel_mp3 + 1) + ") .ml_text"
-    ).innerText;
-    DOM_dict["e_audio"].value = sel_text;
-  }
+  const sel_text = document.querySelector(
+    "#attach_audio_radio .ml_row.selected .ml_text"
+  ).innerText;
+  DOM_dict["e_audio"].value = sel_text;
   close_attach_audio_popup();
 }
 

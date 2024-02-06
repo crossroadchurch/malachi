@@ -312,20 +312,20 @@ input {
   background-color: #f0f0f0;
 }
 
-#passage_list .ml_row.selected {
+.ml_row.selected {
   background-color: #38c;
   color: white;
 }
 
-#passage_list .ml_row.selected .ml_text {
+.ml_row.selected .ml_text {
   text-shadow: 0 1px 0 rgb(0, 85, 153);
 }
 
-#passage_list .ml_row.selected:nth-child(2n) {
+.ml_row.selected:nth-child(2n) {
   background-color: #2b74ad;
 }
 
-#passage_list .ml_row.selected:nth-child(2n) .ml_text {
+.ml_row.selected:nth-child(2n) .ml_text {
   text-shadow: 0 1px 0 #004882;
 }
 
