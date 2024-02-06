@@ -41,6 +41,9 @@ class Service():
         """
         self.items.append(item)
         self.modified = True
+        if len(self.items) == 1:
+            self.item_index = 0 # Select first item added to service plan
+            self.slide_index = 0
         self.autosave()
 
     def remove_item_at(self, index):
@@ -306,6 +309,9 @@ class Service():
                     self.add_item(p)
                 else:
                     raise MalformedServiceFileError(full_path, "Missing key: 'url'")
+        if len(self.items) > 0:
+            self.item_index = 0
+            self.slide_index = 0
         self.modified = False
 
     def import_service(self, fname, cur_style, bible_versions):
