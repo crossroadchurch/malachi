@@ -138,6 +138,14 @@ body {
   text-align: center;
 }
 
+.fill-chord-chunk {
+  display: inline-block;
+  font-family: "Ubuntu Condensed", sans-serif;
+  color: cyan;
+  padding-right: 1rem;
+  margin-bottom: 0.75rem;
+}
+
 .nonsong-block {
   font-family: "Inter Semi Bold", sans-serif;
   color: white;

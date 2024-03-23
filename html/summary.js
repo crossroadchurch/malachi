@@ -23,7 +23,7 @@ function update_music() {
     let current_slide_lines = current_slides[slide_index].split(/\n/);
     for (const line in current_slide_lines) {
       current_text += "<p>";
-      let current_line_segments = current_slide_lines[line].split(/\[[\w\+#\/"='' ]*\]/);
+      let current_line_segments = current_slide_lines[line].split(/\[[\w\+\¬#\/"='' ]*\]/);
       for (let segment = 0; segment < current_line_segments.length; segment++) {
         current_text += current_line_segments[segment];
       }
@@ -37,7 +37,7 @@ function update_music() {
     }
     for (const line in next_slide_lines) {
       next_text += "<p>";
-      let next_line_segments = next_slide_lines[line].split(/\[[\w\+#\/"='' ]*\]/);
+      let next_line_segments = next_slide_lines[line].split(/\[[\w\+\¬#\/"='' ]*\]/);
       for (let segment = 0; segment < next_line_segments.length; segment++) {
         next_text += next_line_segments[segment];
       }
@@ -63,21 +63,29 @@ function update_basic_init(json_data) {
   update_service_overview_update(json_data);
 }
 
+function load_current_item(cur_item) {
+  slide_type = cur_item.type;
+  current_slides = cur_item.slides;
+  current_title = cur_item["title"];
+  if (item_index > 0) {
+    prev_title = service_items[item_index - 1];
+  } else {
+    prev_title = "";
+  }
+  if (item_index < service_items.length - 1) {
+    next_title = service_items[item_index + 1];
+  } else {
+    next_title = "";
+  }
+}
+
 function update_service_overview_update(json_data) {
   item_index = json_data.params.item_index;
   slide_index = json_data.params.slide_index;
   service_items = json_data.params.items;
   current_item = json_data.params.current_item;
   if (JSON.stringify(json_data.params.current_item) != "{}") {
-    slide_type = current_item.type;
-    current_slides = current_item.slides;
-    current_title = current_item.title;
-    if (item_index > 0) {
-      prev_title = service_items[item_index - 1];
-    }
-    if (item_index < service_items.length - 1) {
-      next_title = service_items[item_index + 1];
-    }
+    load_current_item(current_item);
   } else {
     slide_type = "none";
     current_slides = [];
@@ -97,19 +105,7 @@ function update_item_index_update(json_data) {
   item_index = json_data.params.item_index;
   slide_index = json_data.params.slide_index;
   current_item = json_data.params.current_item;
-  slide_type = current_item.type;
-  current_slides = current_item.slides;
-  current_title = current_item["title"];
-  if (item_index > 0) {
-    prev_title = service_items[item_index - 1];
-  } else {
-    prev_title = "";
-  }
-  if (item_index < service_items.length - 1) {
-    next_title = service_items[item_index + 1];
-  } else {
-    next_title = "";
-  }
+  load_current_item(current_item);
   update_music();
 }
 

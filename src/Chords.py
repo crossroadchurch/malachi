@@ -9,6 +9,8 @@ class Chords():
 
     # List of valid keys
     key_list = ('C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B')
+    # List of all recognised keys, including enharmonic equivalents
+    all_key_list = key_list + ('C#', 'D#', 'Gb', 'G#', 'A#', 'Cb', 'B#', 'E#', 'Fb')
 
     # Dictionary of enharmonically equivalent notes
     notes_replacements = {'C#':'Db', 'Db':'C#',
@@ -39,6 +41,54 @@ class Chords():
                           'B' :  ['Db', 'Eb', 'Gb', 'Ab', 'Bb']}
 
     @classmethod
+    def validate_note(cls, note):
+        """
+        Checks validity of a note, updating where necessary (e.g. Cb -> B).
+        Precondition: note is in Chords.all_key_list
+        """
+        note = note.replace("B#", 'C')
+        note = note.replace('Cb', 'B')
+        note = note.replace('E#', 'F')
+        note = note.replace('Fb', 'E')
+        return note
+
+    @classmethod
+    def parse(cls, chord):
+        """
+        Parse a chord into a dict {root, modifiers, bass}.  If a bass note is
+        used, modifiers includes the '/'.  Modifiers and bass can be an empty string. If 
+        either the root or bass notes are invalid (e.g. H# or +) then they will be merged
+        with modifiers and root/bass will be set as the empty string.
+
+        Key arguments:
+        chord -- the chord to be parsed
+        """
+        parsed_chord = {'root':'', 'modifiers':'', 'bass':'' }
+        # Split out bass note, if valid
+        if '/' in chord:
+            bass = chord[chord.rindex('/')+1:].capitalize()
+            if bass in Chords.all_key_list:
+                parsed_chord['bass'] = Chords.validate_note(bass)
+                bassless_chord = chord[:chord.rindex('/')+1]
+            else:
+                bassless_chord = chord
+        else:
+            bassless_chord = chord
+        # Split out root note, if valid
+        if len(bassless_chord)>1 and bassless_chord[1] in ['b', '#']: # Lazy 'and' prevents exceptions
+            root = bassless_chord[:2].capitalize()
+            modifiers = bassless_chord[2:]
+        else:
+            root = bassless_chord[0].capitalize()
+            modifiers = bassless_chord[1:]
+        if root in Chords.all_key_list:
+            parsed_chord['root'] = Chords.validate_note(root)
+            parsed_chord['modifiers'] = modifiers
+        else:
+            parsed_chord['modifiers'] = bassless_chord
+        return parsed_chord
+
+    @classmethod
     def sanitize_chord(cls, chord, song_key):
         """
         Format and return a chord, using notes that are appropriate to the specified key.
@@ -53,49 +103,21 @@ class Chords():
 
         if song_key not in Chords.key_list:
             return chord
-
-        chord = chord.replace("B#", 'C')
-        chord = chord.replace('Cb', 'B')
-        chord = chord.replace('E#', 'F')
-        chord = chord.replace('Fb', 'E')
-
-        # Chord = root_note {modifier} {/ bass_note}
+        chord_parsed = Chords.parse(chord)
         # Adjust root note, if necessary, to be a valid note in the song key
-        # Adjust bass note, if necessary, to be a valid note in the key specified by root
+        if chord_parsed["root"] in Chords.invalid_note_names[song_key]:
+            chord_parsed["root"] = Chords.notes_replacements[chord_parsed["root"]]
+        # Adjust bass note, if necessary, to be a valid note in the root_note key
         # e.g. if we are in C we would want Abmaj7 to be used instead of G#maj7
         #      but E/G# instead of E/Ab (as G# is valid in the key of E)
-
-        # Split chord into root note and the rest of the chord
-        if (len(chord) > 1) and (chord[1].lower() == "b" or chord[1] == "#"):
-            root_note = chord[0].upper() + chord[1].lower()
-            rem_chord = chord[2:]
-        else:
-            root_note = chord[0].upper()
-            rem_chord = chord[1:]
-
-        # Detect bass note, if any
-        if rem_chord.find("/") != -1:
-            chord_mod = rem_chord[0:rem_chord.find("/")].lower()
-            bass_note = rem_chord[rem_chord.find("/") + 1:].capitalize()
-        else:
-            chord_mod = rem_chord.lower()
-            bass_note = ""
-
-        # Adjust root note, if necessary, to be a valid note in the song key
-        if root_note in Chords.invalid_note_names[song_key]:
-            root_note = Chords.notes_replacements[root_note]
-
-        # Adjust bass note, if necessary, to be a valid note in the root_note key
-        if bass_note != "":
-            if bass_note in Chords.invalid_note_names[root_note]:
-                bass_note = Chords.notes_replacements[bass_note]
-
+        if chord_parsed["bass"] != "" and chord_parsed["root"] != "":
+            if chord_parsed["bass"] in Chords.invalid_note_names[chord_parsed["root"]]:
+                chord_parsed["bass"] = Chords.notes_replacements[chord_parsed["bass"]]
+        elif chord_parsed["bass"] != "" and chord_parsed["root"] == "":
+            if chord_parsed["bass"] in Chords.invalid_note_names[song_key]:
+                chord_parsed["bass"] = Chords.notes_replacements[chord_parsed["bass"]]
         # Re-form chord
-        chord = root_note + chord_mod
-        if bass_note != "":
-            chord = chord + "/" + bass_note
-
-        return chord
+        return chord_parsed["root"] + chord_parsed["modifiers"] + chord_parsed["bass"]
 
     @classmethod
     def transpose_chord_tag(cls, chord_tag, root_key, transpose_amount):
@@ -134,39 +156,28 @@ class Chords():
         transposed_key = Chords.key_list[(Chords.key_list.index(root_key) + \
             int(transpose_amount)) % 12]
 
-        # Split chord into root_note, modifier and bass_note
-        if (len(chord) > 1) and (chord[1].lower() == "b" or chord[1] == "#"):
-            root_note = chord[0].upper() + chord[1].lower()
-            rem_chord = chord[2:]
-        else:
-            root_note = chord[0].upper()
-            rem_chord = chord[1:]
-
-        # Detect bass note, if any
-        if rem_chord.find("/") != -1:
-            chord_mod = rem_chord[0:rem_chord.find("/")].lower()
-            bass_note = rem_chord[rem_chord.find("/") + 1:].capitalize()
-        else:
-            chord_mod = rem_chord.lower()
-            bass_note = ""
+        p_chord = Chords.parse(chord)
+        # Exit if either root or bass note are invalid
+        if p_chord["root"] != "" and p_chord["root"] not in Chords.all_key_list:
+            return chord
+        if p_chord["bass"] != "" and p_chord["bass"] not in Chords.all_key_list:
+            return chord
 
         # Assume we are in C major and get the valid names for root_note and bass_note
         # Then transpose root_note and bass_note by transpose_amount in C major
-        if root_note in Chords.invalid_note_names['C']:
-            root_note = Chords.notes_replacements[root_note]
-        root_note = Chords.key_list[(Chords.key_list.index(root_note) + int(transpose_amount)) % 12]
+        if p_chord["root"] != "":
+            if p_chord["root"] in Chords.invalid_note_names['C']:
+                p_chord["root"] = Chords.notes_replacements[p_chord["root"]]
+            p_chord["root"] = Chords.key_list[(Chords.key_list.index(p_chord["root"]) + int(transpose_amount)) % 12]
 
-        if bass_note != "":
-            if bass_note in Chords.invalid_note_names['C']:
-                bass_note = Chords.notes_replacements[bass_note]
-            bass_note = Chords.key_list[(Chords.key_list.index(bass_note) + \
+        if p_chord["bass"] != "":
+            if p_chord["bass"] in Chords.invalid_note_names['C']:
+                p_chord["bass"] = Chords.notes_replacements[p_chord["bass"]]
+            p_chord["bass"] = Chords.key_list[(Chords.key_list.index(p_chord["bass"]) + \
                 int(transpose_amount)) % 12]
 
         # Reform chord and sanitize in transposed key
-        transposed_chord = root_note + chord_mod
-        if bass_note != "":
-            transposed_chord = transposed_chord + "/" + bass_note
-
+        transposed_chord = p_chord["root"] + p_chord["modifiers"] + p_chord["bass"]
         return Chords.sanitize_chord(transposed_chord, transposed_key)
 
     @classmethod
@@ -310,3 +321,7 @@ class Chords():
                 # Add transposed chord to out_str
                 out_str += Chords.transpose_chord_tag(char_buffer, root_key, transpose_amount)
         return out_str
+
+# Testing only
+if __name__ == "__main__":
+    pass

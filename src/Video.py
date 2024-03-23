@@ -21,7 +21,7 @@ class Video():
         if not os.path.isfile(url):
             raise InvalidVideoUrlError(url)
         self.url = os.path.split(url)[0] + "/" + \
-            re.sub(r'[^a-zA-Z0-9 \'\-_.,()]', '', os.path.split(url)[1])
+            re.sub(r'[^a-zA-Z0-9 \-_.,()]', '', os.path.split(url)[1])
         # Remove invalid characters from url, renaming source file as appropriate
         if self.url != url:
             os.rename(os.path.abspath(url), os.path.abspath(self.url))

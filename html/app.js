@@ -28,8 +28,8 @@ const DOM_KEYS = [
   "song_list", "passage_list", "service_list", "presentation_list",
   "video_list", "loop_list", "background_list", "b_version_radios",
   "b_main_version_radios", "b_alt_version_radios", "bible_controls",
-  "e_title", "e_author", "e_book", "e_number", "e_audio", "e_copyright", "e_lyrics",
-  "e_order", "e_transpose", "e_transpose_out", "e_title_span",
+  "e_title", "e_author", "e_book", "e_number", "e_audio", "e_copyright", "e_lyrics", "e_fills",
+  "e_order", "e_transpose", "e_transpose_out", "e_title_span", "line_numbers",
   "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
   "pl_width", "pl_width_out", "pl_font_size", "pl_font_size_out", "pl_lines", "pl_lines_out",
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
@@ -419,14 +419,16 @@ function create_song() {
   DOM_dict["e_audio"].value = "";
   DOM_dict["e_copyright"].value = "";
   DOM_dict["e_lyrics"].value = "<V1>\n";
+  DOM_dict["e_fills"].value = "";
   DOM_dict["e_order"].value = "";
   document.querySelectorAll("input[name='e_key']").forEach((elt) => {
     elt.checked = false;
   });
+  document.querySelector("input[data-ek='C']").checked = true;
   document.querySelector("input[data-lr='0']").checked = true;
   document.querySelector("input[data-lr='1']").checked = false;
   DOM_dict["e_transpose"].value = 0;
-  DOM_dict["e_transpose_out"].value = "-";
+  DOM_dict["e_transpose_out"].value = "C";
   // Switch into create song mode
   DOM_dict["popup_edit_mode"].innerHTML = "Create song";
   // Display popup
@@ -480,11 +482,17 @@ function save_song() {
       part_obj = { part: current_part, lines: current_lines };
       parts.push(part_obj);
     }
+    // fills = [fill_1, fill_2, ...] can be empty array
+    let fill_array = DOM_dict["e_fills"].value.trim().split("\n");
+    if (fill_array.length == 1 && fill_array[0] == "") {
+      fill_array = [];
+    }
 
     let fields = {
       author: DOM_dict["e_author"].value,
       transpose_by: DOM_dict["e_transpose"].value % 12,
       lyrics_chords: parts,
+      fills: fill_array,
       verse_order: DOM_dict["e_order"].value.toLowerCase(),
       song_book_name: DOM_dict["e_book"].value,
       song_number: DOM_dict["e_number"].value,
@@ -635,7 +643,7 @@ function display_current_item(current_item, slide_index) {
       slide_text =
         "<p class='ml_songlyric'><span class='ml_songpart'>" + max_verse_order[idx] + "</span>";
       for (const line of slide_lines) {
-        let line_segments = line.split(/\[[\w\+#\/"='' ]*\]/);
+        let line_segments = line.split(/\[[\w\+\¬#\/"='' ]*\]/);
         for (const segment of line_segments) {
           slide_text += segment;
         }
@@ -1220,6 +1228,15 @@ function result_song_details(json_data) {
       lyrics = "<V1>\n";
     }
     DOM_dict["e_lyrics"].value = lyrics;
+
+    let fills_array = full_song["fills"];
+    let fills_dom = "";
+    for (const fill_elt of fills_array) {
+      fills_dom += fill_elt + "\n";
+    }
+    DOM_dict["e_fills"].value = fills_dom.trim();
+    update_line_numbers(fills_dom.trim());
+
     DOM_dict["e_order"].value = full_song["verse-order"].toUpperCase();
     document.querySelectorAll("input[name=e_key]").forEach((elt) => {
       elt.checked = false;
@@ -1534,6 +1551,14 @@ function close_attach_audio_popup() {
   DOM_dict["popup_attach_audio"].style.display = "none";
 }
 
+function update_line_numbers(fill_text) {
+  const number_of_lines = fill_text.split("\n").length;
+  DOM_dict["line_numbers"].innerHTML = Array(number_of_lines)
+    .fill()
+    .map((_, i) => "<span>:" + (i + 1) + "</span>")
+    .join("");
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
@@ -1769,6 +1794,20 @@ ready(() => {
     elt.addEventListener("change", update_transpose_slider);
   });
 
+  DOM_dict["e_fills"].addEventListener("keyup", (event) => {
+    update_line_numbers(event.target.value);
+  });
+
+  DOM_dict["e_fills"].addEventListener("blur", (event) => {
+    // Remove any blank lines from fill list
+    let fill_lines = event.target.value
+      .split("\n")
+      .filter((x) => x.trim() != "")
+      .join("\n");
+    event.target.value = fill_lines;
+    update_line_numbers(fill_lines);
+  });
+
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {
     elt.addEventListener("change", (e) => {
       websocket.send(
@@ -1783,19 +1822,16 @@ ready(() => {
     });
   });
 
-  DOM_dict["cd_text"].addEventListener("keypress", (e) => {
-    const key_code = e.which ? e.which : e.keyCode;
-    if (key_code == 13) {
-      websocket.send(
-        JSON.stringify({
-          action: "command.edit-style-param",
-          params: {
-            param: "countdown-h-text",
-            value: e.target.value,
-          },
-        })
-      );
-    }
+  DOM_dict["cd_text"].addEventListener("blur", (e) => {
+    websocket.send(
+      JSON.stringify({
+        action: "command.edit-style-param",
+        params: {
+          param: "countdown-h-text",
+          value: e.target.value,
+        },
+      })
+    );
   });
 
   DOM_dict["d_copyright"].addEventListener("change", (e) => {

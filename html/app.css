@@ -340,6 +340,22 @@ input {
   border-style: solid;
 }
 
+#song_list .ml_row:hover,
+#presentation_list .ml_row:hover,
+#video_list .ml_row:hover,
+#loop_list .ml_row:hover,
+#background_list .ml_row:hover {
+  background-color: gold;
+}
+
+#song_list .ml_button:hover,
+#presentation_list .ml_button:hover,
+#video_list .ml_button:hover,
+#loop_list .ml_button:hover,
+#background_list .ml_button:hover {
+  background-color: gold;
+}
+
 .ml_button {
   display: inline-block;
   border-color: #ddd;
@@ -710,6 +726,7 @@ p.ml_bibleverse {
 .mi_range input[type="range"] {
   display: flex;
   flex-grow: 1;
+  appearance: none;
   -webkit-appearance: none;
   height: 2.75em;
   box-sizing: border-box;
@@ -751,6 +768,7 @@ p.ml_bibleverse {
 }
 
 .mi_range input[type="range"]::-moz-range-track {
+  appearance: none;
   -webkit-appearance: none;
   background-color: #e8e8e8;
   border: 1px solid #ccc;
@@ -1113,4 +1131,64 @@ p.ml_bibleverse {
   box-shadow: 0 0 12px #38c;
   border-color: #38c;
   outline: none;
+}
+
+/* Modified from https://stackoverflow.com/a/26916345 */
+[data-tooltip] {
+  cursor: pointer;
+}
+
+[data-tooltip]:hover:before {
+  position: absolute;
+  margin-top: 1.5em;
+  z-index: 1000;
+  content: attr(data-tooltip);
+  white-space: pre-wrap;
+  background-color: #ffeb80;
+  border: solid 1px gold;
+  border-radius: 5px;
+  padding: 1em;
+}
+
+.help_icon {
+  height: 1em;
+  width: 1em;
+  display: inline-block;
+}
+
+#fill_editor {
+  display: inline-flex;
+  font-family: monospace;
+  height: 100px;
+  overflow: hidden;
+}
+
+#e_fills {
+  font-size: 0.9rem;
+  font-family: "Courier New", Courier, monospace;
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+#e_fills:focus-visible {
+  box-shadow: 6px 0 12px #38c;
+  border-color: #38c;
+  outline: none;
+}
+
+#line_numbers {
+  padding-top: 5px;
+  width: 25px;
+  text-align: right;
+  border: 1px solid #ddd;
+  border-right: none;
+  background-color: #38c;
+  color: white;
+  margin-top: 1px;
+}
+
+#line_numbers span {
+  display: block;
+  padding-right: 0.5em;
 }

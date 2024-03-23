@@ -824,7 +824,14 @@
               </div>
             </div>
           </div>
-          <span>Verse order:</span>
+          <div style="width: 100%">
+            <span
+              data-tooltip="You can insert a fill into the order in the same way as a verse,
+just make sure to start it with a : (e.g. C1 :1 V2)."
+              ><img src="/html/icons/icons8-help-48.png" class="help_icon" />
+            </span>
+            Verse order:
+          </div>
           <input type="text" id="e_order" class="mi_textinput" />
           <span>Key:</span>
           <div id="e_key_div" class="radio_toggle_group">
@@ -872,21 +879,35 @@
         </div>
         <!-- Right column -->
         <div class="popup_panel">
+          <div>
+            <span
+              data-tooltip="Use tags in angle brackets (e.g. &lt;V1&gt;) to indicate the start of sections.
+Insert a mandatory line break by placing [br] on a line by itself.
+Place chords on the line before their lyrics and finish chord lines with @.
+Use # to pad out lyrics so that they line up with their chords."
+              ><img src="/html/icons/icons8-help-48.png" class="help_icon" />
+            </span>
+            Lyrics and chords:
+          </div>
           <textarea
-            cols="50"
+            cols="48"
             rows="15"
             name="e_lyrics"
             id="e_lyrics"
             class="mi_textarea"
           ></textarea>
-          <p>
-            Use tags in angle brackets (e.g. <code>&lt;V1&gt;</code>) to indicate the start of
-            sections.<br />
-            Insert a mandatory line break by placing <code>[br]</code> on a line by itself.<br />
-            Place chords on the line before their lyrics and finish chord lines with
-            <code>@</code>.<br />
-            Use <code>#</code> to pad out lyrics so that they line up with their chords.
-          </p>
+          <div style="width: 100%">
+            <span
+              data-tooltip="Place one fill (intro, outro etc) per line.
+Only use chords, there is no need to end the line with an @."
+              ><img src="/html/icons/icons8-help-48.png" class="help_icon" />
+            </span>
+            Fills:
+          </div>
+          <div id="fill_editor">
+            <div id="line_numbers"></div>
+            <textarea cols="50" rows="5" name="e_fills" id="e_fills" class="mi_textarea"></textarea>
+          </div>
         </div>
       </div>
       <div class="popup_v_spacer"></div>

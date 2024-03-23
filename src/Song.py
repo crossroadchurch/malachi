@@ -42,6 +42,7 @@ class Song():
         else:
             raise InvalidSongIdError(song_id)
         self.slides = []
+        self.uses_chords = False
         self.parts = {}
         self.verse_order = ""
         self.part_slide_count = []
@@ -51,6 +52,7 @@ class Song():
         except MissingStyleParameterError as style_error:
             raise MissingStyleParameterError(
                 style_error.msg[42:]) from style_error
+        self.add_fills()
 
     @classmethod
     def is_valid_song_id(cls, song_id):
@@ -137,7 +139,9 @@ class Song():
             "played-key": p_key,
             "non-capo-key": o_key,
             "verse-order": self.verse_order,
-            "part-counts": self.part_slide_count}, indent=2)
+            "fills": self.fills,
+            "part-counts": self.part_slide_count,
+            "uses-chords": self.uses_chords}, indent=2)
 
     def to_JSON_full_data(self):
         """Return a JSON object containing all the data in this Song."""
@@ -162,9 +166,9 @@ class Song():
         return json.dumps({
             "song-id": self.song_id, "title": self.title, "author": self.author,
             "song-key": self.song_key, "transpose-by": self.transpose_by,
-            "parts": tr_parts, "verse-order": self.verse_order, "copyright": self.copyright,
+            "parts": tr_parts, "verse-order": self.full_verse_order, "copyright": self.copyright,
             "song-book-name": self.song_book_name, "song-number": self.song_number,
-            "remote": self.remote, "audio": self.audio })
+            "remote": self.remote, "audio": self.audio, "fills": self.fills })
 
     def __str__(self):
         return self.get_title()
@@ -180,7 +184,7 @@ class Song():
         """
         song_db, cursor = Song.db_connect()
         cursor.execute('''
-            SELECT s.lyrics_chords, s.verse_order, s.search_title, s.search_lyrics
+            SELECT s.lyrics_chords, s.verse_order, s.search_title, s.search_lyrics, s.fills
             FROM songs AS s
             WHERE s.id={s_id}
         '''.format(s_id=self.song_id))
@@ -199,7 +203,8 @@ class Song():
             "lyrics_chords": result[0],
             "verse_order": result[1],
             "search_title": result[2],
-            "search_lyrics": result[3]
+            "search_lyrics": result[3],
+            "fills": result[4]
         })
 
     @classmethod
@@ -232,8 +237,8 @@ class Song():
         else:
             # Song match not found, create remote song in database
             cursor.execute('''
-                INSERT INTO songs(title, author, song_key, transpose_by, copyright, song_book_name, song_number, lyrics_chords, verse_order, search_title, search_lyrics, remote)
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO songs(title, author, song_key, transpose_by, copyright, song_book_name, song_number, lyrics_chords, verse_order, search_title, search_lyrics, fills, remote)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 json_data["title"], 
                 json_data["author"], 
@@ -246,6 +251,7 @@ class Song():
                 json_data["verse_order"],
                 json_data["search_title"],
                 json_data["search_lyrics"],
+                json_data["fills"],
                 1))
             song_db.commit()
             s_id = cursor.lastrowid
@@ -294,7 +300,7 @@ class Song():
         # Need to track chords along with words, but not include chords in width calculations
         song_db, cursor = Song.db_connect()
         cursor.execute('''
-            SELECT s.lyrics_chords, s.verse_order FROM songs AS s
+            SELECT s.lyrics_chords, s.verse_order, s.fills FROM songs AS s
             WHERE s.id={s_id}
         '''.format(s_id=self.song_id))
         result = cursor.fetchone()
@@ -302,6 +308,11 @@ class Song():
         self.parts = dict([x["part"], x["data"]]
                           for x in json.loads(result[0]))
         self.saved_verse_order = result[1]
+
+        self.fills = json.loads(result[2])
+        self.fill_dict = {}
+        for idx, fill in enumerate(self.fills):
+            self.fill_dict[":" + str(idx+1)] = fill
 
         # Create verse order if it is missing
         if self.saved_verse_order is None:
@@ -311,14 +322,19 @@ class Song():
 
         if self.parts != {}:
             slide_temp = [self.parts[x] for x in self.saved_verse_order.split(" ") if x in self.parts]
+            self.full_verse_order = ' '.join([x for x in self.saved_verse_order.split(" ") 
+                                              if x in self.parts or x in self.fill_dict])
             self.verse_order = ' '.join([x for x in self.saved_verse_order.split(" ") if x in self.parts])
             if self.verse_order == "":
                 # Fix completely invalid verse order
                 slide_temp = [self.parts[x] for x in self.parts]
                 self.verse_order = ' '.join([x for x in self.parts])
+                self.full_verse_order = ' '.join([x for x in self.parts])
         else:
             slide_temp = []
             self.verse_order = self.saved_verse_order
+            self.full_verse_order = self.saved_verse_order
+
         self.slides = []
         self.part_slide_count = []
 
@@ -383,7 +399,44 @@ class Song():
                 section_length += 1
             # Update parts length
             self.part_slide_count.append(section_length)
+        # Determine if song uses chords
+        for slide in self.slides:
+            if "[" in slide:
+                self.uses_chords = True
         song_db.close()
+
+    def package_fill(self, fill):
+        # Package fill in correct key, transposing if necessary
+        packaged_fill = "[¬]" + ''.join("[" + x + "]" for x in fill.split(" ")) + "[¬]"
+        if self.resultant_key != "" and self.transpose_by != 0:
+            actual_fill = Chords.transpose_section(packaged_fill, self.song_key, self.transpose_by)
+        else:
+            actual_fill = packaged_fill
+        return actual_fill
+
+    def add_fills(self):
+        # Pre-condition - Song has already been paginated => self.fill_dict is populated and self.full_verse_order exists
+        order_with_fills = self.full_verse_order.split(" ")
+        order_no_fills = self.verse_order.split(" ")
+
+        offset = 0
+        cur_slide = 0
+        for idx, part in enumerate(order_with_fills):
+            if (idx-offset) < len(order_no_fills) and part != order_no_fills[idx - offset]:
+                # Fill detected
+                if offset == 0: # Intro
+                    # Intro
+                    self.slides[0] = self.package_fill(self.fill_dict[part]) + self.slides[0]
+                else: # Fill
+                    link_fill = self.package_fill(self.fill_dict[part])
+                    self.slides[cur_slide-1] = self.slides[cur_slide-1] + link_fill
+                    self.slides[cur_slide] = link_fill + self.slides[cur_slide]
+                offset += 1
+            elif (idx-offset) == len(order_no_fills): # Outro
+                self.slides[-1] = self.slides[-1] + self.package_fill(self.fill_dict[part])
+            else:
+                # Non-fill match found
+                cur_slide += self.part_slide_count[idx-offset]
 
     @classmethod
     def text_search(cls, search_text, remote):
@@ -419,9 +472,9 @@ class Song():
         """
         song_db, cursor = Song.db_connect()
         cursor.execute('''
-            INSERT INTO songs(song_book_name, title, author, song_key, transpose_by, lyrics_chords, verse_order, copyright, song_number, search_title, search_lyrics)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', ("", "", "", "", 0, "", "", "", "", "", ""))
+            INSERT INTO songs(song_book_name, title, author, song_key, transpose_by, lyrics_chords, verse_order, copyright, song_number, search_title, search_lyrics, audio)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', ("", "", "", "C", 0, "", "", "", "", "", "", ""))
         song_db.commit()
         song_id = cursor.lastrowid
         song_db.close()
@@ -502,27 +555,17 @@ class Song():
             elif saved_song_key:
                 song_key = saved_song_key
 
-            uses_chords = False
             for section in fields["lyrics_chords"]:
                 section_data = ""
                 # e.g. section = { "part": "c1", "lines": [line_1, ..., line_N] }
                 if "part" in section and "lines" in section:
                     prev_line = ""
-                    # Do all chord checking here
-                    for line in section["lines"]:
-                        if line[-1] == "@" and uses_chords is False:
-                            uses_chords = True
-                            # Check there is a key, either in saved record or fields["song_key"]
-                            # If fields["song_key"] exists then it has already been validated
-                            if "song_key" not in fields and saved_song_key not in Chords.key_list:
-                                raise InvalidSongFieldError(
-                                    "No key specified for a song with chords")
 
-                    # Now process section and combine chords and lyrics
+                    # Process section and combine chords and lyrics
                     for line in section["lines"]:
                         # Case 1: Line is chords
                         if line[-1] == "@":
-                            if len(prev_line) >= 1 and prev_line[-1] == "@":
+                            if len(prev_line) >= 1 and prev_line[-1] == "@": 
                                 # Previous line is chords
                                 section_data += Chords.combine_chords_and_lyrics(
                                     prev_line[:-1], "", song_key) + "\n"
@@ -617,6 +660,16 @@ class Song():
                 WHERE id = ?
             ''', (json.dumps(lyrics_chords), fields["search_lyrics"], song_id))
             song_db.commit()
+
+        # Update fills
+        if "fills" in fields:
+            cursor.execute('''
+                UPDATE songs
+                SET fills = ?
+                WHERE id = ?
+            ''', (json.dumps(fields["fills"]), song_id))
+            song_db.commit()
+
         song_db.close()
 
     @classmethod
@@ -642,6 +695,19 @@ class Song():
             # Add audio recording column to songs table
             cursor.execute('ALTER TABLE songs ADD COLUMN audio TEXT NOT NULL DEFAULT ""')
 
+        if(len([x for x in song_rows if x[1]=='fills']) == 0):
+            # Add fills column to songs table
+            cursor.execute('ALTER TABLE songs ADD COLUMN fills TEXT NOT NULL DEFAULT "[]"')
+
+        # Add mandatory key to each song, converting existing NULLs into 'C'
+        song_key_row = [x for x in song_rows if x[1]=='song_key'][0]
+        if song_key_row[3] == 0: # songs(song_key) NOT NULL flag set to false, so hasn't been updated yet
+            cursor.execute('ALTER TABLE songs RENAME song_key TO old_song_key')
+            cursor.execute('ALTER TABLE songs ADD COLUMN song_key VARCHAR(3) NOT NULL DEFAULT "C"')
+            cursor.execute('UPDATE songs SET song_key = old_song_key WHERE old_song_key IS NOT NULL AND old_song_key IS NOT ""')
+            song_db.commit()
+            cursor.execute('ALTER TABLE songs DROP COLUMN old_song_key')
+            
         cursor.close()
         song_db.close()
 

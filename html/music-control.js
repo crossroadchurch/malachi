@@ -99,6 +99,120 @@ function view_service_options(val) {
   }
 }
 
+function get_song_section_html(section, prefix, display_fill_toggle) {
+  let section_and_fills = section.split(/(\[\¬\].*\[\¬\])/).filter((x) => x != "");
+  let slide_text = "";
+  for (const section_part of section_and_fills) {
+    if (section_part.includes("[¬]")) {
+      // Process fill section (single line of chords)
+      if (display_fill_toggle) {
+        fill_chords = section_part
+          .split(/(\[[\w\+#\/"=''\¬ ]*\])/)
+          .filter((x) => x != "" && x != "[¬]");
+        for (const chord of fill_chords) {
+          slide_text += "<span class='fill-chord-chunk'>" + chord.slice(1, -1) + "</span>";
+        }
+        slide_text += "<br />";
+      }
+      display_fill_toggle = !display_fill_toggle;
+    } else {
+      // Process regular lyrics and chords
+      let slide_lines = section_part.split(/(\n)/);
+      let prev_chunk_is_chord = false;
+      let hanging_lyric_pos = -1;
+      for (const line of slide_lines) {
+        if (line == "\n") {
+          slide_text += "<br />";
+        } else {
+          let line_segments = line.split(/(\[[\w\+#\/"='' ]*\])/);
+          if (line_segments[0] != "") {
+            // Process head of line
+            slide_text +=
+              '<span class="' +
+              prefix +
+              'lyric-chord-block"><span class="' +
+              prefix +
+              'lyric-chunk">' +
+              line_segments[0] +
+              "</span></span>";
+          }
+          // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
+          prev_chunk_is_chord = false;
+          hanging_lyric_pos = -1;
+          for (let segment = 1; segment < line_segments.length; segment++) {
+            let seg = line_segments[segment];
+            if (seg.charAt(0) == "[") {
+              // Current is chord
+              seg = seg.replace(/\[[\s]?/, '<span class="' + prefix + 'chord-chunk">');
+              seg = seg.replace(/[\s]?\]/, "</span>");
+              if (prev_chunk_is_chord == true) {
+                slide_text += '</span><span class="' + prefix + 'lyric-chord-block">' + seg;
+              } else {
+                slide_text += '<span class="' + prefix + 'lyric-chord-block">' + seg;
+              }
+              prev_chunk_is_chord = true;
+            } else {
+              // Current is lyric
+              if (hanging_lyric_pos > 0 && seg.charAt(0).match(/[a-z]/i)) {
+                slide_text =
+                  slide_text.slice(0, hanging_lyric_pos + 1) +
+                  " midword" +
+                  slide_text.slice(hanging_lyric_pos + 1);
+              }
+              // recalc hanging_lyric_pos based on current_text length + offset
+              hanging_lyric_pos = slide_text.length + 23 + prefix.length;
+              slide_text += '<span class="' + prefix + 'lyric-chunk">' + seg + "</span></span>";
+              prev_chunk_is_chord = false;
+              if (!seg.slice(-1).match(/[a-z]/i)) {
+                hanging_lyric_pos = -1;
+              }
+            }
+          }
+          if (prev_chunk_is_chord == true) {
+            slide_text += "</span>";
+          }
+        }
+      }
+      slide_text += "<br />";
+    }
+  }
+  return { text: slide_text, toggle: display_fill_toggle };
+}
+
+function process_chord_widths(slide_id, prefix) {
+  document.querySelectorAll("#" + slide_id + ">span").forEach((element) => {
+    if (element.children.length > 1) {
+      const lyricWidth = parseInt(
+        getComputedStyle(element.querySelector("." + prefix + "lyric-chunk")).width
+      );
+      const chordWidth = parseInt(
+        getComputedStyle(element.querySelector("." + prefix + "chord-chunk")).width
+      );
+      if (lyricWidth == 0) {
+        element.querySelector("." + prefix + "lyric-chunk").innerHTML = "&nbsp;";
+      }
+      if (lyricWidth <= chordWidth) {
+        if (element.querySelectorAll(".midword").length > 0) {
+          const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
+          element.insertAdjacentHTML(
+            "beforeend",
+            '<span class="' + prefix + 'midword-spacer">-</span>'
+          );
+          if (spacerWidth < body_size_int) {
+            element.querySelector("." + prefix + "midword-spacer").style.width =
+              body_size_int + "px";
+          } else {
+            element.querySelector("." + prefix + "midword-spacer").style.width = spacerWidth + "px";
+          }
+        } else {
+          element.style.paddingRight =
+            chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
+        }
+      }
+    }
+  });
+}
+
 function update_music() {
   DOM_dict["playedkey"].innerHTML = played_key;
   if (played_key === "") {
@@ -169,171 +283,21 @@ function update_music() {
 
   let current_text = "";
   let next_text = "";
-
   if (slide_type == "song") {
-    let current_slide_lines = current_slides[slide_index].split(/(\n)/);
-    let prev_chunk_is_chord = false;
-    let hanging_lyric_pos = -1;
-
-    for (const line in current_slide_lines) {
-      if (current_slide_lines[line] == "\n") {
-        current_text += "<br />";
-      } else {
-        let current_line_segments = current_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
-        if (current_line_segments[0] != "") {
-          // Process head of line
-          current_text +=
-            '<span class="lyric-chord-block"><span class="lyric-chunk">' +
-            current_line_segments[0] +
-            "</span></span>";
-        }
-        // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
-        prev_chunk_is_chord = false;
-        hanging_lyric_pos = -1;
-        for (let segment = 1; segment < current_line_segments.length; segment++) {
-          let cur_seg = current_line_segments[segment];
-          if (cur_seg.charAt(0) == "[") {
-            // Current is chord
-            cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="chord-chunk">');
-            cur_seg = cur_seg.replace(/[\s]?\]/, "</span>");
-            if (prev_chunk_is_chord == true) {
-              current_text += '</span><span class="lyric-chord-block">' + cur_seg;
-            } else {
-              current_text += '<span class="lyric-chord-block">' + cur_seg;
-            }
-            prev_chunk_is_chord = true;
-          } else {
-            // Current is lyric
-            if (hanging_lyric_pos > 0 && cur_seg.charAt(0).match(/[a-z]/i)) {
-              current_text =
-                current_text.slice(0, hanging_lyric_pos + 1) +
-                " midword" +
-                current_text.slice(hanging_lyric_pos + 1);
-            }
-            // recalc hanging_lyric_pos based on current_text length + offset
-            hanging_lyric_pos = current_text.length + 23;
-            current_text += '<span class="lyric-chunk">' + cur_seg + "</span></span>";
-            prev_chunk_is_chord = false;
-            if (!cur_seg.slice(-1).match(/[a-z]/i)) {
-              hanging_lyric_pos = -1;
-            }
-          }
-        }
-        if (prev_chunk_is_chord == true) {
-          current_text += "</span>";
-        }
-      }
-    }
-    DOM_dict["currentslide"].innerHTML = current_text;
-
-    let next_slide_lines = [];
+    current_result = get_song_section_html(current_slides[slide_index], "", true);
+    DOM_dict["currentslide"].innerHTML = current_result.text;
     if (slide_index < current_slides.length - 1) {
-      next_slide_lines = current_slides[slide_index + 1].split(/(\n)/);
+      next_result = get_song_section_html(
+        current_slides[slide_index + 1],
+        "next-",
+        current_result.toggle
+      );
+      DOM_dict["nextslide"].innerHTML = next_result.text;
+    } else {
+      DOM_dict["nextslide"].innerHTML = "";
     }
-    let next_text = "";
-
-    for (const line in next_slide_lines) {
-      if (next_slide_lines[line] == "\n") {
-        next_text += "<br />";
-      } else {
-        let next_line_segments = next_slide_lines[line].split(/(\[[\w\+#\/"='' ]*\])/);
-        if (next_line_segments[0] != "") {
-          // Process head of line
-          next_text +=
-            '<span class="next-lyric-chord-block"><span class="next-lyric-chunk">' +
-            next_line_segments[0] +
-            "</span></span>";
-        }
-        // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
-        prev_chunk_is_chord = false;
-        hanging_lyric_pos = -1;
-        for (let segment = 1; segment < next_line_segments.length; segment++) {
-          let cur_seg = next_line_segments[segment];
-          if (cur_seg.charAt(0) == "[") {
-            // Current is chord
-            cur_seg = cur_seg.replace(/\[[\s]?/, '<span class="next-chord-chunk">');
-            cur_seg = cur_seg.replace(/[\s]?\]/, "</span>");
-            if (prev_chunk_is_chord == true) {
-              next_text += '</span><span class="next-lyric-chord-block">' + cur_seg;
-            } else {
-              next_text += '<span class="next-lyric-chord-block">' + cur_seg;
-            }
-            prev_chunk_is_chord = true;
-          } else {
-            // Current is lyric
-            if (hanging_lyric_pos > 0 && cur_seg.charAt(0).match(/[a-z]/i)) {
-              next_text =
-                next_text.slice(0, hanging_lyric_pos + 1) +
-                " midword" +
-                next_text.slice(hanging_lyric_pos + 1);
-            }
-            // recalc hanging_lyric_pos based on current_text length + offset
-            hanging_lyric_pos = next_text.length + 28;
-            next_text += '<span class="next-lyric-chunk">' + cur_seg + "</span></span>";
-            prev_chunk_is_chord = false;
-            if (!cur_seg.slice(-1).match(/[a-z]/i)) {
-              hanging_lyric_pos = -1;
-            }
-          }
-        }
-        if (prev_chunk_is_chord == true) {
-          next_text += "</span>";
-        }
-      }
-    }
-    DOM_dict["nextslide"].innerHTML = next_text;
-
-    document.querySelectorAll("#currentslide>span").forEach((element) => {
-      if (element.children.length > 1) {
-        const lyricWidth = parseInt(getComputedStyle(element.querySelector(".lyric-chunk")).width);
-        const chordWidth = parseInt(getComputedStyle(element.querySelector(".chord-chunk")).width);
-        if (lyricWidth == 0) {
-          element.querySelector(".lyric-chunk").innerHTML = "&nbsp;";
-        }
-        if (lyricWidth <= chordWidth) {
-          if (element.querySelectorAll(".midword").length > 0) {
-            const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
-            element.insertAdjacentHTML("beforeend", '<span class="midword-spacer">-</span>');
-            if (spacerWidth < body_size_int) {
-              element.querySelector(".midword-spacer").style.width = body_size_int + "px";
-            } else {
-              element.querySelector(".midword-spacer").style.width = spacerWidth + "px";
-            }
-          } else {
-            element.style.paddingRight =
-              chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
-          }
-        }
-      }
-    });
-
-    document.querySelectorAll("#nextslide>span").forEach((element) => {
-      if (element.children.length > 1) {
-        const lyricWidth = parseInt(
-          getComputedStyle(element.querySelector(".next-lyric-chunk")).width
-        );
-        const chordWidth = parseInt(
-          getComputedStyle(element.querySelector(".next-chord-chunk")).width
-        );
-        if (lyricWidth == 0) {
-          element.querySelector(".next-lyric-chunk").innerHTML = "&nbsp;";
-        }
-        if (lyricWidth <= chordWidth) {
-          if (element.querySelectorAll(".midword").length > 0) {
-            const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
-            element.insertAdjacentHTML("beforeend", '<span class="next-midword-spacer">-</span>');
-            if (spacerWidth < body_size_int) {
-              element.querySelector(".next-midword-spacer").style.width = body_size_int + "px";
-            } else {
-              element.querySelector(".next-midword-spacer").style.width = spacerWidth + "px";
-            }
-          } else {
-            element.style.paddingRight =
-              chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
-          }
-        }
-      }
-    });
+    process_chord_widths("currentslide", "");
+    process_chord_widths("nextslide", "next-");
   } else if (slide_type == "bible") {
     current_text = '<div class ="nonsong-block"><p class="nonsong-line">';
     current_text += current_slides[slide_index].replace(/\n/g, '</p><p class="nonsong-line">');
@@ -506,26 +470,34 @@ function update_leader_init(json_data) {
   update_service_overview_update(json_data);
 }
 
+function load_current_item(cur_item) {
+  slide_type = cur_item.type;
+  current_slides = cur_item.slides;
+  if (slide_type == "song") {
+    cur_song_id = cur_item["song-id"];
+    noncapo_key = cur_item["non-capo-key"];
+    if (cur_item["uses-chords"]) {
+      played_key = cur_item["played-key"];
+    } else {
+      played_key = "";
+    }
+    verse_order = cur_item["verse-order"];
+    part_counts = cur_item["part-counts"];
+  } else {
+    cur_song_id = -1;
+    verse_order = "";
+    part_counts = [];
+    noncapo_key = "";
+    played_key = "";
+  }
+}
+
 function update_service_overview_update(json_data) {
   item_index = json_data.params.item_index;
   slide_index = json_data.params.slide_index;
   service_items = json_data.params.items;
   if (JSON.stringify(json_data.params.current_item) != "{}") {
-    slide_type = json_data.params.current_item.type;
-    current_slides = json_data.params.current_item.slides;
-    if (slide_type == "song") {
-      cur_song_id = json_data.params.current_item["song-id"];
-      noncapo_key = json_data.params.current_item["non-capo-key"];
-      played_key = json_data.params.current_item["played-key"];
-      verse_order = json_data.params.current_item["verse-order"];
-      part_counts = json_data.params.current_item["part-counts"];
-    } else {
-      cur_song_id = -1;
-      verse_order = "";
-      part_counts = [];
-      noncapo_key = "";
-      played_key = "";
-    }
+    load_current_item(json_data.params.current_item);
   } else {
     slide_type = "none";
     cur_song_id = -1;
@@ -552,21 +524,7 @@ function update_slide_index_update(json_data) {
 function update_item_index_update(json_data) {
   item_index = json_data.params.item_index;
   slide_index = json_data.params.slide_index;
-  slide_type = json_data.params.current_item.type;
-  current_slides = json_data.params.current_item.slides;
-  if (slide_type == "song") {
-    cur_song_id = json_data.params.current_item["song-id"];
-    noncapo_key = json_data.params.current_item["non-capo-key"];
-    played_key = json_data.params.current_item["played-key"];
-    verse_order = json_data.params.current_item["verse-order"];
-    part_counts = json_data.params.current_item["part-counts"];
-  } else {
-    cur_song_id = -1;
-    verse_order = "";
-    played_key = "";
-    noncapo_key = "";
-    part_counts = [];
-  }
+  load_current_item(json_data.params.current_item);
   update_menu();
   capo_check_update_music();
 }

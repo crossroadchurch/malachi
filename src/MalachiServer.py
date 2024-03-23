@@ -486,6 +486,7 @@ class MalachiServer():
                         # Refresh instance of edited Song in service
                         self.s.items[i].get_nonslide_data()
                         self.s.items[i].paginate_from_style(self.screen_style)
+                        self.s.items[i].add_fills()
             # Update all clients
             await self.clients_item_index_update()
         except InvalidSongIdError as e:
@@ -1248,6 +1249,7 @@ class MalachiServer():
             # Refresh song in service
             self.s.items[idx].get_nonslide_data()
             self.s.items[idx].paginate_from_style(self.screen_style)
+            self.s.items[idx].add_fills()
             # Update all clients
             await self.clients_item_index_update()
         else:

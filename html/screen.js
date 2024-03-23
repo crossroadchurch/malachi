@@ -39,7 +39,7 @@ function display_current_slide(slide_index) {
     verseorder = "<p>";
     slide_text = "<p>";
     for (const line in slide_lines) {
-      let line_segments = slide_lines[line].split(/\[[\w\+#\/"='' ]*\]/);
+      let line_segments = slide_lines[line].split(/\[[\w\+\¬#\/"='' ]*\]/);
       for (let segment = 0; segment < line_segments.length; segment++) {
         slide_text += line_segments[segment];
       }
