@@ -136,12 +136,12 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.bass-root {
-  display: none;
+.faded-chord {
+  color: grey;
 }
 
-.hybrid-root {
-  color: grey;
+.hidden-chord {
+  display: none;
 }
 
 .nonsong-block {
@@ -196,7 +196,7 @@ span {
 }
 
 #caposelect,
-#bassselect {
+#chordselect {
   font-size: 1.25rem;
 }
 

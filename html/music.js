@@ -7,13 +7,16 @@ let current_slides = [];
 let current_title = "";
 let part_counts = [];
 let slide_index = -1;
-let bass_pref = window.localStorage.getItem("bass_pref");
-const BASS_CSS = ["guitar-root", "hybrid-root", "bass-root"];
+let chord_pref = window.localStorage.getItem("chord_pref");
+const FULL_CHORDS = "0";
+const SIMPLE_CHORDS = "1";
+const BASS_EMPHASIS = "2";
+const BASS_ONLY = "3";
 let websocket;
 // DOM pointers
 const DOM_dict = {};
 // prettier-ignore
-const DOM_KEYS = ["playedkey", "capoarea", "verseorder", "currentslide", "nextslide", "caposelect", "bassselect"];
+const DOM_KEYS = ["playedkey", "capoarea", "verseorder", "currentslide", "nextslide", "caposelect", "chordselect"];
 // prettier-ignore
 const VALID_KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"];
 
@@ -51,32 +54,59 @@ function parse_chord(chord) {
   return [p_root, p_modifiers, p_bass];
 }
 
-function get_chord_chunk_html(chord, prefix) {
+function get_chord_chunk_html(chord, prefix, prev_chord) {
   p_chord = parse_chord(chord);
-  if (p_chord[2] == "") {
-    // Chord doesn't have a bass note
-    // prettier-ignore
-    chord = p_chord[0] + "<span class='" + BASS_CSS[bass_pref] + "'>" + p_chord[1] + "</span>";
-  } else {
-    // prettier-ignore
-    chord = "<span class='" + BASS_CSS[bass_pref] + "'>" + p_chord[0] + p_chord[1] + "</span>" + p_chord[2];
+  switch (chord_pref) {
+    case SIMPLE_CHORDS:
+      if (p_chord[1][0] == "m") {
+        chord = p_chord[0] + "m";
+      } else {
+        chord = p_chord[0];
+      }
+      break;
+    case BASS_EMPHASIS:
+      if (p_chord[2] == "") {
+        chord = p_chord[0] + "<span class='faded-chord'>" + p_chord[1] + "</span>";
+      } else {
+        chord = "<span class='faded-chord'>" + p_chord[0] + p_chord[1] + "</span>" + p_chord[2];
+      }
+      break;
+    case BASS_ONLY:
+      if (p_chord[2] == "") {
+        chord = p_chord[0];
+      } else {
+        chord = p_chord[2];
+      }
+      break;
+    default:
+      chord = p_chord[0] + p_chord[1] + p_chord[2];
+      break;
   }
   let chunk_text = "<span class='" + prefix + "chord-chunk'>" + chord + "</span>";
-  return chunk_text;
+  if (chord == prev_chord) {
+    // Don't display duplicate chords on the same line
+    chunk_text = "<span class='" + prefix + "chord-chunk hidden-chord'>" + chord + "</span>";
+  }
+  return [chunk_text, chord];
 }
 
 function get_song_section_html(section, prefix, display_fill_toggle) {
   let section_and_fills = section.split(/(\[\¬\].*\[\¬\])/).filter((x) => x != "");
   let slide_text = "";
+  let prev_chord = "";
+  let cur_chord_tag = "";
   for (const section_part of section_and_fills) {
     if (section_part.includes("[¬]")) {
       // Process fill section (single line of chords)
+      prev_chord = "";
       if (display_fill_toggle) {
         fill_chords = section_part
           .split(/(\[[\w\+\¬#\/"='' ]*\])/)
           .filter((x) => x != "" && x != "[¬]");
         for (const chord of fill_chords) {
-          slide_text += get_chord_chunk_html(chord.slice(1, -1), "fill-");
+          //prettier-ignore
+          [cur_chord_tag, prev_chord] = get_chord_chunk_html(chord.slice(1, -1), "fill-", prev_chord);
+          slide_text += cur_chord_tag;
         }
         slide_text += "<br />";
       }
@@ -87,6 +117,7 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
       let prev_chunk_is_chord = false;
       let hanging_lyric_pos = -1;
       for (const line of slide_lines) {
+        prev_chord = "";
         if (line == "\n") {
           slide_text += "<br />";
         } else {
@@ -111,11 +142,12 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
               // Current is chord
               seg = seg.replace(/\[[\s]?/, ""); // ? => * maybe
               seg = seg.replace(/[\s]?\]/, "");
-              seg = get_chord_chunk_html(seg, prefix);
+              [cur_chord_tag, prev_chord] = get_chord_chunk_html(seg, prefix, prev_chord);
               if (prev_chunk_is_chord == true) {
-                slide_text += '</span><span class="' + prefix + 'lyric-chord-block">' + seg;
+                slide_text +=
+                  '</span><span class="' + prefix + 'lyric-chord-block">' + cur_chord_tag;
               } else {
-                slide_text += '<span class="' + prefix + 'lyric-chord-block">' + seg;
+                slide_text += '<span class="' + prefix + 'lyric-chord-block">' + cur_chord_tag;
               }
               prev_chunk_is_chord = true;
             } else {
@@ -262,9 +294,9 @@ function update_capo() {
   websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
 }
 
-function update_bass() {
-  bass_pref = parseInt(DOM_dict["bassselect"].value);
-  window.localStorage.setItem("bass_pref", bass_pref);
+function update_chord_style() {
+  chord_pref = DOM_dict["chordselect"].value;
+  window.localStorage.setItem("chord_pref", chord_pref);
   update_music();
 }
 
@@ -394,11 +426,11 @@ ready(() => {
   for (const key of DOM_KEYS) {
     DOM_dict[key] = document.getElementById(key);
   }
-  if (bass_pref == null) {
-    bass_pref = 0;
-    window.localStorage.setItem("bass_pref", bass_pref);
+  if (chord_pref == null) {
+    chord_pref = 0;
+    window.localStorage.setItem("chord_pref", chord_pref);
   }
-  DOM_dict["bassselect"].value = parseInt(bass_pref);
+  DOM_dict["chordselect"].value = chord_pref;
   start_websocket();
 });
 
