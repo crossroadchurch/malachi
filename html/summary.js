@@ -8,6 +8,7 @@ let service_items = [];
 let current_slides = [];
 let slide_index = -1;
 let item_index = -1;
+const LINE_SEGMENT_REGEX = /\[[\w\+\¬#\/"='' ]*\]/;
 // DOM pointers
 const DOM_dict = {};
 // prettier-ignore
@@ -21,11 +22,10 @@ function update_music() {
 
   if (slide_type == "song" || slide_type == "bible") {
     let current_slide_lines = current_slides[slide_index].split(/\n/);
-    for (const line in current_slide_lines) {
+    for (const line of current_slide_lines) {
       current_text += "<p>";
-      let current_line_segments = current_slide_lines[line].split(/\[[\w\+\¬#\/"='' ]*\]/);
-      for (let segment = 0; segment < current_line_segments.length; segment++) {
-        current_text += current_line_segments[segment];
+      for (const segment of line.split(LINE_SEGMENT_REGEX)) {
+        current_text += segment;
       }
       current_text += "</p>";
     }
@@ -35,11 +35,10 @@ function update_music() {
     if (slide_index < current_slides.length - 1) {
       next_slide_lines = current_slides[slide_index + 1].split(/\n/);
     }
-    for (const line in next_slide_lines) {
+    for (const line of next_slide_lines) {
       next_text += "<p>";
-      let next_line_segments = next_slide_lines[line].split(/\[[\w\+\¬#\/"='' ]*\]/);
-      for (let segment = 0; segment < next_line_segments.length; segment++) {
-        next_text += next_line_segments[segment];
+      for (const segment of line.split(LINE_SEGMENT_REGEX)) {
+        next_text += segment;
       }
       next_text += "</p>";
     }
@@ -210,9 +209,8 @@ ready(() => {
 const params = window.location.search.slice(1);
 let body_size = "12px";
 if (params != "") {
-  const param_arr = params.split("&");
-  for (let i = 0; i < param_arr.length; i++) {
-    let param_pair = param_arr[i].split("=");
+  for (const param of params.split("&")) {
+    let param_pair = param.split("=");
     if (param_pair[0] == "size") {
       body_size = param_pair[1] + "px";
     }

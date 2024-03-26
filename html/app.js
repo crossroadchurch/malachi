@@ -16,6 +16,7 @@ let video_interval;
 let valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 let saved_style = null;
+const LINE_SEGMENT_REGEX = /\[[\w\+\¬#\/"='' ]*\]/;
 
 // DOM pointers
 const DOM_dict = {};
@@ -643,8 +644,7 @@ function display_current_item(current_item, slide_index) {
       slide_text =
         "<p class='ml_songlyric'><span class='ml_songpart'>" + max_verse_order[idx] + "</span>";
       for (const line of slide_lines) {
-        let line_segments = line.split(/\[[\w\+\¬#\/"='' ]*\]/);
-        for (const segment of line_segments) {
+        for (const segment of line.split(LINE_SEGMENT_REGEX)) {
           slide_text += segment;
         }
         slide_text += "<br />";

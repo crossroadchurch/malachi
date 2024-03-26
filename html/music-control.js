@@ -15,6 +15,9 @@ const valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", 
 let music_options_visible = false;
 let display_options_visible = false;
 let service_options_visible = false;
+const SECTION_AND_FILLS_REGEX = /(\[\¬\].*\[\¬\])/;
+const FILL_CHORD_REGEX = /(\[[\w\+#\/"=''\¬ ]*\])/;
+const LINE_SEGMENT_REGEX = /(\[[\w\+#\/"='' ]*\])/;
 // DOM pointers
 const DOM_dict = {};
 // prettier-ignore
@@ -100,15 +103,13 @@ function view_service_options(val) {
 }
 
 function get_song_section_html(section, prefix, display_fill_toggle) {
-  let section_and_fills = section.split(/(\[\¬\].*\[\¬\])/).filter((x) => x != "");
+  let section_and_fills = section.split(SECTION_AND_FILLS_REGEX).filter((x) => x != "");
   let slide_text = "";
   for (const section_part of section_and_fills) {
     if (section_part.includes("[¬]")) {
       // Process fill section (single line of chords)
       if (display_fill_toggle) {
-        fill_chords = section_part
-          .split(/(\[[\w\+#\/"=''\¬ ]*\])/)
-          .filter((x) => x != "" && x != "[¬]");
+        fill_chords = section_part.split(FILL_CHORD_REGEX).filter((x) => x != "" && x != "[¬]");
         for (const chord of fill_chords) {
           slide_text += "<span class='fill-chord-chunk'>" + chord.slice(1, -1) + "</span>";
         }
@@ -124,7 +125,7 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
         if (line == "\n") {
           slide_text += "<br />";
         } else {
-          let line_segments = line.split(/(\[[\w\+#\/"='' ]*\])/);
+          let line_segments = line.split(LINE_SEGMENT_REGEX);
           if (line_segments[0] != "") {
             // Process head of line
             slide_text +=
@@ -244,23 +245,23 @@ function update_music() {
   if (slide_type == "song") {
     verse_list = verse_order.split(" ");
     let part_counts_sum = 0;
-    for (let i = 0; i < verse_list.length; i++) {
-      if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[i]) {
+    for (const [idx, verse] of verse_list.entries()) {
+      if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[idx]) {
         verse_control_list +=
           "<button class='verse-button current-verse-button' onclick='change_verse(" +
           part_counts_sum +
           ")'>" +
-          verse_list[i].toUpperCase() +
+          verse.toUpperCase() +
           "</button>";
       } else {
         verse_control_list +=
           "<button class='verse-button' onclick='change_verse(" +
           part_counts_sum +
           ")'>" +
-          verse_list[i].toUpperCase() +
+          verse.toUpperCase() +
           "</button>";
       }
-      part_counts_sum += part_counts[i];
+      part_counts_sum += part_counts[idx];
     }
   } else if (slide_type != undefined) {
     verse_control_list = "<span class='non-song-title'>" + service_items[item_index] + "</span>";
@@ -327,14 +328,14 @@ function update_menu() {
   let temp_menu = "";
   if (service_items.length > 0) {
     // Build up song choice menu, place divider at current song location
-    for (let i = 0; i < service_items.length; i++) {
-      if (i != item_index) {
+    for (const [idx, item] of service_items.entries()) {
+      if (idx != item_index) {
         temp_menu += "<button class='menu-list-item' ";
-        temp_menu += "onclick='change_song(" + i + ")'>";
-        temp_menu += service_items[i] + "</button>";
+        temp_menu += "onclick='change_song(" + idx + ")'>";
+        temp_menu += item + "</button>";
       } else {
         temp_menu += "<button class='menu-list-item current-song-item'>";
-        temp_menu += service_items[i] + "</button>";
+        temp_menu += item + "</button>";
       }
     }
   }
@@ -615,9 +616,8 @@ const params = window.location.search.slice(1);
 let body_size_int = 16;
 let body_size = "16px";
 if (params != "") {
-  const param_arr = params.split("&");
-  for (let i = 0; i < param_arr.length; i++) {
-    let param_pair = param_arr[i].split("=");
+  for (const param of params.split("&")) {
+    let param_pair = param.split("=");
     if (param_pair[0] == "size") {
       body_size_int = parseInt(param_pair[1]);
       body_size = param_pair[1] + "px";

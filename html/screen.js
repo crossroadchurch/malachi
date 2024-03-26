@@ -15,6 +15,7 @@ let screen_state = false;
 let video_displayed = false;
 let video_muted = false;
 let play_videos = true;
+const LINE_SEGMENT_REGEX = /\[[\w\+\¬#\/"='' ]*\]/;
 // DOM Pointers
 const DOM_dict = {};
 // prettier-ignore
@@ -38,10 +39,9 @@ function display_current_slide(slide_index) {
     let slide_lines = current_slide.split(/\n/);
     verseorder = "<p>";
     slide_text = "<p>";
-    for (const line in slide_lines) {
-      let line_segments = slide_lines[line].split(/\[[\w\+\¬#\/"='' ]*\]/);
-      for (let segment = 0; segment < line_segments.length; segment++) {
-        slide_text += line_segments[segment];
+    for (const line of slide_lines) {
+      for (const segment of line.split(LINE_SEGMENT_REGEX)) {
+        slide_text += segment;
       }
       slide_text += "<br />";
     }
@@ -49,16 +49,16 @@ function display_current_slide(slide_index) {
 
     const verse_list = current_item["verse-order"].split(" ");
     let part_counts_sum = 0;
-    for (let i = 0; i < verse_list.length; i++) {
+    for (const [idx, verse] of verse_list.entries()) {
       if (
         slide_index >= part_counts_sum &&
-        slide_index < part_counts_sum + current_item["part-counts"][i]
+        slide_index < part_counts_sum + current_item["part-counts"][idx]
       ) {
-        verseorder += "<span class='selected'>" + verse_list[i].toUpperCase() + "</span>";
+        verseorder += "<span class='selected'>" + verse.toUpperCase() + "</span>";
       } else {
-        verseorder += "<span>" + verse_list[i].toUpperCase() + "</span>";
+        verseorder += "<span>" + verse.toUpperCase() + "</span>";
       }
-      part_counts_sum += current_item["part-counts"][i];
+      part_counts_sum += current_item["part-counts"][idx];
     }
     verseorder += "</p>";
   } else if (current_item.type == "bible") {
@@ -558,9 +558,8 @@ ready(() => {
   // Play video elements based on ?videos=true,false parameter (default = true)
   const params = window.location.search.slice(1);
   if (params != "") {
-    let param_arr = params.split("&");
-    for (let i = 0; i < param_arr.length; i++) {
-      let param_pair = param_arr[i].split("=");
+    for (const param of params.split("&")) {
+      let param_pair = param.split("=");
       if (param_pair[0] == "muted") {
         video_muted = param_pair[1] == "true";
       }

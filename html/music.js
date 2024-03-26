@@ -12,6 +12,9 @@ const FULL_CHORDS = "0";
 const SIMPLE_CHORDS = "1";
 const BASS_EMPHASIS = "2";
 const BASS_ONLY = "3";
+const SECTION_AND_FILLS_REGEX = /(\[\¬\].*\[\¬\])/;
+const FILL_CHORD_REGEX = /(\[[\w\+\¬#\/"='' ]*\])/;
+const LINE_SEGMENT_REGEX = /(\[[\w\+#\/"='' ]*\])/;
 let websocket;
 // DOM pointers
 const DOM_dict = {};
@@ -91,7 +94,7 @@ function get_chord_chunk_html(chord, prefix, prev_chord) {
 }
 
 function get_song_section_html(section, prefix, display_fill_toggle) {
-  let section_and_fills = section.split(/(\[\¬\].*\[\¬\])/).filter((x) => x != "");
+  let section_and_fills = section.split(SECTION_AND_FILLS_REGEX).filter((x) => x != "");
   let slide_text = "";
   let prev_chord = "";
   let cur_chord_tag = "";
@@ -100,9 +103,7 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
       // Process fill section (single line of chords)
       prev_chord = "";
       if (display_fill_toggle) {
-        fill_chords = section_part
-          .split(/(\[[\w\+\¬#\/"='' ]*\])/)
-          .filter((x) => x != "" && x != "[¬]");
+        fill_chords = section_part.split(FILL_CHORD_REGEX).filter((x) => x != "" && x != "[¬]");
         for (const chord of fill_chords) {
           //prettier-ignore
           [cur_chord_tag, prev_chord] = get_chord_chunk_html(chord.slice(1, -1), "fill-", prev_chord);
@@ -121,7 +122,7 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
         if (line == "\n") {
           slide_text += "<br />";
         } else {
-          let line_segments = line.split(/(\[[\w\+#\/"='' ]*\])/);
+          let line_segments = line.split(LINE_SEGMENT_REGEX);
           if (line_segments[0] != "") {
             // Process head of line
             slide_text +=
@@ -221,14 +222,14 @@ function update_music() {
     DOM_dict["capoarea"].style.display = "inline";
     verse_list = verse_order.split(" ");
     let part_counts_sum = 0;
-    for (let i = 0; i < verse_list.length; i++) {
-      if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[i]) {
+    for (const [idx, verse] of verse_list.entries()) {
+      if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[idx]) {
         verse_control_list +=
-          "<li><span class='current-verse'>" + verse_list[i].toUpperCase() + "</span></li>";
+          "<li><span class='current-verse'>" + verse.toUpperCase() + "</span></li>";
       } else {
-        verse_control_list += "<li>" + verse_list[i].toUpperCase() + "</li>";
+        verse_control_list += "<li>" + verse.toUpperCase() + "</li>";
       }
-      part_counts_sum += part_counts[i];
+      part_counts_sum += part_counts[idx];
     }
     verse_control_list += "</ul>";
   } else if (slide_type != undefined) {
@@ -439,9 +440,8 @@ const params = window.location.search.slice(1);
 let body_size_int = 16;
 let body_size = "16px";
 if (params != "") {
-  const param_arr = params.split("&");
-  for (let i = 0; i < param_arr.length; i++) {
-    let param_pair = param_arr[i].split("=");
+  for (const param of params.split("&")) {
+    let param_pair = param.split("=");
     if (param_pair[0] == "size") {
       body_size_int = parseInt(param_pair[1]);
       body_size = param_pair[1] + "px";
