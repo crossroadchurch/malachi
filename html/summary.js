@@ -66,16 +66,8 @@ function load_current_item(cur_item) {
   slide_type = cur_item.type;
   current_slides = cur_item.slides;
   current_title = cur_item["title"];
-  if (item_index > 0) {
-    prev_title = service_items[item_index - 1];
-  } else {
-    prev_title = "";
-  }
-  if (item_index < service_items.length - 1) {
-    next_title = service_items[item_index + 1];
-  } else {
-    next_title = "";
-  }
+  prev_title = item_index > 0 ? service_items[item_index - 1] : "";
+  next_title = item_index < service_items.length - 1 ? service_items[item_index + 1] : "";
 }
 
 function update_service_overview_update(json_data) {
@@ -86,11 +78,7 @@ function update_service_overview_update(json_data) {
   if (JSON.stringify(json_data.params.current_item) != "{}") {
     load_current_item(current_item);
   } else {
-    slide_type = "none";
-    current_slides = [];
-    current_title = "";
-    prev_title = "";
-    next_title = "";
+    load_current_item({ type: "none", slides: [], title: "" });
   }
   update_music();
 }

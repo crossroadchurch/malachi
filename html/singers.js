@@ -17,30 +17,29 @@ const DOM_KEYS = [
   "songarea", "video_item_src", "video_item",
 ];
 
-function update_music() {
-  stop_running_video();
-
-  DOM_dict["playedkey"].innerHTML = played_key;
-  let verse_list = "";
-  let verse_control_list = "<ul>";
-
+function update_verse_order() {
+  let verse_list = "<ul>";
   if (slide_type == "song") {
-    verse_list = verse_order.split(" ");
     let part_counts_sum = 0;
-    for (const [idx, verse] of verse_list.entries()) {
+    for (const [idx, verse] of verse_order.split(" ").entries()) {
       if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[idx]) {
-        verse_control_list +=
-          "<li><span class='current-verse'>" + verse.toUpperCase() + "</span></li>";
+        verse_list += "<li><span class='current-verse'>" + verse.toUpperCase() + "</span></li>";
       } else {
-        verse_control_list += "<li>" + verse.toUpperCase() + "</li>";
+        verse_list += "<li>" + verse.toUpperCase() + "</li>";
       }
       part_counts_sum += part_counts[idx];
     }
-    verse_control_list += "</ul>";
+    verse_list += "</ul>";
   } else if (slide_type != undefined) {
-    verse_control_list = "<ul><li>" + current_title + "</li></ul>";
+    verse_list = "<ul><li>" + current_title + "</li></ul>";
   }
-  DOM_dict["verseorder"].innerHTML = verse_control_list;
+  DOM_dict["verseorder"].innerHTML = verse_list;
+}
+
+function update_music() {
+  stop_running_video();
+  update_verse_order();
+  DOM_dict["playedkey"].innerHTML = played_key;
 
   let current_text = "";
   let next_text = "";
@@ -54,8 +53,6 @@ function update_music() {
       }
       current_text += "</p>";
     }
-    DOM_dict["currentslide"].innerHTML = current_text;
-
     let next_slide_lines = [];
     if (slide_index < current_slides.length - 1) {
       next_slide_lines = current_slides[slide_index + 1].split(/\n/);
@@ -67,21 +64,14 @@ function update_music() {
       }
       next_text += "</p>";
     }
-    DOM_dict["nextslide"].innerHTML = next_text;
   } else if (slide_type == "video") {
-    DOM_dict["currentslide"].innerHTML = "";
-    DOM_dict["nextslide"].innerHTML = "";
     // Background load video, wait for trigger to display and start playback
     DOM_dict["songarea"].style.display = "none";
     DOM_dict["video_item_src"].setAttribute("src", current_item.url);
     DOM_dict["video_item"].load();
-  } else if (slide_type == "presentation") {
-    DOM_dict["currentslide"].innerHTML = "";
-    DOM_dict["nextslide"].innerHTML = "";
-  } else {
-    DOM_dict["currentslide"].innerHTML = "";
-    DOM_dict["nextslide"].innerHTML = "";
   }
+  DOM_dict["currentslide"].innerHTML = current_text;
+  DOM_dict["nextslide"].innerHTML = next_text;
 }
 
 function resize_video_item() {
@@ -122,18 +112,15 @@ function load_current_item(cur_item) {
   slide_type = cur_item.type;
   current_slides = cur_item.slides;
   current_title = cur_item.title;
+  verse_order = "";
+  part_counts = [];
+  played_key = "";
   if (slide_type == "song") {
     if (cur_item["uses-chords"]) {
       played_key = cur_item["played-key"];
-    } else {
-      played_key = "";
     }
     verse_order = cur_item["verse-order"];
     part_counts = cur_item["part-counts"];
-  } else {
-    verse_order = "";
-    part_counts = [];
-    played_key = "";
   }
 }
 
@@ -145,12 +132,7 @@ function update_service_overview_update(json_data) {
   if (JSON.stringify(json_data.params.current_item) != "{}") {
     load_current_item(current_item);
   } else {
-    slide_type = "none";
-    current_slides = [];
-    current_title = "";
-    verse_order = "";
-    part_counts = [];
-    played_key = "";
+    load_current_item({ type: "none", slides: [], title: "" });
   }
   update_music();
 }
@@ -224,6 +206,7 @@ function start_websocket() {
       case "update.capture-ready":
       case "update.stop-capture":
       case "update.video-loop":
+      case "trigger.stop-audio":
         break;
       default:
         console.error("Unsupported event", json_data);

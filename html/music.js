@@ -95,7 +95,7 @@ function get_chord_chunk_html(chord, prefix, prev_chord) {
 
 function get_song_section_html(section, prefix, display_fill_toggle) {
   let section_and_fills = section.split(SECTION_AND_FILLS_REGEX).filter((x) => x != "");
-  let slide_text = "";
+  let s_text = "";
   let prev_chord = "";
   let cur_chord_tag = "";
   for (const section_part of section_and_fills) {
@@ -107,9 +107,9 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
         for (const chord of fill_chords) {
           //prettier-ignore
           [cur_chord_tag, prev_chord] = get_chord_chunk_html(chord.slice(1, -1), "fill-", prev_chord);
-          slide_text += cur_chord_tag;
+          s_text += cur_chord_tag;
         }
-        slide_text += "<br />";
+        s_text += "<br />";
       }
       display_fill_toggle = !display_fill_toggle;
     } else {
@@ -120,48 +120,41 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
       for (const line of slide_lines) {
         prev_chord = "";
         if (line == "\n") {
-          slide_text += "<br />";
+          s_text += "<br />";
         } else {
-          let line_segments = line.split(LINE_SEGMENT_REGEX);
-          if (line_segments[0] != "") {
+          let segments = line.split(LINE_SEGMENT_REGEX);
+          if (segments[0] != "") {
             // Process head of line
-            slide_text +=
-              '<span class="' +
-              prefix +
-              'lyric-chord-block"><span class="' +
-              prefix +
-              'lyric-chunk">' +
-              line_segments[0] +
-              "</span></span>";
+            s_text += '<span class="' + prefix + 'lyric-chord-block">';
+            s_text += '<span class="' + prefix + 'lyric-chunk">' + segments[0] + "</span></span>";
           }
           // Process tail of line: <Tail> ::= (<Chord>|(<Chord><Lyric>))*
           prev_chunk_is_chord = false;
           hanging_lyric_pos = -1;
-          for (let segment = 1; segment < line_segments.length; segment++) {
-            let seg = line_segments[segment];
+          for (let segment = 1; segment < segments.length; segment++) {
+            let seg = segments[segment];
             if (seg.charAt(0) == "[") {
               // Current is chord
               seg = seg.replace(/\[[\s]?/, ""); // ? => * maybe
               seg = seg.replace(/[\s]?\]/, "");
               [cur_chord_tag, prev_chord] = get_chord_chunk_html(seg, prefix, prev_chord);
               if (prev_chunk_is_chord == true) {
-                slide_text +=
-                  '</span><span class="' + prefix + 'lyric-chord-block">' + cur_chord_tag;
+                s_text += '</span><span class="' + prefix + 'lyric-chord-block">' + cur_chord_tag;
               } else {
-                slide_text += '<span class="' + prefix + 'lyric-chord-block">' + cur_chord_tag;
+                s_text += '<span class="' + prefix + 'lyric-chord-block">' + cur_chord_tag;
               }
               prev_chunk_is_chord = true;
             } else {
               // Current is lyric
               if (hanging_lyric_pos > 0 && seg.charAt(0).match(/[a-z]/i)) {
-                slide_text =
-                  slide_text.slice(0, hanging_lyric_pos + 1) +
+                s_text =
+                  s_text.slice(0, hanging_lyric_pos + 1) +
                   " midword" +
-                  slide_text.slice(hanging_lyric_pos + 1);
+                  s_text.slice(hanging_lyric_pos + 1);
               }
               // recalc hanging_lyric_pos based on current_text length + offset
-              hanging_lyric_pos = slide_text.length + 23 + prefix.length;
-              slide_text += '<span class="' + prefix + 'lyric-chunk">' + seg + "</span></span>";
+              hanging_lyric_pos = s_text.length + 23 + prefix.length;
+              s_text += '<span class="' + prefix + 'lyric-chunk">' + seg + "</span></span>";
               prev_chunk_is_chord = false;
               if (!seg.slice(-1).match(/[a-z]/i)) {
                 hanging_lyric_pos = -1;
@@ -169,14 +162,14 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
             }
           }
           if (prev_chunk_is_chord == true) {
-            slide_text += "</span>";
+            s_text += "</span>";
           }
         }
       }
-      slide_text += "<br />";
+      s_text += "<br />";
     }
   }
-  return { text: slide_text, toggle: display_fill_toggle };
+  return { text: s_text, toggle: display_fill_toggle };
 }
 
 function process_chord_widths(slide_id, prefix) {
@@ -213,50 +206,42 @@ function process_chord_widths(slide_id, prefix) {
   });
 }
 
-function update_music() {
-  DOM_dict["playedkey"].innerHTML = played_key;
-  let verse_control_list = "<ul>";
-  let verse_list = "";
-
+function update_verse_order() {
+  let verse_list = "<ul>";
   if (slide_type == "song") {
     DOM_dict["capoarea"].style.display = "inline";
-    verse_list = verse_order.split(" ");
     let part_counts_sum = 0;
-    for (const [idx, verse] of verse_list.entries()) {
+    for (const [idx, verse] of verse_order.split(" ").entries()) {
       if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[idx]) {
-        verse_control_list +=
-          "<li><span class='current-verse'>" + verse.toUpperCase() + "</span></li>";
+        verse_list += "<li><span class='current-verse'>" + verse.toUpperCase() + "</span></li>";
       } else {
-        verse_control_list += "<li>" + verse.toUpperCase() + "</li>";
+        verse_list += "<li>" + verse.toUpperCase() + "</li>";
       }
       part_counts_sum += part_counts[idx];
     }
-    verse_control_list += "</ul>";
-  } else if (slide_type != undefined) {
-    verse_control_list = "<ul><li>" + current_title + "</li></ul>";
+    verse_list += "</ul>";
+  } else if (slide_type != "none") {
+    verse_list = "<ul><li>" + current_title + "</li></ul>";
     DOM_dict["capoarea"].style.display = "none";
   } else {
     DOM_dict["capoarea"].style.display = "none";
   }
-  DOM_dict["verseorder"].innerHTML = verse_control_list;
+  DOM_dict["verseorder"].innerHTML = verse_list;
+}
+
+function update_music() {
+  DOM_dict["playedkey"].innerHTML = played_key;
+  update_verse_order();
 
   let current_text = "";
   let next_text = "";
   if (slide_type == "song") {
     current_result = get_song_section_html(current_slides[slide_index], "", true);
-    DOM_dict["currentslide"].innerHTML = current_result.text;
+    current_text = current_result.text;
     if (slide_index < current_slides.length - 1) {
-      next_result = get_song_section_html(
-        current_slides[slide_index + 1],
-        "next-",
-        current_result.toggle
-      );
-      DOM_dict["nextslide"].innerHTML = next_result.text;
-    } else {
-      DOM_dict["nextslide"].innerHTML = "";
+      // prettier-ignore
+      next_text = get_song_section_html(current_slides[slide_index + 1], "next-", current_result.toggle).text;
     }
-    process_chord_widths("currentslide", "");
-    process_chord_widths("nextslide", "next-");
   } else if (slide_type == "bible") {
     current_text = "<div class ='nonsong-block'><p class='nonsong-line'>";
     current_text += current_slides[slide_index].replace(/\n/g, "</p><p class='nonsong-line'>");
@@ -265,23 +250,18 @@ function update_music() {
       next_text = "<div class ='next-nonsong-block'><p class='nonsong-line'>";
       next_text += current_slides[slide_index + 1].replace(/\n/g, "</p><p class='nonsong-line'>");
       next_text += "</div>";
-    } else {
-      next_text = "<div></div>";
     }
-    DOM_dict["currentslide"].innerHTML = current_text;
-    DOM_dict["nextslide"].innerHTML = next_text;
   } else if (slide_type == "video") {
     current_text = "<div class ='nonsong-block'><p class='nonsong-line'>";
     current_text += current_slides[0].replace(/\n/g, "</p><p class='nonsong-line'>");
     current_text += "</div>";
-    DOM_dict["currentslide"].innerHTML = current_text;
-    DOM_dict["nextslide"].innerHTML = "";
-  } else if (slide_type == "presentation") {
-    DOM_dict["currentslide"].innerHTML = "";
-    DOM_dict["nextslide"].innerHTML = "";
-  } else {
-    DOM_dict["currentslide"].innerHTML = "";
-    DOM_dict["nextslide"].innerHTML = "";
+  }
+  DOM_dict["currentslide"].innerHTML = current_text;
+  DOM_dict["nextslide"].innerHTML = next_text;
+
+  if (slide_type == "song") {
+    process_chord_widths("currentslide", "");
+    process_chord_widths("nextslide", "next-");
   }
 }
 
@@ -335,20 +315,17 @@ function load_current_item(cur_item) {
   slide_type = cur_item.type;
   current_slides = cur_item.slides;
   current_title = cur_item["title"];
+  cur_song_id = -1;
+  verse_order = "";
+  part_counts = [];
+  played_key = "";
   if (slide_type == "song") {
     cur_song_id = cur_item["song-id"];
     if (cur_item["uses-chords"]) {
       played_key = cur_item["played-key"];
-    } else {
-      played_key = "";
     }
     verse_order = cur_item["verse-order"];
     part_counts = cur_item["part-counts"];
-  } else {
-    cur_song_id = -1;
-    verse_order = "";
-    part_counts = [];
-    played_key = "";
   }
 }
 
@@ -357,12 +334,7 @@ function update_service_overview_update(json_data) {
   if (JSON.stringify(json_data.params.current_item) != "{}") {
     load_current_item(json_data.params.current_item);
   } else {
-    slide_type = "none";
-    cur_song_id = -1;
-    current_slides = [];
-    verse_order = "";
-    part_counts = [];
-    played_key = "";
+    load_current_item({ type: "none", slides: [], title: "" });
   }
   capo_check_update_music();
 }

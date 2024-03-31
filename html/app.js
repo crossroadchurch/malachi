@@ -978,6 +978,15 @@ function load_element(short_elt) {
   });
   document.getElementById(short_elt + "_element").style.display = "block";
   document.getElementById(short_elt + "_elt_button").classList.add("active_element");
+  if (short_elt == "song") {
+    DOM_dict["song_search"].focus();
+    let s_len = DOM_dict["song_search"].value.length;
+    DOM_dict["song_search"].setSelectionRange(s_len, s_len);
+  } else if (short_elt == "bible") {
+    DOM_dict["bible_search"].focus();
+    let b_len = DOM_dict["bible_search"].value.length;
+    DOM_dict["bible_search"].setSelectionRange(b_len, b_len);
+  }
 }
 
 function expand_section(short_elt) {

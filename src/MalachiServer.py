@@ -51,6 +51,7 @@ class MalachiServer():
     def __init__(self):
         try:
             Song.update_schema() # Check song database has up to date schema
+            self.setup_commands()
             self.bible_versions = []  # Loaded within check_data_files()
             self.screen_style = []
             self.capture_refresh_rate = 1000
@@ -74,6 +75,76 @@ class MalachiServer():
             self.load_settings()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
+
+    def setup_commands(self):
+        self.command_switcher = {
+            # Syntax: "command_name": [function, [params_needed]]
+            "command.next-slide": [self.next_slide, []],
+            "command.previous-slide": [self.previous_slide, []],
+            "command.goto-slide": [self.goto_slide, ["index"]],
+            "command.next-item": [self.next_item, []],
+            "command.previous-item": [self.previous_item, []],
+            "command.goto-item": [self.goto_item, ["index"]],
+            "command.add-bible-item": [self.add_bible_item, ["version", "start-verse", "end-verse"]],
+            "command.change-bible-pl-version": [self.change_bible_pl_version, ["version"]],                      
+            "command.remove-bible-pl-version": [self.remove_bible_pl_version, []],                   
+            "command.change-bible-version": [self.change_bible_version, ["version"]],
+            "command.add-song-item": [self.add_song_item, ["song-id"]],
+            "command.add-video": [self.add_video, ["url"]],
+            "command.add-presentation": [self.add_presentation, ["url"]],
+            "command.remove-item": [self.remove_item, ["index"]],
+            "command.move-item": [self.move_item, ["from-index", "to-index"]],
+            "command.set-display-state": [self.set_display_state, ["state"]],
+            "command.toggle-display-state": [self.toggle_display_state, []],
+            "command.new-service": [self.new_service, ["force"]],
+            "command.load-service": [self.load_service, ["filename", "force"]],
+            "command.save-service": [self.save_service, []],
+            "command.save-service-as": [self.save_service_as, ["filename"]],
+            "command.export-service": [self.export_service, ["filename"]],
+            "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
+            "command.edit-style-params": [self.edit_style_params, ["style_params"]],
+            "command.set-loop": [self.set_loop, ["url"]],
+            "command.clear-loop": [self.clear_loop, []],
+            "command.restore-loop": [self.restore_loop, []],
+            "command.create-song": [self.create_song, ["title", "fields"]],
+            "command.edit-song": [self.edit_song, ["song-id", "fields"]],
+            "command.play-video": [self.play_video, []],
+            "command.pause-video": [self.pause_video, []],
+            "command.stop-video": [self.stop_video, []],
+            "command.seek-video": [self.seek_video, ["seconds"]],
+            "command.play-audio": [self.play_audio, []],
+            "command.pause-audio": [self.pause_audio, []],
+            "command.stop-audio": [self.stop_audio, []],
+            "command.start-presentation": [self.start_presentation, []],
+            "command.stop-presentation": [self.stop_presentation, []],
+            "command.next-presentation-slide": [self.next_presentation_slide, []],
+            "command.prev-presentation-slide": [self.prev_presentation_slide, []],
+            "command.generic-play": [self.generic_play, []],
+            "command.generic-stop": [self.generic_stop, []],
+            "command.transpose-by": [self.transpose_by, ["amount"]],
+            "command.start-capture": [self.start_capture, ["monitor"]],
+            "command.stop-capture": [self.stop_capture, []],
+            "command.change-capture-monitor": [self.change_capture_monitor, ["monitor"]],
+            "command.change-capture-rate": [self.change_capture_rate, ["rate"]],
+            "command.unlock-socket": [self.unlock_socket, []],
+            "command.start-countdown": [self.start_countdown, ["hr", "min"]],
+            "command.clear-countdown": [self.clear_countdown, []],
+            "client.set-capo": [self.set_capo, ["capo"]],
+            "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
+            "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
+            "query.song-by-text": [self.song_text_query, ["search-text", "remote"]],
+            "request.full-song": [self.request_full_song, ["song-id"]],
+            "request.bible-versions": [self.request_bible_versions, []],
+            "request.bible-books": [self.request_bible_books, ["version"]],
+            "request.chapter-structure": [self.request_chapter_structure, ["version"]],
+            "request.all-videos": [self.request_all_videos, []],
+            "request.all-loops": [self.request_all_loops, []],
+            "request.all-backgrounds": [self.request_all_backgrounds, []],
+            "request.all-services": [self.request_all_services, []],
+            "request.all-presentations": [self.request_all_presentations, []],
+            "request.all-audio": [self.request_all_audio, []],
+            "request.capture-update": [self.capture_update, []]
+        }
 
     def register(self, websocket, path):
         """
@@ -184,6 +255,24 @@ class MalachiServer():
             "params": service_data
         }))
 
+    async def handle_message(self, websocket, json_data):
+        """Process message from websocket"""
+        k_check = MalachiServer.key_check(json_data, ["action", "params"])
+        if k_check != "": # Malformed JSON - missing key(s)
+            await self.server_response(websocket, "error.json", "missing-keys", k_check)            
+            return
+        command_item = self.command_switcher.get(json_data["action"])
+        if command_item is None: # Invalid command
+            await self.server_response(websocket, "error.json", "invalid-command", json_data["action"])
+            return
+        p_check = MalachiServer.key_check(json_data["params"], command_item[1])
+        if p_check != "": # Required parameter(s) missing
+            await self.server_response(websocket, "error.json", "missing-params",
+                                       json_data["action"] + ": " + p_check)    
+            return
+        # Execute the command
+        await command_item[0](websocket, json_data["params"])
+
     async def responder(self, websocket, path):
         """
         Handle a websocket connection.
@@ -215,110 +304,19 @@ class MalachiServer():
 
         try:
             # Websocket message loop
-            command_switcher = {
-                # Syntax: "command_name": [function, [params_needed]]
-                "command.next-slide": [self.next_slide, []],
-                "command.previous-slide": [self.previous_slide, []],
-                "command.goto-slide": [self.goto_slide, ["index"]],
-                "command.next-item": [self.next_item, []],
-                "command.previous-item": [self.previous_item, []],
-                "command.goto-item": [self.goto_item, ["index"]],
-                "command.add-bible-item": [self.add_bible_item, \
-                                           ["version", "start-verse", "end-verse"]],
-                "command.change-bible-pl-version": [self.change_bible_pl_version, \
-                                                    ["version"]],                      
-                "command.remove-bible-pl-version": [self.remove_bible_pl_version, []],                   
-                "command.change-bible-version": [self.change_bible_version, ["version"]],
-                "command.add-song-item": [self.add_song_item, ["song-id"]],
-                "command.add-video": [self.add_video, ["url"]],
-                "command.add-presentation": [self.add_presentation, ["url"]],
-                "command.remove-item": [self.remove_item, ["index"]],
-                "command.move-item": [self.move_item, ["from-index", "to-index"]],
-                "command.set-display-state": [self.set_display_state, ["state"]],
-                "command.toggle-display-state": [self.toggle_display_state, []],
-                "command.new-service": [self.new_service, ["force"]],
-                "command.load-service": [self.load_service, ["filename", "force"]],
-                "command.save-service": [self.save_service, []],
-                "command.save-service-as": [self.save_service_as, ["filename"]],
-                "command.export-service": [self.export_service, ["filename"]],
-                "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
-                "command.edit-style-params": [self.edit_style_params, ["style_params"]],
-                "command.set-loop": [self.set_loop, ["url"]],
-                "command.clear-loop": [self.clear_loop, []],
-                "command.restore-loop": [self.restore_loop, []],
-                "command.create-song": [self.create_song, ["title", "fields"]],
-                "command.edit-song": [self.edit_song, ["song-id", "fields"]],
-                "command.play-video": [self.play_video, []],
-                "command.pause-video": [self.pause_video, []],
-                "command.stop-video": [self.stop_video, []],
-                "command.seek-video": [self.seek_video, ["seconds"]],
-                "command.play-audio": [self.play_audio, []],
-                "command.pause-audio": [self.pause_audio, []],
-                "command.stop-audio": [self.stop_audio, []],
-                "command.start-presentation": [self.start_presentation, []],
-                "command.stop-presentation": [self.stop_presentation, []],
-                "command.next-presentation-slide": [self.next_presentation_slide, []],
-                "command.prev-presentation-slide": [self.prev_presentation_slide, []],
-                "command.generic-play": [self.generic_play, []],
-                "command.generic-stop": [self.generic_stop, []],
-                "command.transpose-by": [self.transpose_by, ["amount"]],
-                "command.start-capture": [self.start_capture, ["monitor"]],
-                "command.stop-capture": [self.stop_capture, []],
-                "command.change-capture-monitor": [self.change_capture_monitor, ["monitor"]],
-                "command.change-capture-rate": [self.change_capture_rate, ["rate"]],
-                "command.unlock-socket": [self.unlock_socket, []],
-                "command.start-countdown": [self.start_countdown, ["hr", "min"]],
-                "command.clear-countdown": [self.clear_countdown, []],
-                "client.set-capo": [self.set_capo, ["capo"]],
-                "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
-                "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
-                "query.song-by-text": [self.song_text_query, ["search-text", "remote"]],
-                "request.full-song": [self.request_full_song, ["song-id"]],
-                "request.bible-versions": [self.request_bible_versions, []],
-                "request.bible-books": [self.request_bible_books, ["version"]],
-                "request.chapter-structure": [self.request_chapter_structure, ["version"]],
-                "request.all-videos": [self.request_all_videos, []],
-                "request.all-loops": [self.request_all_loops, []],
-                "request.all-backgrounds": [self.request_all_backgrounds, []],
-                "request.all-services": [self.request_all_services, []],
-                "request.all-presentations": [self.request_all_presentations, []],
-                "request.all-audio": [self.request_all_audio, []],
-                "request.capture-update": [self.capture_update, []]
-            }
-            try:
-                async for message in websocket:
-                    try:
-                        json_data = json.loads(message)
-                        # Check json_data has action and params keys
-                        k_check = MalachiServer.key_check(json_data, ["action", "params"])
-                        if k_check == "":
-                            command_item = command_switcher.get(json_data["action"])
-                            if command_item is not None:
-                                # Check that all required parameters have been supplied
-                                p_check = MalachiServer.key_check(json_data["params"],
-                                                                  command_item[1])
-                                if p_check == "":
-                                    await command_item[0](websocket, json_data["params"])
-                                else:
-                                    await self.server_response(websocket, "error.json",
-                                                               "missing-params", json_data["action"] + ": " + p_check)
-                            else:
-                                # Invalid command
-                                await self.server_response(websocket, "error.json",
-                                                           "invalid-command", json_data["action"])
-                        else:
-                            # Malformed JSON
-                            await self.server_response(websocket,
-                                                       "error.json", "missing-keys", k_check)
-                    except JSONDecodeError:
-                        await self.server_response(websocket, "error.json", "decode-error", message)
-            except ConnectionClosed as e:
-                message = "ConnectionClosed exception from " + websocket.remote_address[0] + ":" + \
-                    str(websocket.remote_address[1]) + " (" + path + "): "
-                if e.reason:
-                    print(message + str(e.code) + ", " + str(e.reason))
-                else:
-                    print(message + str(e.code) + ", no reason provided")
+            async for message in websocket:
+                try:
+                    json_data = json.loads(message)
+                    await self.handle_message(websocket, json_data)
+                except JSONDecodeError:
+                    await self.server_response(websocket, "error.json", "decode-error", message)
+        except ConnectionClosed as e:
+            message = "ConnectionClosed exception from " + websocket.remote_address[0] + ":" + \
+                str(websocket.remote_address[1]) + " (" + path + "): "
+            if e.reason:
+                print(message + str(e.code) + ", " + str(e.reason))
+            else:
+                print(message + str(e.code) + ", no reason provided")
         finally:
             # Websocket is closed by client
             self.unregister(websocket, path)

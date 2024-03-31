@@ -424,7 +424,7 @@ class Song():
         for idx, part in enumerate(order_with_fills):
             if (idx-offset) < len(order_no_fills) and part != order_no_fills[idx - offset]:
                 # Fill detected
-                if offset == 0: # Intro
+                if idx == 0: # Intro
                     # Intro
                     self.slides[0] = self.package_fill(self.fill_dict[part]) + self.slides[0]
                 else: # Fill
