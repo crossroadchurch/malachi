@@ -231,9 +231,10 @@ function update_played_key() {
 
 function update_verse_order() {
   let verse_list = "";
+  let verses = verse_order.split(" ");
   if (slide_type == "song") {
     let part_counts_sum = 0;
-    for (const [idx, verse] of verse_order.split(" ").entries()) {
+    for (const [idx, verse] of verses.entries()) {
       if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[idx]) {
         verse_list +=
           "<button class='verse-button current-verse-button' onclick='change_verse(" +
@@ -262,8 +263,8 @@ function update_verse_order() {
   const button_margin = parseInt(
     getComputedStyle(document.querySelector(".verse-button")).marginRight
   );
-  const buttons_width = header_width - keyandcapo_width - button_margin * verse_list.length;
-  const max_button_width = Math.floor(buttons_width / verse_list.length);
+  const buttons_width = header_width - keyandcapo_width - button_margin * verses.length;
+  const max_button_width = Math.floor(buttons_width / verses.length);
   const pref_width = 6 * parseInt(document.querySelector("html").style.fontSize); /* 6rem */
   const actual_width = Math.min(pref_width, max_button_width);
   document.querySelectorAll(".verse-button").forEach((elt) => {
