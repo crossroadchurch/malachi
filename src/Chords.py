@@ -40,8 +40,8 @@ class Chords():
                           'Bb' : ['C#', 'D#', 'F#', 'G#', 'A#'],
                           'B' :  ['Db', 'Eb', 'Gb', 'Ab', 'Bb']}
 
-    @classmethod
-    def validate_note(cls, note):
+    @staticmethod
+    def validate_note(note):
         """
         Checks validity of a note, updating where necessary (e.g. Cb -> B).
         Precondition: note is in Chords.all_key_list
@@ -52,8 +52,8 @@ class Chords():
         note = note.replace('Fb', 'E')
         return note
 
-    @classmethod
-    def parse(cls, chord):
+    @staticmethod
+    def parse(chord):
         """
         Parse a chord into a dict {root, modifiers, bass}.  If a bass note is
         used, modifiers includes the '/'.  Modifiers and bass can be an empty string. If 
@@ -88,8 +88,8 @@ class Chords():
             parsed_chord['modifiers'] = bassless_chord
         return parsed_chord
 
-    @classmethod
-    def sanitize_chord(cls, chord, song_key):
+    @staticmethod
+    def sanitize_chord(chord, song_key):
         """
         Format and return a chord, using notes that are appropriate to the specified key.
         If the root note or bass note is not in the range [A-G] then it will not be changed,
@@ -119,8 +119,8 @@ class Chords():
         # Re-form chord
         return chord_parsed["root"] + chord_parsed["modifiers"] + chord_parsed["bass"]
 
-    @classmethod
-    def transpose_chord_tag(cls, chord_tag, root_key, transpose_amount):
+    @staticmethod
+    def transpose_chord_tag(chord_tag, root_key, transpose_amount):
         """
         Transpose and return a chord in a given root key by a specified number of semitones.
         The returned chord tag will be a valid chord in the transposed key.
@@ -137,8 +137,8 @@ class Chords():
         else:
             return chord_tag
 
-    @classmethod
-    def transpose_chord(cls, chord, root_key, transpose_amount):
+    @staticmethod
+    def transpose_chord(chord, root_key, transpose_amount):
         """
         Transpose and return a chord in a given root_key by a specified number of semitones.
         The returned chord will be a valid chord in the transposed key.
@@ -180,8 +180,8 @@ class Chords():
         transposed_chord = p_chord["root"] + p_chord["modifiers"] + p_chord["bass"]
         return Chords.sanitize_chord(transposed_chord, transposed_key)
 
-    @classmethod
-    def combine_chords_and_lyrics(cls, chord_line, lyric_line, key):
+    @staticmethod
+    def combine_chords_and_lyrics(chord_line, lyric_line, key):
         """
         Combine a line of chords with a corresponding line of lyrics.
 
@@ -229,8 +229,8 @@ class Chords():
 
         return line_out
 
-    @classmethod
-    def extract_chords_and_lyrics(cls, in_line):
+    @staticmethod
+    def extract_chords_and_lyrics(in_line):
         """
         Turn a combined line of lyrics and chords into a line of chords and the corresponding
         line of lyrics.
@@ -292,8 +292,8 @@ class Chords():
 
         return chord_line, lyric_line
 
-    @classmethod
-    def transpose_section(cls, in_str, root_key, transpose_amount):
+    @staticmethod
+    def transpose_section(in_str, root_key, transpose_amount):
         """
         Transpose and return a string containing lyrics and chord tags.
 
