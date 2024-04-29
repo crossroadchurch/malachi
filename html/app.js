@@ -41,7 +41,7 @@ const DOM_KEYS = [
   "popup_new_service", "popup_load_service", "popup_save_before_load_service",
   "popup_save_service_as", "popup_export_service_as", "f_name", "exp_name",
   "popup_edit_mode", "popup_edit_song", "load_files_radio",
-  "popup_attach_audio", "attach_audio_radio", "d_version_radios"
+  "popup_attach_audio", "attach_audio_radio", "d_version_radios", "updater_elt_button", "updater_btn"
 ];
 
 style_dict["s_width"] = "div-width-vw";
@@ -1053,6 +1053,11 @@ function update_app_init(json_data) {
   screen_state = json_data.params.screen_state;
   DOM_dict["flip_screen_state"].checked = screen_state === "on";
 
+  // Display updater tab if update available
+  if (json_data.params["update-available"]) {
+    DOM_dict["updater_elt_button"].style.display = "flex";
+  }
+
   // Size screen_view div and current_item div based on style
   // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
   const aspect_ratio = json_data.params.style["aspect-ratio"];
@@ -1566,6 +1571,17 @@ function update_line_numbers(fill_text) {
     .fill()
     .map((_, i) => "<span>:" + (i + 1) + "</span>")
     .join("");
+}
+
+function update_malachi() {
+  DOM_dict["updater_btn"].disabled = true;
+  DOM_dict["updater_btn"].innerText = "Updating Malachi...";
+  websocket.send(
+    JSON.stringify({
+      action: "utility.update-malachi",
+      params: {},
+    })
+  );
 }
 
 function start_websocket() {

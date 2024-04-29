@@ -116,7 +116,8 @@ input {
 #presentation_element,
 #video_element,
 #backgrounds_element,
-#styles_element {
+#styles_element,
+#updater_element {
   display: none;
 }
 
@@ -1191,4 +1192,22 @@ p.ml_bibleverse {
 #line_numbers span {
   display: block;
   padding-right: 0.5em;
+}
+
+#updater_elt_button {
+  display: none;
+}
+
+#update_instructions li {
+  padding-bottom: 0.5em;
+}
+
+#updater_btn:disabled {
+  cursor: default;
+  color: grey;
+  background-color: #e8e8e8;
+}
+
+#updater_btn:disabled :hover {
+  background-color: #e8e8e8;
 }

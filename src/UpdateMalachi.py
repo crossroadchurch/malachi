@@ -9,18 +9,64 @@ IMPORTANT: DO NOT RUN this script from /src, only run when script has been copie
 
 from tqdm import tqdm
 from distutils import dir_util, file_util
+import io
 import json
+import logging
 import os
 import re
 import requests
 import shutil
 import subprocess
+import sys
 import zipfile
+from datetime import datetime
 
 UPDATER_DIR = './updater_files'
 UPDATE_BASE = UPDATER_DIR + '/malachi-master'
 GLOBAL_SETTINGS_FILE = 'global_settings.json'
 MALACHI_ZIP = 'malachi.zip'
+OS_REQUIREMENTS_CALLS = {
+    'win32': ['python', '-m', 'pip', 'install', '-r', 'requirements.txt'],
+    'linux': ['sudo', 'python3.6', '-m', 'pip', 'install', '-r', 'linux_requirements.txt'],
+    'raspbian': ['python3.9', '-m', 'pip', 'install', '-r', 'pi_requirements.txt']
+}
+OS_MALACHI_CALLS = {
+    'win32': ['python', './Malachi.py'],
+    'linux': ['python3.6', './Malachi.py'],
+    'raspbian': ['python3.9', './Malachi.py']
+}
+DEPRECATED_FILES = ['Update Malachi.bat', 'update_malachi_linux', 'update_malachi_pi']
+PERMISSION_FILES = ['./install_malachi_linux', './install_malachi_pi', './run_malachi_linux', './run_malachi_pi']
+
+# Copy of src/StreamToLogger.py, added here to avoid problems when patching /src
+class StreamToLogger(object):
+   """
+   Fake file-like stream object that redirects writes to a logger instance.
+   """
+   def __init__(self, logger, level):
+      self.logger = logger
+      self.level = level
+      self.linebuf = ''
+      self.stdout = sys.stdout
+
+   def write(self, buf):
+      try:
+         for line in buf.rstrip().splitlines():
+            self.stdout.write(line + '\n')
+            self.logger.log(self.level, line.rstrip())
+      except UnicodeEncodeError as _:
+         print("UnicodeEncodeError encountered")
+
+   def flush(self):
+      pass
+
+# https://raspberrypi.stackexchange.com/questions/5100/detect-that-a-python-program-is-running-on-the-pi
+def is_raspberry_pi():
+    try:
+        with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
+            if 'raspberry pi' in m.read().lower(): return True
+    except Exception: pass
+    return False
 
 def download_malachi_repo():
     # Code from https://stackoverflow.com/questions/37573483/progress-bar-while-download-file-over-http-with-requests
@@ -45,11 +91,10 @@ def extract_malachi():
         zipped.extractall(UPDATER_DIR)
 
 def patch_malachi():
-    # Patch root content with exception of 'Update Malachi.bat' which is being executed whilst
-    # running this update script
+    # Patch root content
     print("Patching / ...")
     for root_obj in os.listdir(UPDATE_BASE):
-        if os.path.isfile(UPDATE_BASE + "/" + root_obj) and root_obj not in ['Update Malachi.bat']:
+        if os.path.isfile(UPDATE_BASE + "/" + root_obj):
             file_util.copy_file(UPDATE_BASE + "/" + root_obj, './' + root_obj)
 
     # Clear /src and replace with contents of updater_files/malachi-master/src
@@ -111,10 +156,31 @@ def update_needed():
         if old_sha == latest_sha:
             print("The latest version of Malachi is already installed!")
             return False
+        if old_sha == "-1":
+            print("Developer testing mode - update skipped")
+            return False
     return True
 
 
 if __name__ == "__main__":
+    # Setup logging of terminal output
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s:%(levelname)s:%(name)s:%(message)s',
+        filename='./logs/updater-' + datetime.now().strftime("%Y%m%d_%H%M%S") + '.log',
+        filemode='a'
+        )
+    log = logging.getLogger('malachi-updater')
+    logging.raiseExceptions = False;
+    sys.stdout = StreamToLogger(log,logging.INFO)
+    sys.stderr = StreamToLogger(log,logging.ERROR)
+
+    os_version = 'win32'
+    if sys.platform == 'linux':
+        if is_raspberry_pi():
+            os_version = 'raspbian'
+        else:
+            os_version = 'linux'
 
     if update_needed():
         result = download_malachi_repo()
@@ -131,10 +197,24 @@ if __name__ == "__main__":
             # Run pip
             print()
             print("Installing new Python modules...")
-            subprocess.call(['python', '-m', 'pip', 'install', '-r', 'requirements.txt'])
+            subprocess.call(OS_REQUIREMENTS_CALLS[os_version])
+            print()
+            if os_version == "linux" or os_version == "raspbian":
+                print("Setting permissions...")
+                for f in PERMISSION_FILES:
+                    subprocess.check_call(['chmod', '+x', f])
+                print()
+            print("Removing deprecated files...")
+            for f in DEPRECATED_FILES:
+                if os.path.exists(f):
+                    os.remove(f)
             print()
             print("Malachi has been successfully updated!")
 
         # Clean up downloaded file
         if os.path.exists(MALACHI_ZIP):
             os.remove(MALACHI_ZIP)
+
+    print()
+    print("Re-opening Malachi...")
+    subprocess.Popen(OS_MALACHI_CALLS[os_version])

@@ -14,10 +14,15 @@ of appropriate state changes
 
 import json
 from json.decoder import JSONDecodeError
+from distutils import file_util
 import os
+import io
 import re
 import shutil
 import subprocess
+import sys
+import requests
+from requests.exceptions import ConnectionError
 from websockets.exceptions import ConnectionClosed
 import cv2
 import pyautogui
@@ -47,10 +52,14 @@ class MalachiServer():
 
     SONGS_DATABASE = "./data/songs.sqlite"
     GLOBAL_SETTINGS_FILE = "./data/global_settings.json"
+    GITHUB_URL = 'https://github.com/crossroadchurch/malachi/commits/master'    
+    UPDATER_FILE = 'UpdateMalachi.py'
 
     def __init__(self):
         try:
             Song.update_schema() # Check song database has up to date schema
+            self.cleanup_update()
+            self.updatable = self.is_update_available()
             self.setup_commands()
             self.bible_versions = []  # Loaded within check_data_files()
             self.screen_style = []
@@ -75,6 +84,10 @@ class MalachiServer():
             self.load_settings()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
+
+    def cleanup_update(self):
+        if os.path.exists(MalachiServer.UPDATER_FILE):
+            os.remove(MalachiServer.UPDATER_FILE)
 
     def setup_commands(self):
         self.command_switcher = {
@@ -143,7 +156,8 @@ class MalachiServer():
             "request.all-services": [self.request_all_services, []],
             "request.all-presentations": [self.request_all_presentations, []],
             "request.all-audio": [self.request_all_audio, []],
-            "request.capture-update": [self.capture_update, []]
+            "request.capture-update": [self.capture_update, []],
+            "utility.update-malachi": [self.update_malachi, []]
         }
 
     def register(self, websocket, path):
@@ -250,6 +264,7 @@ class MalachiServer():
         service_data['video_loop'] = self.video_loop
         service_data['loop-width'] = self.loop_width
         service_data['loop-height'] = self.loop_height
+        service_data['update-available'] = self.updatable
         await websocket.send(json.dumps({
             "action": "update.app-init",
             "params": service_data
@@ -1533,3 +1548,40 @@ class MalachiServer():
         Song.generate_word_sizes(font_file)
         Song.load_length_data(font_name)
         print("Malachi has loaded successfully!")
+
+
+    def is_update_available(self):
+        try:
+            repo_page = requests.get(MalachiServer.GITHUB_URL)
+            if repo_page.status_code == 200:
+                latest_sha = re.findall('malachi/commit/[0-9a-f]*', repo_page.text)[0][15:]
+                old_sha = 0
+                if os.path.isfile('sha.txt'):
+                    with open('sha.txt', 'r') as old_sha_file:
+                        old_sha = old_sha_file.read()
+                if old_sha != latest_sha:
+                    return True
+                else:
+                    return False
+        except ConnectionError as _:
+            return False # No internet connection, so can't update
+    
+
+    # https://raspberrypi.stackexchange.com/questions/5100/detect-that-a-python-program-is-running-on-the-pi
+    def is_raspberry_pi(self):
+        try:
+            with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
+                if 'raspberry pi' in m.read().lower(): return True
+        except Exception: pass
+        return False
+
+    def update_malachi(self, websocket, params):
+        py_exec = 'python'
+        if sys.platform == 'linux':
+            if self.is_raspberry_pi():
+                py_exec = 'python3.9'
+            else:
+                py_exec = 'python3.6'
+        file_util.copy_file("./src/" + MalachiServer.UPDATER_FILE, './' + MalachiServer.UPDATER_FILE)
+        subprocess.Popen([py_exec, './' + MalachiServer.UPDATER_FILE])
+        sys.exit()
