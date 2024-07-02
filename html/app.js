@@ -4,7 +4,7 @@ const MAX_VERSE_ITEMS = 2500;
 const SELECTED_COLOR = "gold";
 let saved_current_item = null;
 let service_sort_start;
-let editing_song_id;
+let editing_song_id = -1;
 let action_after_save;
 let screen_state;
 let icon_dict = {};
@@ -41,7 +41,9 @@ const DOM_KEYS = [
   "popup_new_service", "popup_load_service", "popup_save_before_load_service",
   "popup_save_service_as", "popup_export_service_as", "f_name", "exp_name",
   "popup_edit_mode", "popup_edit_song", "load_files_radio",
-  "popup_attach_audio", "attach_audio_radio", "d_version_radios", "updater_elt_button", "updater_btn"
+  "popup_attach_audio", "attach_audio_radio", "d_version_radios", 
+  "updater_elt_button", "updater_btn", "delete_song_btn", "popup_confirm_delete_song",
+  "recycle_bin", "popup_confirm_empty_bin"
 ];
 
 style_dict["s_width"] = "div-width-vw";
@@ -432,8 +434,10 @@ function create_song() {
   DOM_dict["e_transpose_out"].value = "C";
   // Switch into create song mode
   DOM_dict["popup_edit_mode"].innerHTML = "Create song";
+  DOM_dict["delete_song_btn"].style.display = "none";
   // Display popup
   DOM_dict["popup_edit_song"].style.display = "flex";
+  editing_song_id = -1;
 }
 
 function reset_edit_song_form() {
@@ -461,13 +465,14 @@ function save_song() {
           parts.push(part_obj);
         }
         // Start new part
-        if (line[line.length - 1] == ">") {
-          current_part = line.substr(1, line.length - 2).toLowerCase();
+        line_words = line.split(/[> ]/);
+        current_part = line_words[0].substr(1, line_words[0].length - 1).toLowerCase();
+        line_tail = line_words.slice(1).join(" ").trim();
+        if (line_tail != "") {
+          current_lines = [line_tail];
         } else {
-          // Tag has not been ended
-          current_part = line.substr(1, line.length - 1).toLowerCase();
+          current_lines = [];
         }
-        current_lines = [];
       } else if (line[0] == "[") {
         // Only [br] lines should start with [, this ensures no mismatched brackets occur
         current_lines.push("[br]");
@@ -481,6 +486,11 @@ function save_song() {
     // Add final part to parts
     if (current_lines.length != 0) {
       part_obj = { part: current_part, lines: current_lines };
+      parts.push(part_obj);
+    }
+    // Make sure saved song has at least one part
+    if (parts.length == 0) {
+      part_obj = { part: "v1", lines: [] };
       parts.push(part_obj);
     }
     // fills = [fill_1, fill_2, ...] can be empty array
@@ -1115,6 +1125,9 @@ function update_app_init(json_data) {
 
   // Populate Bible version list
   websocket.send(JSON.stringify({ action: "request.bible-versions", params: {} }));
+
+  // Populate Recycle Bin
+  websocket.send(JSON.stringify({ action: "request.recycle-bin", params: {} }));
 }
 
 function update_service_overview_update(json_data) {
@@ -1267,6 +1280,11 @@ function result_song_details(json_data) {
     }
     // Ensure that we are in edit song mode, rather than create song mode
     DOM_dict["popup_edit_mode"].innerHTML = "Edit song";
+    if (full_song["deleted"] == 1) {
+      DOM_dict["delete_song_btn"].style.display = "none";
+    } else {
+      DOM_dict["delete_song_btn"].style.display = "flex";
+    }
     DOM_dict["popup_edit_song"].style.display = "flex";
     editing_song_id = full_song["song-id"];
   }
@@ -1308,6 +1326,20 @@ function result_song_titles(json_data) {
     }
   }
   DOM_dict["song_list"].innerHTML = song_list;
+}
+
+function result_recycle_bin(json_data) {
+  let song_list = "";
+  for (const [idx, song] of json_data.params.songs.entries()) {
+    song_list += "<div class='ml_row'>";
+    song_list += "<div class='ml_text'>" + song[1] + "</div>";
+    song_list += "<a class='ml_button ml_icon ml_icon_edit' ";
+    song_list += "onclick='edit_song(" + song[0] + ");'></a>";
+    song_list += "<a class='ml_button ml_icon ml_icon_undo' ";
+    song_list += "onclick='restore_song(" + song[0] + ");'></a>";
+    song_list += "</div>";
+  }
+  DOM_dict["recycle_bin"].innerHTML = song_list;
 }
 
 function response_save_service(json_data) {
@@ -1584,6 +1616,52 @@ function update_malachi() {
   );
 }
 
+function confirm_delete_song() {
+  DOM_dict["popup_edit_song"].style.display = "none";
+  DOM_dict["popup_confirm_delete_song"].style.display = "flex";
+}
+
+function delete_song() {
+  DOM_dict["popup_confirm_delete_song"].style.display = "none";
+  websocket.send(
+    JSON.stringify({
+      action: "command.delete-song",
+      params: {
+        "song-id": editing_song_id,
+      },
+    })
+  );
+}
+
+function confirm_empty_recycle_bin() {
+  DOM_dict["popup_confirm_empty_bin"].style.display = "flex";
+}
+
+function empty_recycle_bin() {
+  DOM_dict["popup_confirm_empty_bin"].style.display = "none";
+  websocket.send(
+    JSON.stringify({
+      action: "command.empty-recycle-bin",
+      params: {},
+    })
+  );
+}
+
+function restore_song(s_id) {
+  websocket.send(
+    JSON.stringify({
+      action: "command.restore-song",
+      params: {
+        "song-id": s_id,
+      },
+    })
+  );
+}
+
+function refresh_recycle_bin() {
+  websocket.send(JSON.stringify({ action: "request.recycle-bin", params: {} }));
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/app");
@@ -1644,6 +1722,9 @@ function start_websocket() {
         break;
       case "result.song-titles":
         result_song_titles(json_data);
+        break;
+      case "result.recycle-bin":
+        result_recycle_bin(json_data);
         break;
       case "response.save-service":
         response_save_service(json_data);
@@ -1729,6 +1810,24 @@ function start_websocket() {
         break;
       case "response.start-presentation":
         json_toast_response(json_data, "Starting presentation...", "Problem starting presentation");
+        break;
+      case "response.delete-song":
+        json_toast_response(json_data, "Song deleted", "Problem deleting song");
+        song_search();
+        refresh_recycle_bin();
+        break;
+      case "response.restore-song":
+        json_toast_response(json_data, "Song restored", "Problem restoring song");
+        song_search();
+        refresh_recycle_bin();
+        break;
+      case "response.empty-recycle-bin":
+        json_toast_response(
+          json_data,
+          "Song Recycle Bin emptied",
+          "Problem emptying the Song Recycle Bin"
+        );
+        refresh_recycle_bin();
         break;
       case "update.video-loop":
       case "update.capture-update":

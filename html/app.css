@@ -98,8 +98,7 @@ input {
 }
 
 .element_button.active_element {
-  background-color: rgb(77, 162, 231);
-  border-color: #38c;
+  background-color: gold;
 }
 
 .element_icon {
@@ -342,6 +341,7 @@ input {
 }
 
 #song_list .ml_row:hover,
+#recycle_bin .ml_row:hover,
 #presentation_list .ml_row:hover,
 #video_list .ml_row:hover,
 #loop_list .ml_row:hover,
@@ -350,6 +350,7 @@ input {
 }
 
 #song_list .ml_button:hover,
+#recycle_bin .ml_button:hover,
 #presentation_list .ml_button:hover,
 #video_list .ml_button:hover,
 #loop_list .ml_button:hover,
@@ -523,6 +524,10 @@ p.ml_bibleverse {
   background-image: url("/html/icons/icons8-amendment-32.png");
 }
 
+.ml_icon_undo::after {
+  background-image: url("/html/icons/icons8-undo-24.png");
+}
+
 .refresh_header {
   display: flex;
   align-items: center;
@@ -540,6 +545,7 @@ p.ml_bibleverse {
 
 .cmd_button {
   display: flex;
+  gap: 0.5em;
   align-items: center;
   height: 2.75em;
   background-color: #f6f6f6;
@@ -613,10 +619,6 @@ p.ml_bibleverse {
 #create_song_btn {
   justify-content: center;
   width: 11em;
-}
-
-#create_song_btn span {
-  padding-left: 1em;
 }
 
 #service_menu {
@@ -1016,7 +1018,9 @@ p.ml_bibleverse {
 #popup_save_before_load_service,
 #popup_save_service_as,
 #popup_export_service_as,
-#popup_attach_audio {
+#popup_attach_audio,
+#popup_confirm_delete_song,
+#popup_confirm_empty_bin {
   display: none;
 }
 

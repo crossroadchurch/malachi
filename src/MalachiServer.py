@@ -121,6 +121,9 @@ class MalachiServer():
             "command.restore-loop": [self.restore_loop, []],
             "command.create-song": [self.create_song, ["title", "fields"]],
             "command.edit-song": [self.edit_song, ["song-id", "fields"]],
+            "command.delete-song": [self.delete_song, ["song-id"]],
+            "command.restore-song": [self.restore_song, ["song-id"]],
+            "command.empty-recycle-bin": [self.empty_recycle_bin, []],
             "command.play-video": [self.play_video, []],
             "command.pause-video": [self.pause_video, []],
             "command.stop-video": [self.stop_video, []],
@@ -150,6 +153,7 @@ class MalachiServer():
             "request.bible-versions": [self.request_bible_versions, []],
             "request.bible-books": [self.request_bible_books, ["version"]],
             "request.chapter-structure": [self.request_chapter_structure, ["version"]],
+            "request.recycle-bin": [self.request_recycle_bin, []],
             "request.all-videos": [self.request_all_videos, []],
             "request.all-loops": [self.request_all_loops, []],
             "request.all-backgrounds": [self.request_all_backgrounds, []],
@@ -511,6 +515,35 @@ class MalachiServer():
         finally:
             await self.server_response(websocket, "response.edit-song", status, details)
 
+    async def delete_song(self, websocket, params):
+        """Mark song as deleted in the songs database"""
+        status, details = "ok", ""
+        try:
+            Song.delete_song(int(params["song-id"]))
+            # Remove instances of song from current service
+            if self.s.remove_song(int(params["song-id"])):
+                await self.clients_service_items_update()
+        except InvalidSongIdError as e:
+            status, details = "invalid-id", e.msg
+        finally:
+            await self.server_response(websocket, "response.delete-song", status, details)
+
+    async def restore_song(self, websocket, params):
+        """Unmark song as deleted in the songs database"""
+        status, details = "ok", ""
+        try:
+            Song.restore_song(int(params["song-id"]))
+        except InvalidSongIdError as e:
+            status, details = "invalid-id", e.msg
+        finally:
+            await self.server_response(websocket, "response.restore-song", status, details)
+
+    async def empty_recycle_bin(self, websocket, params):
+        """Permanently delete all songs that have been marked as deleted."""
+        status, details = "ok", ""
+        Song.empty_recycle_bin()
+        await self.server_response(websocket, "response.empty-recycle-bin", status, details)
+
     # Command functions
     async def next_slide(self, websocket, params):
         """Advance to next slide and send update to appropriate clients."""
@@ -603,20 +636,12 @@ class MalachiServer():
         """
         status, details = "ok", ""
         index = int(params["index"])
+        cur_item_check = index == self.s.item_index
         result = self.s.remove_item_at(index)
         if result:
-            if index == self.s.item_index:
+            if cur_item_check and self.s.item_index > 0:
                 # Current item was removed
-                if self.s.item_index > 0:
-                    self.s.item_index -= 1
-                    self.s.slide_index = 0
-                    self.track_usage()
-                elif not self.s.items:
-                    self.s.item_index = -1
-                    self.s.slide_index = -1
-            elif index < self.s.item_index:
-                self.s.item_index -= 1
-                self.s.slide_index = 0
+                self.track_usage()
             await self.clients_service_items_update()
         else:
             status, details = "invalid-index", str(index)
@@ -1456,6 +1481,15 @@ class MalachiServer():
                 "status": status,
                 "chapter-structure": chapters
             })
+
+    async def request_recycle_bin(self, websocket, params):
+        """
+        Returns a list of all songs that have been marked as deleted.
+        """
+        songs = Song.get_recycle_bin()
+        await self.send_message(websocket, "result.recycle-bin", {
+            "songs": json.loads(songs)
+        })
 
     async def request_all_videos(self, websocket, params):
         """Return a list of all video URLs in the ./videos directory to websocket."""

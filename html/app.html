@@ -559,6 +559,17 @@
               <output id="at_scale_out"></output>
             </div>
           </div>
+          <div id="sh_recyclebin" class="ml_row style_header">
+            <div class="sl_text">Song Recycle Bin</div>
+            <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('recyclebin')"></a>
+          </div>
+          <div id="sg_recyclebin" class="style_group">
+            <div id="recycle_bin" class="ml_list"></div>
+            <button onclick="confirm_empty_recycle_bin()" class="cmd_button full_button">
+              <img src="/html/icons/icons8-remove-24.png" />
+              Empty Song Recycle Bin
+            </button>
+          </div>
           <h4>About Malachi</h4>
           <p>
             Malachi is open-source software, released under a
@@ -593,6 +604,7 @@
             </li>
           </ol>
           <button id="updater_btn" onclick="update_malachi()" class="cmd_button full_button">
+            <img src="/html/icons/icons8-windows-update-24.png" />
             Update Malachi
           </button>
         </div>
@@ -805,6 +817,68 @@
       <div class="popup_v_spacer"></div>
     </div>
 
+    <!-- POPUP: Prompt to confirm song deletion -->
+    <div id="popup_confirm_delete_song" class="popup_wrapper">
+      <div class="popup_v_spacer"></div>
+      <div style="display: flex">
+        <div class="popup_h_spacer"></div>
+        <div style="display: flex; flex-direction: column">
+          <div class="popup_header">
+            <span>Delete song?</span>
+          </div>
+          <div class="popup_panel">
+            <p>
+              Are you sure that you want to delete the current song?<br />Deleted songs can be
+              restored from the Song Recycle Bin in the Settings tab.
+            </p>
+            <div class="popup_buttons">
+              <div class="cmd_button menu_button dialog_button" onclick="delete_song()">Delete</div>
+              <div
+                class="cmd_button menu_button dialog_button"
+                onclick="close_popup('popup_confirm_delete_song')"
+              >
+                Cancel
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="popup_h_spacer"></div>
+      </div>
+      <div class="popup_v_spacer"></div>
+    </div>
+
+    <!-- POPUP: Prompt to confirm emptying song recycle bin -->
+    <div id="popup_confirm_empty_bin" class="popup_wrapper">
+      <div class="popup_v_spacer"></div>
+      <div style="display: flex">
+        <div class="popup_h_spacer"></div>
+        <div style="display: flex; flex-direction: column">
+          <div class="popup_header">
+            <span>Empty Song Recycle Bin?</span>
+          </div>
+          <div class="popup_panel">
+            <p>
+              Are you sure that you want to empty the Song Recycle Bin?<br />
+              All Songs in the Recycle Bin will be deleted permanently.
+            </p>
+            <div class="popup_buttons">
+              <div class="cmd_button menu_button dialog_button" onclick="empty_recycle_bin()">
+                Empty Bin
+              </div>
+              <div
+                class="cmd_button menu_button dialog_button"
+                onclick="close_popup('popup_confirm_empty_bin')"
+              >
+                Cancel
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="popup_h_spacer"></div>
+      </div>
+      <div class="popup_v_spacer"></div>
+    </div>
+
     <!-- POPUP: Edit song dialog -->
     <div id="popup_edit_song" class="popup_wrapper">
       <div class="popup_v_spacer"></div>
@@ -861,45 +935,62 @@ just make sure to start it with a : (e.g. C1 :1 V2)."
             Verse order:
           </div>
           <input type="text" id="e_order" class="mi_textinput" />
-          <span>Key:</span>
-          <div id="e_key_div" class="radio_toggle_group">
-            <input type="radio" name="e_key" id="e_key_1" data-ek="C" />
-            <label for="e_key_1">C</label>
-            <input type="radio" name="e_key" id="e_key_2" data-ek="Db" />
-            <label for="e_key_2">Db</label>
-            <input type="radio" name="e_key" id="e_key_3" data-ek="D" />
-            <label for="e_key_3">D</label>
-            <input type="radio" name="e_key" id="e_key_4" data-ek="Eb" />
-            <label for="e_key_4">Eb</label>
-            <input type="radio" name="e_key" id="e_key_5" data-ek="E" />
-            <label for="e_key_5">E</label>
-            <input type="radio" name="e_key" id="e_key_6" data-ek="F" />
-            <label for="e_key_6">F</label>
-            <input type="radio" name="e_key" id="e_key_7" data-ek="F#" />
-            <label for="e_key_7">F#</label>
-            <input type="radio" name="e_key" id="e_key_8" data-ek="G" />
-            <label for="e_key_8">G</label>
-            <input type="radio" name="e_key" id="e_key_9" data-ek="Ab" />
-            <label for="e_key_9">Ab</label>
-            <input type="radio" name="e_key" id="e_key_10" data-ek="A" />
-            <label for="e_key_10">A</label>
-            <input type="radio" name="e_key" id="e_key_11" data-ek="Bb" />
-            <label for="e_key_11">Bb</label>
-            <input type="radio" name="e_key" id="e_key_12" data-ek="B" />
-            <label for="e_key_12">B</label>
+          <div style="width: 100%; display: flex; flex-direction: row; gap: 1em">
+            <div style="display: flex; flex-direction: column; gap: 0.5em">
+              <span>Key:</span>
+              <div id="e_key_div" class="radio_toggle_group">
+                <input type="radio" name="e_key" id="e_key_1" data-ek="C" />
+                <label for="e_key_1">C</label>
+                <input type="radio" name="e_key" id="e_key_2" data-ek="Db" />
+                <label for="e_key_2">Db</label>
+                <input type="radio" name="e_key" id="e_key_3" data-ek="D" />
+                <label for="e_key_3">D</label>
+                <input type="radio" name="e_key" id="e_key_4" data-ek="Eb" />
+                <label for="e_key_4">Eb</label>
+                <input type="radio" name="e_key" id="e_key_5" data-ek="E" />
+                <label for="e_key_5">E</label>
+                <input type="radio" name="e_key" id="e_key_6" data-ek="F" />
+                <label for="e_key_6">F</label>
+                <input type="radio" name="e_key" id="e_key_7" data-ek="F#" />
+                <label for="e_key_7">F#</label>
+                <input type="radio" name="e_key" id="e_key_8" data-ek="G" />
+                <label for="e_key_8">G</label>
+                <input type="radio" name="e_key" id="e_key_9" data-ek="Ab" />
+                <label for="e_key_9">Ab</label>
+                <input type="radio" name="e_key" id="e_key_10" data-ek="A" />
+                <label for="e_key_10">A</label>
+                <input type="radio" name="e_key" id="e_key_11" data-ek="Bb" />
+                <label for="e_key_11">Bb</label>
+                <input type="radio" name="e_key" id="e_key_12" data-ek="B" />
+                <label for="e_key_12">B</label>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5em">
+              <span>Transpose by:</span>
+              <div class="mi_range" style="margin-top: 0">
+                <input id="e_transpose" type="range" min="0" max="11" step="1" />
+                <output id="e_transpose_out"></output>
+              </div>
+            </div>
           </div>
+
           <div class="popup_baseline_row">
-            <div class="mi_range">
-              <label for="e_transpose">Transpose by:</label>
-              <input id="e_transpose" type="range" min="0" max="11" step="1" />
-              <output id="e_transpose_out"></output>
+            <div
+              id="delete_song_btn"
+              class="cmd_button menu_button"
+              onclick="confirm_delete_song()"
+            >
+              <img src="/html/icons/icons8-remove-24.png" />Delete song
             </div>
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="save_song()">Save</div>
+              <div class="cmd_button menu_button dialog_button" onclick="save_song()">
+                <img src="/html/icons/icons8-save-24.png" />Save
+              </div>
               <div
                 class="cmd_button menu_button dialog_button"
                 onclick="close_popup('popup_edit_song')"
               >
+                <img src="/html/icons/icons8-close-window-24.png" />
                 Cancel
               </div>
             </div>

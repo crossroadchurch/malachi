@@ -24,7 +24,7 @@ class Song():
 
     STR_FIELDS = ['song_book_name', 'title', 'author', 'song_key',
                   'verse_order', 'copyright', 'song_number', 'search_title', 'audio']
-    INT_FIELDS = ['transpose_by', 'remote']
+    INT_FIELDS = ['transpose_by', 'remote', 'deleted']
     length_data = dict()
 
     def __init__(self, song_id, cur_style):
@@ -77,7 +77,7 @@ class Song():
         """Retrieve non-lyric Song data from the songs database."""
         song_db, cursor = Song.db_connect()
         cursor.execute('''
-            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number, s.remote, s.audio
+            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number, s.remote, s.audio, s.deleted
             FROM songs AS s
             WHERE s.id={s_id}
         '''.format(s_id=self.song_id))
@@ -100,6 +100,7 @@ class Song():
         self.song_number = result[6]
         self.remote = result[7]
         self.audio = result[8]
+        self.deleted = result[9]
 
     def get_title(self):
         """Return the title of this Song."""
@@ -168,7 +169,7 @@ class Song():
             "song-key": self.song_key, "transpose-by": self.transpose_by,
             "parts": tr_parts, "verse-order": self.full_verse_order, "copyright": self.copyright,
             "song-book-name": self.song_book_name, "song-number": self.song_number,
-            "remote": self.remote, "audio": self.audio, "fills": self.fills })
+            "remote": self.remote, "audio": self.audio, "fills": self.fills, "deleted": self.deleted })
 
     def __str__(self):
         return self.get_title()
@@ -441,7 +442,7 @@ class Song():
     @classmethod
     def text_search(cls, search_text, remote):
         """Perform a text search on the Song database.
-        Return all matching Songs (id and title) in a JSON array.
+        Return all matching non-deleted Songs (id and title) in a JSON array.
 
         Arguments:
         search_text -- the text to search for, in either the song's title, lyrics or song number.
@@ -453,6 +454,7 @@ class Song():
             FROM songs AS s
             WHERE (s.search_title LIKE "%{txt}%" OR s.search_lyrics LIKE "%{txt}%" OR s.song_number LIKE "{txt}")
             AND (s.remote = {rem})
+            AND (s.deleted = 0)
             ORDER BY s.title ASC
         '''.format(txt=search_text, rem=remote))
         songs = cursor.fetchall()
@@ -494,6 +496,71 @@ class Song():
             # Raise error with server
             raise InvalidSongFieldError(song_error.msg[29:]) from song_error
         return song_id
+
+    @classmethod
+    def delete_song(cls, song_id):
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            SELECT s.id FROM songs AS s
+            WHERE s.id = {s_id}
+        '''.format(s_id=song_id))
+        result = cursor.fetchone()
+        if result == []:
+            raise InvalidSongIdError(song_id)
+        cursor.execute('''
+            UPDATE songs
+            SET deleted = 1
+            WHERE id = {s_id}
+        '''.format(s_id=song_id))
+        song_db.commit()
+        song_db.close()
+
+    @classmethod
+    def restore_song(cls, song_id):
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            SELECT s.id FROM songs AS s
+            WHERE s.id = {s_id}
+        '''.format(s_id=song_id))
+        result = cursor.fetchone()
+        if result == []:
+            raise InvalidSongIdError(song_id)
+        cursor.execute('''
+            UPDATE songs
+            SET deleted = 0
+            WHERE id = {s_id}
+        '''.format(s_id=song_id))
+        song_db.commit()
+        song_db.close()
+
+    @classmethod
+    def get_recycle_bin(cls):
+        """
+        Returns a list of all songs that have been marked as deleted.
+        """
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            SELECT s.id, s.title
+            FROM songs AS s
+            WHERE s.deleted = 1
+            ORDER BY s.title ASC
+        ''')
+        songs = cursor.fetchall()
+        song_db.close()
+        return json.dumps(songs, indent=2)
+    
+    @classmethod
+    def empty_recycle_bin(cls):
+        """
+        Permanently deletes all songs that have been marked as deleted.
+        """
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            DELETE FROM songs AS s
+            WHERE s.deleted = 1
+        ''')
+        song_db.commit()
+        song_db.close()
 
     @classmethod
     def edit_song(cls, song_id, fields):
@@ -687,15 +754,15 @@ class Song():
         cursor.execute('PRAGMA table_info("songs")')
         song_rows = cursor.fetchall()
         
-        if(len([x for x in song_rows if x[1]=='remote']) == 0):
+        if len([x for x in song_rows if x[1]=='remote']) == 0:
             # Add remote song column to songs table
             cursor.execute('ALTER TABLE songs ADD COLUMN remote INTEGER DEFAULT 0')
 
-        if(len([x for x in song_rows if x[1]=='audio']) == 0):
+        if len([x for x in song_rows if x[1]=='audio']) == 0:
             # Add audio recording column to songs table
             cursor.execute('ALTER TABLE songs ADD COLUMN audio TEXT NOT NULL DEFAULT ""')
 
-        if(len([x for x in song_rows if x[1]=='fills']) == 0):
+        if len([x for x in song_rows if x[1]=='fills']) == 0:
             # Add fills column to songs table
             cursor.execute('ALTER TABLE songs ADD COLUMN fills TEXT NOT NULL DEFAULT "[]"')
 
@@ -707,6 +774,10 @@ class Song():
             cursor.execute('UPDATE songs SET song_key = old_song_key WHERE old_song_key IS NOT NULL AND old_song_key IS NOT ""')
             song_db.commit()
             cursor.execute('ALTER TABLE songs DROP COLUMN old_song_key')
+
+        if len([x for x in song_rows if x[1]=='deleted']) == 0:
+            # Add deleted flag column to songs table
+            cursor.execute('ALTER TABLE songs ADD COLUMN deleted INTEGER DEFAULT 0')
             
         cursor.close()
         song_db.close()

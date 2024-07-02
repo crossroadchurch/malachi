@@ -61,7 +61,34 @@ class Service():
         if index >= 0 and self.items and index < len(self.items):
             del self.items[index]
             self.modified = True
+            if index == self.item_index:
+                # Current item was removed
+                if self.item_index > 0:
+                    self.item_index -= 1
+                    self.slide_index = 0
+                elif not self.items:
+                    self.item_index = -1
+                    self.slide_index = -1
+            elif index < self.item_index:
+                self.item_index -= 1
+                self.slide_index = 0
             self.autosave()
+            return True
+        else:
+            return False
+        
+    def remove_song(self, s_id):
+        """
+        Removes all instances of a given song from the service
+        """
+        song_instances = []
+        for idx, item in enumerate(self.items):
+            if type(item).__name__ == "Song" and item.song_id == s_id:
+                song_instances.append(idx)
+        print("Indices to delete:", song_instances)
+        if song_instances:
+            for idx in reversed(song_instances):
+                self.remove_item_at(idx)
             return True
         else:
             return False
@@ -99,6 +126,13 @@ class Service():
         """Return the type of the currently selected item"""
         if self.item_index >= 0:
             return type(self.items[self.item_index]).__name__
+        else:
+            return None
+        
+    def get_item_type(self, index):
+        """Return the type of a specified item, or None if invalid index given"""
+        if index >= 0 and index < len(self.items):
+            return type(self.items[index]).__name__
         else:
             return None
 
