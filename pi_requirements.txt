@@ -15,6 +15,6 @@ PyScreeze==0.1.28
 python3-xlib==0.15
 pytweening==1.0.4
 requests==2.32.2
-tqdm==4.62.3
+tqdm==4.66.3
 urllib3==1.26.19
 websockets==10.1
