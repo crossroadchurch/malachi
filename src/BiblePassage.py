@@ -38,8 +38,8 @@ class BiblePassage():
             raise InvalidVerseIdError(start_id, version)
         if not self.is_valid_verse_id(end_id):
             raise InvalidVerseIdError(end_id, version)
-        self.start_id = start_id
-        self.end_id = end_id
+        self.start_id = int(start_id)
+        self.end_id = int(end_id)
         if self.start_id > self.end_id:
             temp = self.end_id
             self.end_id = self.start_id
