@@ -1,4 +1,4 @@
-certifi==2023.7.22
+certifi==2024.7.4
 charset-normalizer==2.0.5
 colorama==0.4.4
 comtypes==1.1.10
