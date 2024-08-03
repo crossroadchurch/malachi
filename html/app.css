@@ -571,7 +571,7 @@ p.ml_bibleverse {
 
 .small_button {
   width: fit-content;
-  font-size: 13px;
+  font-size: 12.8px;
   padding: 1em;
 }
 
@@ -648,6 +648,15 @@ p.ml_bibleverse {
   border-width: 1px;
   border-radius: 5px;
   padding-left: 0.5em;
+}
+
+.mi_textinput_join_right {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.join_column_right {
+  margin-right: -0.5em;
 }
 
 .mi_textinput:focus-visible {
@@ -1032,20 +1041,14 @@ p.ml_bibleverse {
   justify-content: left;
 }
 
-#e_audio_button_div {
-  padding-top: 1.825em;
-  display: flex;
-}
-
-#e_audio_button_div div:first-child {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-right-width: 0;
-}
-
-#e_audio_button_div div:last-child {
+.btn_join_left {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+}
+
+.btn_join_right {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .popup_wrapper {
@@ -1109,6 +1112,12 @@ p.ml_bibleverse {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  gap: 0.5em;
+}
+
+.popup_column_no_grow {
+  display: flex;
+  flex-direction: column;
   gap: 0.5em;
 }
 
@@ -1214,4 +1223,28 @@ p.ml_bibleverse {
 
 #updater_btn:disabled :hover {
   background-color: #e8e8e8;
+}
+
+#e_audio {
+  flex-grow: 1;
+}
+
+#add_audio_btn {
+  display: flex;
+}
+
+#remove_audio_btn {
+  display: none;
+}
+
+#e_transpose_out {
+  border-radius: 0;
+  width: 3em;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
+
+#e_key_div input + label {
+  flex-grow: 1;
 }

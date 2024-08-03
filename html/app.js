@@ -14,6 +14,7 @@ let aspect_ratio;
 let video_timer = 0;
 let video_interval;
 let valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+let e_transpose = 0;
 let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 let saved_style = null;
 const LINE_SEGMENT_REGEX = /\[[\w\+\¬#\/"='' ]*\]/;
@@ -29,8 +30,9 @@ const DOM_KEYS = [
   "song_list", "passage_list", "service_list", "presentation_list",
   "video_list", "loop_list", "background_list", "b_version_radios",
   "b_main_version_radios", "b_alt_version_radios", "bible_controls",
-  "e_title", "e_author", "e_book", "e_number", "e_audio", "e_copyright", "e_lyrics", "e_fills",
-  "e_order", "e_transpose", "e_transpose_out", "e_title_span", "line_numbers",
+  "e_title", "e_author", "e_book", "e_number", "e_audio", "add_audio_btn",
+  "remove_audio_btn", "e_copyright", "e_lyrics", "e_fills",
+  "e_order", "e_transpose_out", "e_title_span", "line_numbers",
   "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
   "pl_width", "pl_width_out", "pl_font_size", "pl_font_size_out", "pl_lines", "pl_lines_out",
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
@@ -430,7 +432,7 @@ function create_song() {
   document.querySelector("input[data-ek='C']").checked = true;
   document.querySelector("input[data-lr='0']").checked = true;
   document.querySelector("input[data-lr='1']").checked = false;
-  DOM_dict["e_transpose"].value = 0;
+  e_transpose = 0;
   DOM_dict["e_transpose_out"].value = "C";
   // Switch into create song mode
   DOM_dict["popup_edit_mode"].innerHTML = "Create song";
@@ -501,7 +503,7 @@ function save_song() {
 
     let fields = {
       author: DOM_dict["e_author"].value,
-      transpose_by: DOM_dict["e_transpose"].value % 12,
+      transpose_by: e_transpose,
       lyrics_chords: parts,
       fills: fill_array,
       verse_order: DOM_dict["e_order"].value.toLowerCase(),
@@ -850,12 +852,16 @@ function toast_error(error_details) {
   }).showToast();
 }
 
-function update_transpose_slider() {
+function transpose_by(amount) {
+  e_transpose = (e_transpose + amount + 12) % 12;
+  update_transpose_output();
+}
+
+function update_transpose_output() {
   if (document.querySelectorAll("input[name=e_key]:checked").length > 0) {
     const e_val = document.querySelector("input[name=e_key]:checked").getAttribute("data-ek");
     const e_idx = valid_keys.findIndex((element) => element == e_val);
-    const t_idx = parseInt(DOM_dict["e_transpose"].value, 10);
-    const t_key = valid_keys[(e_idx + t_idx) % 12];
+    const t_key = valid_keys[(e_idx + e_transpose) % 12];
     DOM_dict["e_transpose_out"].value = t_key;
   }
 }
@@ -1241,6 +1247,13 @@ function result_song_details(json_data) {
     DOM_dict["e_book"].value = full_song["song-book-name"];
     DOM_dict["e_number"].value = full_song["song-number"];
     DOM_dict["e_audio"].value = full_song["audio"];
+    if (full_song["audio"] == "") {
+      DOM_dict["add_audio_btn"].style.display = "flex";
+      DOM_dict["remove_audio_btn"].style.display = "none";
+    } else {
+      DOM_dict["add_audio_btn"].style.display = "none";
+      DOM_dict["remove_audio_btn"].style.display = "flex";
+    }
     DOM_dict["e_copyright"].value = full_song["copyright"];
     document.querySelectorAll("input[name=e_remote]").forEach((elt) => {
       elt.checked = false;
@@ -1269,7 +1282,7 @@ function result_song_details(json_data) {
       elt.checked = false;
     });
     const t_idx = full_song["transpose-by"];
-    DOM_dict["e_transpose"].value = (t_idx + 12) % 12; // +12 needed to ensure remainder is in [0, 12)
+    e_transpose = (parseInt(t_idx, 10) + 12) % 12; // +12 needed to ensure remainder is in [0, 12)
     if (full_song["song-key"]) {
       document.querySelector("input[data-ek='" + full_song["song-key"] + "']").checked = true;
       const e_idx = valid_keys.findIndex((element) => element == full_song["song-key"]);
@@ -1548,6 +1561,8 @@ function toggle_verse(idx) {
 
 function remove_audio() {
   DOM_dict["e_audio"].value = "";
+  DOM_dict["add_audio_btn"].style.display = "flex";
+  DOM_dict["remove_audio_btn"].style.display = "none";
 }
 
 function audio_popup_preload() {
@@ -1589,6 +1604,8 @@ function attach_audio() {
     "#attach_audio_radio .ml_row.selected .ml_text"
   ).innerText;
   DOM_dict["e_audio"].value = sel_text;
+  DOM_dict["add_audio_btn"].style.display = "none";
+  DOM_dict["remove_audio_btn"].style.display = "flex";
   close_attach_audio_popup();
 }
 
@@ -1911,11 +1928,6 @@ ready(() => {
     if (key_code == 13) {
       bible_search();
     }
-  });
-
-  DOM_dict["e_transpose"].addEventListener("change", update_transpose_slider);
-  document.querySelectorAll('input[name="e_key"]').forEach((elt) => {
-    elt.addEventListener("change", update_transpose_slider);
   });
 
   DOM_dict["e_fills"].addEventListener("keyup", (event) => {

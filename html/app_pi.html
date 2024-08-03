@@ -915,14 +915,28 @@
             </div>
             <div class="popup_column">
               <span>Audio:</span>
-              <input type="text" id="e_audio" class="mi_textinput" readonly />
-            </div>
-            <div id="e_audio_button_div">
-              <div class="cmd_button small_button" onclick="audio_popup_preload()">
-                <img src="/html/icons/icons8-plus-24.png" />
-              </div>
-              <div class="cmd_button small_button" onclick="remove_audio()">
-                <img src="/html/icons/icons8-minus-24.png" />
+              <div style="display: flex">
+                <input
+                  type="text"
+                  id="e_audio"
+                  class="mi_textinput mi_textinput_join_right"
+                  placeholder="No audio attached"
+                  readonly
+                />
+                <div
+                  class="cmd_button small_button btn_join_left"
+                  id="add_audio_btn"
+                  onclick="audio_popup_preload()"
+                >
+                  <img src="/html/icons/icons8-plus-24.png" />
+                </div>
+                <div
+                  class="cmd_button small_button btn_join_left"
+                  id="remove_audio_btn"
+                  onclick="remove_audio()"
+                >
+                  <img src="/html/icons/icons8-minus-24.png" />
+                </div>
               </div>
             </div>
           </div>
@@ -936,7 +950,7 @@ just make sure to start it with a : (e.g. C1 :1 V2)."
           </div>
           <input type="text" id="e_order" class="mi_textinput" />
           <div style="width: 100%; display: flex; flex-direction: row; gap: 1em">
-            <div style="display: flex; flex-direction: column; gap: 0.5em">
+            <div class="popup_column">
               <span>Key:</span>
               <div id="e_key_div" class="radio_toggle_group">
                 <input type="radio" name="e_key" id="e_key_1" data-ek="C" />
@@ -965,11 +979,16 @@ just make sure to start it with a : (e.g. C1 :1 V2)."
                 <label for="e_key_12">B</label>
               </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 0.5em">
-              <span>Transpose by:</span>
-              <div class="mi_range" style="margin-top: 0">
-                <input id="e_transpose" type="range" min="0" max="11" step="1" />
-                <output id="e_transpose_out"></output>
+            <div class="popup_column_no_grow">
+              <span>Transpose to:</span>
+              <div style="display: flex">
+                <div class="cmd_button small_button btn_join_right" onclick="transpose_by(-1)">
+                  <img src="/html/icons/icons8-back-to-24.png" />
+                </div>
+                <input id="e_transpose_out" type="text" class="mi_textinput" readonly />
+                <div class="cmd_button small_button btn_join_left" onclick="transpose_by(1)">
+                  <img src="/html/icons/icons8-next-page-24.png" />
+                </div>
               </div>
             </div>
           </div>
