@@ -188,11 +188,11 @@ span {
 }
 
 #controlarea {
-  max-width: 30vw;
+  max-width: 15vw;
   position: absolute;
   top: 4.5rem;
   bottom: 2%;
-  left: 70%;
+  left: 85%;
   right: 2%;
 }
 
@@ -201,16 +201,16 @@ span {
   top: 4.5rem;
   left: 2%;
   bottom: 2%;
-  right: 30%;
+  right: 15%;
   overflow-y: hidden;
 }
 
 #currentslide {
-  max-width: 70vw;
+  max-width: 85vw;
 }
 
 #nextslide {
-  max-width: 70vw;
+  max-width: 85vw;
 }
 
 .vert-button-25 {

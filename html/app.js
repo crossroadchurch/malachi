@@ -17,7 +17,7 @@ let valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B
 let e_transpose = 0;
 let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 let saved_style = null;
-const LINE_SEGMENT_REGEX = /\[[\w\+\¬#\/"='' ]*\]/;
+const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
 
 // DOM pointers
 const DOM_dict = {};
@@ -45,7 +45,8 @@ const DOM_KEYS = [
   "popup_edit_mode", "popup_edit_song", "load_files_radio",
   "popup_attach_audio", "attach_audio_radio", "d_version_radios", 
   "updater_elt_button", "updater_btn", "delete_song_btn", "popup_confirm_delete_song",
-  "recycle_bin", "popup_confirm_empty_bin"
+  "recycle_bin", "popup_confirm_empty_bin",
+  "regular_update_instructions", "python_update_instructions", "python_version_needed"
 ];
 
 style_dict["s_width"] = "div-width-vw";
@@ -1073,6 +1074,14 @@ function update_app_init(json_data) {
   if (json_data.params["update-available"]) {
     DOM_dict["updater_elt_button"].style.display = "flex";
   }
+  if (json_data.params["python-required"][0]) {
+    DOM_dict["regular_update_instructions"].style.display = "none";
+    DOM_dict["python_update_instructions"].style.display = "block";
+    DOM_dict["python_version_needed"].innerText = json_data.params["python-required"][1];
+  } else {
+    DOM_dict["regular_update_instructions"].style.display = "block";
+    DOM_dict["python_update_instructions"].style.display = "none";
+  }
 
   // Size screen_view div and current_item div based on style
   // Video width = 70% of container div, with padding-bottom set to enforce aspect ratio
@@ -1921,6 +1930,10 @@ ready(() => {
   document.querySelector('input[data-lrs="1"]').checked = false;
   document.querySelectorAll('input[name="lr_search"]').forEach((elt) => {
     elt.addEventListener("change", song_search);
+  });
+
+  document.querySelectorAll('input[name="e_key"]').forEach((elt) => {
+    elt.addEventListener("click", update_transpose_output);
   });
 
   DOM_dict["bible_search"].addEventListener("keypress", (e) => {

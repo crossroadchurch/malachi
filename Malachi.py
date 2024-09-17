@@ -36,6 +36,7 @@ def main():
     sys.stderr = StreamToLogger(log,logging.ERROR)
 
     print("Welcome to Malachi v{v}".format(v=__version__))
+    print("Running on Python {v}".format(v=sys.version))
     # Start web server
     HTTP_SERVER = ThreadedHTTPServer('0.0.0.0', 8000)
     HTTP_SERVER.start()
@@ -44,11 +45,19 @@ def main():
     try:
         MALACHI_SERVER = MalachiServer()
 
+        # https://stackoverflow.com/a/73884759
+        if sys.version_info < (3, 10):
+            loop = asyncio.get_event_loop()
+        else:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
         # Start websocket server
-        asyncio.get_event_loop().run_until_complete(
-            websockets.serve(MALACHI_SERVER.responder, '0.0.0.0', 9001)
-        )
-        asyncio.get_event_loop().run_forever()
+        loop.run_until_complete(websockets.serve(MALACHI_SERVER.responder, '0.0.0.0', 9001))
+        loop.run_forever()
         HTTP_SERVER.stop()
 
     except MissingDataFilesError as _:

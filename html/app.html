@@ -585,28 +585,41 @@
 
         <div id="updater_element" class="element_panel">
           <h3>Update Malachi</h3>
-          <p>A new version of Malachi has been released - here's how to install it:</p>
-          <ol id="update_instructions">
-            <li>Save the service (if you want to load it later).</li>
-            <li>
-              Click the
-              <strong>Update Malachi</strong>
-              button below.
-            </li>
-            <li>
-              Wait for the green
-              <em>Connected to Malachi server</em>
-              message to be displayed in the bottom left of the app.
-            </li>
-            <li>
-              Press <strong>Ctrl + Shift + R</strong> to refresh the app. Any other devices
-              connected to Malachi will automatically reconnect to the server after a few seconds.
-            </li>
-          </ol>
-          <button id="updater_btn" onclick="update_malachi()" class="cmd_button full_button">
-            <img src="/html/icons/icons8-windows-update-24.png" />
-            Update Malachi
-          </button>
+          <div id="regular_update_instructions">
+            <p>A new version of Malachi has been released - here's how to install it:</p>
+            <ol class="update_instructions">
+              <li>Save the service if you want to load it later.</li>
+              <li>
+                Click the
+                <strong>Update Malachi</strong>
+                button below.
+              </li>
+              <li>
+                Wait for the green
+                <em>Connected to Malachi server</em>
+                message to be displayed in the bottom left of the app.
+              </li>
+              <li>
+                Press <strong>Ctrl + Shift + R</strong> to refresh the app. Any other devices
+                connected to Malachi will automatically reconnect to the server after a few seconds.
+              </li>
+            </ol>
+            <button id="updater_btn" onclick="update_malachi()" class="cmd_button full_button">
+              <img src="/html/icons/icons8-windows-update-24.png" />
+              Update Malachi
+            </button>
+          </div>
+          <div id="python_update_instructions">
+            <p>
+              The newest version of Malachi runs on a different version of Python. Here's how to
+              update both Python and Malachi:
+              <ol class="update_instructions">
+                <li>Save the service if you want to load it later.</li>
+                <li>Take a note of this Python version number: <strong id="python_version_needed">3.x.x</strong></li>
+                <li>Follow the <a href="https://github.com/crossroadchurch/malachi/wiki/Manually-updating-Python-and-Malachi">manual update instructions</a> on the Malachi wiki.</li>
+              </ol>
+            </p>
+          </div>
         </div>
       </div>
     </div>

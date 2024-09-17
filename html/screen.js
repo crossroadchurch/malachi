@@ -15,7 +15,7 @@ let screen_state = false;
 let video_displayed = false;
 let video_muted = false;
 let play_videos = true;
-const LINE_SEGMENT_REGEX = /\[[\w\+\¬#\/"='' ]*\]/;
+const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
 // DOM Pointers
 const DOM_dict = {};
 // prettier-ignore

@@ -13,8 +13,8 @@ const SIMPLE_CHORDS = "1";
 const BASS_EMPHASIS = "2";
 const BASS_ONLY = "3";
 const SECTION_AND_FILLS_REGEX = /(\[\¬\].*\[\¬\])/;
-const FILL_CHORD_REGEX = /(\[[\w\+\¬#\/"='' ]*\])/;
-const LINE_SEGMENT_REGEX = /(\[[\w\+#\/"='' ]*\])/;
+const FILL_CHORD_REGEX = /(\[[\w\+\¬#|\/"='' ]*\])/;
+const LINE_SEGMENT_REGEX = /(\[[\w\+#|\/"='' ]*\])/;
 let websocket;
 // DOM pointers
 const DOM_dict = {};

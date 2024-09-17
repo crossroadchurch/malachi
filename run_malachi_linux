@@ -1,2 +1,2 @@
 #!/bin/sh
-python3.6 Malachi.py
+python Malachi.py

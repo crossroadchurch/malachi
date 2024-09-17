@@ -8,7 +8,7 @@ let current_slides = [];
 let part_counts = [];
 let slide_index = -1;
 let item_index = -1;
-const LINE_SEGMENT_REGEX = /\[[\w\+\¬#\/"='' ]*\]/;
+const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
 // DOM pointers
 const DOM_dict = {};
 // prettier-ignore

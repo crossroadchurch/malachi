@@ -17,6 +17,7 @@ from json.decoder import JSONDecodeError
 from distutils import file_util
 import os
 import io
+import platform
 import re
 import shutil
 import subprocess
@@ -53,6 +54,7 @@ class MalachiServer():
     SONGS_DATABASE = "./data/songs.sqlite"
     GLOBAL_SETTINGS_FILE = "./data/global_settings.json"
     GITHUB_URL = 'https://github.com/crossroadchurch/malachi/commits/master'    
+    PYTHON_VERSION_URL = 'https://raw.githubusercontent.com/crossroadchurch/malachi/master/src/python-required.txt'
     UPDATER_FILE = 'UpdateMalachi.py'
 
     def __init__(self):
@@ -60,6 +62,7 @@ class MalachiServer():
             Song.update_schema() # Check song database has up to date schema
             self.cleanup_update()
             self.updatable = self.is_update_available()
+            self.python_update_status = self.is_python_update_needed()
             self.setup_commands()
             self.bible_versions = []  # Loaded within check_data_files()
             self.screen_style = []
@@ -269,6 +272,7 @@ class MalachiServer():
         service_data['loop-width'] = self.loop_width
         service_data['loop-height'] = self.loop_height
         service_data['update-available'] = self.updatable
+        service_data['python-required'] = self.python_update_status
         await websocket.send(json.dumps({
             "action": "update.app-init",
             "params": service_data
@@ -1600,22 +1604,18 @@ class MalachiServer():
         except ConnectionError as _:
             return False # No internet connection, so can't update
     
-
-    # https://raspberrypi.stackexchange.com/questions/5100/detect-that-a-python-program-is-running-on-the-pi
-    def is_raspberry_pi(self):
+    def is_python_update_needed(self):
         try:
-            with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
-                if 'raspberry pi' in m.read().lower(): return True
-        except Exception: pass
-        return False
+            python_page = requests.get(MalachiServer.PYTHON_VERSION_URL)
+            if python_page.status_code == 200:
+                if python_page.text != platform.python_version():
+                    return (True, python_page.text, platform.python_version())
+            else:
+                return (False, '', '')
+        except ConnectionError as _:
+            return (False, '', '')
 
     def update_malachi(self, websocket, params):
-        py_exec = 'python'
-        if sys.platform == 'linux':
-            if self.is_raspberry_pi():
-                py_exec = 'python3.9'
-            else:
-                py_exec = 'python3.6'
         file_util.copy_file("./src/" + MalachiServer.UPDATER_FILE, './' + MalachiServer.UPDATER_FILE)
-        subprocess.Popen([py_exec, './' + MalachiServer.UPDATER_FILE])
+        subprocess.Popen(['python', './' + MalachiServer.UPDATER_FILE])
         sys.exit()

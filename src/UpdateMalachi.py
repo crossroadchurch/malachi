@@ -27,13 +27,15 @@ GLOBAL_SETTINGS_FILE = 'global_settings.json'
 MALACHI_ZIP = 'malachi.zip'
 OS_REQUIREMENTS_CALLS = {
     'win32': ['python', '-m', 'pip', 'install', '-r', 'requirements.txt'],
-    'linux': ['sudo', 'python3.6', '-m', 'pip', 'install', '-r', 'linux_requirements.txt'],
-    'raspbian': ['python3.9', '-m', 'pip', 'install', '-r', 'pi_requirements.txt']
+    'linux': ['sudo', 'python', '-m', 'pip', 'install', '-r', 'linux_requirements.txt'],
+    'raspbian': ['python', '-m', 'pip', 'install', '-r', 'pi_requirements.txt'],
+    'darwin': ['python', '-m', 'pip', 'install', '-r', 'mac_requirements.txt']
 }
 OS_MALACHI_CALLS = {
     'win32': ['python', './Malachi.py'],
-    'linux': ['python3.6', './Malachi.py'],
-    'raspbian': ['python3.9', './Malachi.py']
+    'linux': ['python', './Malachi.py'],
+    'raspbian': ['python', './Malachi.py'],
+    'darwin': ['python', './Malachi.py']
 }
 DEPRECATED_FILES = ['Update Malachi.bat', 'update_malachi_linux', 'update_malachi_pi']
 PERMISSION_FILES = ['./install_malachi_linux', './install_malachi_pi', './run_malachi_linux', './run_malachi_pi']
@@ -181,7 +183,9 @@ if __name__ == "__main__":
             os_version = 'raspbian'
         else:
             os_version = 'linux'
-
+    elif sys.platform == 'darwin':
+        os_version = 'darwin'
+        
     if update_needed():
         result = download_malachi_repo()
 

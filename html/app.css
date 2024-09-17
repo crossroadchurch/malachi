@@ -1211,7 +1211,7 @@ p.ml_bibleverse {
   display: none;
 }
 
-#update_instructions li {
+.update_instructions li {
   padding-bottom: 0.5em;
 }
 

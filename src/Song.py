@@ -361,7 +361,7 @@ class Song():
                     line_count, slide_start = 0, 0
                     line_length = -1 * SPACE_WIDTH
                     for idx, word_and_chords in enumerate(line_words):
-                        word = re.sub(r'\[[\w\+#\/]*\]', '', word_and_chords)
+                        word = re.sub(r'\[[\w\+|#\/]*\]', '', word_and_chords)
                         if word != "":
                             if word in Song.length_data:
                                 word_length = Song.length_data[word]

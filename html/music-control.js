@@ -16,8 +16,8 @@ let music_options_visible = false;
 let display_options_visible = false;
 let service_options_visible = false;
 const SECTION_AND_FILLS_REGEX = /(\[\¬\].*\[\¬\])/;
-const FILL_CHORD_REGEX = /(\[[\w\+#\/"=''\¬ ]*\])/;
-const LINE_SEGMENT_REGEX = /(\[[\w\+#\/"='' ]*\])/;
+const FILL_CHORD_REGEX = /(\[[\w\+#|\/"=''\¬ ]*\])/;
+const LINE_SEGMENT_REGEX = /(\[[\w\+#|\/"='' ]*\])/;
 // DOM pointers
 const DOM_dict = {};
 // prettier-ignore
