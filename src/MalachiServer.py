@@ -1610,8 +1610,7 @@ class MalachiServer():
             if python_page.status_code == 200:
                 if python_page.text != platform.python_version():
                     return (True, python_page.text, platform.python_version())
-            else:
-                return (False, '', '')
+            return (False, '', '')
         except ConnectionError as _:
             return (False, '', '')
 
