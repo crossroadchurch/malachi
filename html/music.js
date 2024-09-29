@@ -173,37 +173,49 @@ function get_song_section_html(section, prefix, display_fill_toggle) {
 }
 
 function process_chord_widths(slide_id, prefix) {
-  document.querySelectorAll("#" + slide_id + ">span").forEach((element) => {
-    if (element.children.length > 1) {
-      const lyricWidth = parseInt(
-        getComputedStyle(element.querySelector("." + prefix + "lyric-chunk")).width
-      );
-      const chordWidth = parseInt(
-        getComputedStyle(element.querySelector("." + prefix + "chord-chunk")).width
-      );
-      if (lyricWidth == 0) {
-        element.querySelector("." + prefix + "lyric-chunk").innerHTML = "&nbsp;";
-      }
-      if (lyricWidth <= chordWidth) {
-        if (element.querySelectorAll(".midword").length > 0) {
-          const spacerWidth = chordWidth - parseInt(getComputedStyle(element).width);
-          element.insertAdjacentHTML(
-            "beforeend",
-            '<span class="' + prefix + 'midword-spacer">-</span>'
-          );
-          if (spacerWidth < body_size_int) {
-            element.querySelector("." + prefix + "midword-spacer").style.width =
-              body_size_int + "px";
-          } else {
-            element.querySelector("." + prefix + "midword-spacer").style.width = spacerWidth + "px";
-          }
+  const chunks = document.querySelectorAll("#" + slide_id + ">span");
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    if (chunk.children.length <= 1) {
+      continue;
+    }
+    const cur_left = chunk.getBoundingClientRect().left;
+    const next_left = i < chunks.length - 1 ? chunks[i + 1].getBoundingClientRect().left : 1000000;
+    const midword = chunk.querySelectorAll(".midword").length > 0;
+    const l_width = chunk.querySelector("." + prefix + "lyric-chunk").getBoundingClientRect().width;
+    const c_width = chunk.querySelector("." + prefix + "chord-chunk").getBoundingClientRect().width;
+    if (l_width == 0) {
+      chunk.querySelector("." + prefix + "lyric-chunk").innerHTML = "&nbsp;";
+    }
+
+    if (midword) {
+      if (l_width <= c_width) {
+        // Hyphen to space out lyrics over long chords
+        const spacer_width = c_width - parseInt(getComputedStyle(chunk).width);
+        chunk.insertAdjacentHTML(
+          "beforeend",
+          '<span class="' + prefix + 'midword-spacer">-</span>'
+        );
+        if (spacer_width < body_size_int) {
+          chunk.querySelector("." + prefix + "midword-spacer").style.width = body_size_int + "px";
         } else {
-          element.style.paddingRight =
-            chordWidth - parseInt(getComputedStyle(element).width) + body_size_int + "px";
+          chunk.querySelector("." + prefix + "midword-spacer").style.width = spacer_width + "px";
         }
+      } else if (next_left < cur_left) {
+        // Hyphen at end of line
+        chunk.insertAdjacentHTML(
+          "beforeend",
+          '<span class="' + prefix + 'midword-spacer">-</span>'
+        );
+        chunk.querySelector("." + prefix + "midword-spacer").style.width = body_size_int + "px";
+      }
+    } else {
+      if (l_width <= c_width) {
+        chunk.style.paddingRight =
+          c_width - parseInt(getComputedStyle(chunk).width) + body_size_int + "px";
       }
     }
-  });
+  }
 }
 
 function update_verse_order() {

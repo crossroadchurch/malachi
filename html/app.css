@@ -1215,6 +1215,14 @@ p.ml_bibleverse {
   padding-bottom: 0.5em;
 }
 
+#regular_update_instructions {
+  display: block;
+}
+
+#python_update_instructions {
+  display: none;
+}
+
 #updater_btn:disabled {
   cursor: default;
   color: grey;

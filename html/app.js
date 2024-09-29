@@ -1078,9 +1078,6 @@ function update_app_init(json_data) {
     DOM_dict["regular_update_instructions"].style.display = "none";
     DOM_dict["python_update_instructions"].style.display = "block";
     DOM_dict["python_version_needed"].innerText = json_data.params["python-required"][1];
-  } else {
-    DOM_dict["regular_update_instructions"].style.display = "block";
-    DOM_dict["python_update_instructions"].style.display = "none";
   }
 
   // Size screen_view div and current_item div based on style
