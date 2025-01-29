@@ -89,14 +89,14 @@ body {
   display: inline-block;
   margin: 2rem 0rem 0.5rem 0rem;
   white-space: pre-wrap;
-  max-width: 66vw;
+  max-width: 81vw;
 }
 
 .lyric-chord-block {
   position: relative;
   margin-right: 0px;
   display: inline-block;
-  max-width: 66vw;
+  max-width: 81vw;
 }
 
 .next-chord-chunk {
@@ -116,14 +116,14 @@ body {
   display: inline-block;
   margin: 2rem 0rem 0.5rem 0rem;
   white-space: pre-wrap;
-  max-width: 66vw;
+  max-width: 81vw;
 }
 
 .next-lyric-chord-block {
   position: relative;
   margin-right: 0px;
   display: inline-block;
-  max-width: 66vw;
+  max-width: 81vw;
 }
 
 .next-midword-spacer {

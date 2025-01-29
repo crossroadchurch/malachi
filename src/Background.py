@@ -58,7 +58,7 @@ class Background():
         """Return a list of all background URLs in the ./backgrounds directory."""
         Background.generate_background_thumbnails()
         urls = ['./backgrounds/' + f for f in os.listdir('./backgrounds')
-            if f.endswith('.jpg') or f.endswith('JPG') or f.endswith('png') or f.endswith('PNG')]
+            if f.endswith('.jpg') or f.endswith('.JPG') or f.endswith('.png') or f.endswith('.PNG')]
         if urls:
             urls.sort()
         return urls
@@ -66,8 +66,8 @@ class Background():
     @classmethod
     def generate_background_thumbnails(cls):
         """Ensure that all backgrounds have a corresponding thumbnail."""
-        backgrounds = ['./backgrounds/' + f for f in os.listdir('./backgrounds')
-            if f.endswith('.jpg') or f.endswith('JPG') or f.endswith('png') or f.endswith('PNG')]
-        for url in backgrounds:
-            if not os.path.isfile(url + ".jpg"):
-                Background(url)
+        backgrounds = [f for f in os.listdir('./backgrounds')
+            if f.endswith('.jpg') or f.endswith('.JPG') or f.endswith('.png') or f.endswith('.PNG')]
+        for fname in backgrounds:
+            if not os.path.isfile('./backgrounds/thumbnails/' + fname):
+                Background('./backgrounds/' + fname)

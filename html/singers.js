@@ -201,10 +201,6 @@ function start_websocket() {
       case "trigger.seek-video":
         trigger_seek_video(json_data);
         break;
-      case "response.unlock-socket":
-      case "result.capture-update":
-      case "update.capture-ready":
-      case "update.stop-capture":
       case "update.video-loop":
       case "trigger.stop-audio":
         break;

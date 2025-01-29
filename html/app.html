@@ -117,7 +117,7 @@
             <div class="cmd_button menu_button" onclick="load_service_preload()">Load</div>
             <div class="cmd_button menu_button" onclick="save_service('none')">Save</div>
             <div class="cmd_button menu_button" onclick="open_save_service_popup()">Save as</div>
-            <div class="cmd_button menu_button" onclick="open_export_service_popup()">Export</div>
+            <div id="export_service_btn" class="cmd_button menu_button" onclick="export_service()">Export</div>
           </div>
           <h3>Service plan</h3>
           <div id="service_list" class="ml_list"></div>
@@ -200,10 +200,10 @@
         <div id="presentation_element" class="element_panel">
           <div class="refresh_header">
             <h3>Presentations</h3>
-            <div
-              class="cmd_button icon_button refresh_icon"
-              onclick="refresh_presentations()"
-            ></div>
+            <div id="import_presentation_btn" class="cmd_button" onclick="import_presentation()">
+              <img src="/html/icons/icons8-add-file-24.png" />
+              <span>Import presentation</span>
+            </div>
           </div>
           <div id="presentation_list" class="ml_list"></div>
         </div>
@@ -211,7 +211,10 @@
         <div id="video_element" class="element_panel">
           <div class="refresh_header">
             <h3>Videos</h3>
-            <div class="cmd_button icon_button refresh_icon" onclick="refresh_videos()"></div>
+            <div id="import_video_btn" class="cmd_button" onclick="import_video()">
+              <img src="/html/icons/icons8-add-file-24.png" />
+              <span>Import video</span>
+            </div>
           </div>
           <div id="video_list" class="ml_list"></div>
         </div>
@@ -219,13 +222,19 @@
         <div id="backgrounds_element" class="element_panel">
           <div class="refresh_header">
             <h3>Loops</h3>
-            <div class="cmd_button icon_button refresh_icon" onclick="refresh_loops()"></div>
+            <div id="import_loop_btn" class="cmd_button" onclick="import_loop()">
+              <img src="/html/icons/icons8-add-file-24.png" />
+              <span>Import loop</span>
+            </div>
           </div>
           <div id="loop_list" class="ml_list"></div>
           <div class="cmd_button full_button" onclick="clear_loop()">Clear loop</div>
           <div class="refresh_header">
             <h3>Backgrounds</h3>
-            <div class="cmd_button icon_button refresh_icon" onclick="refresh_backgrounds();"></div>
+            <div id="import_background_btn" class="cmd_button" onclick="import_background()">
+              <img src="/html/icons/icons8-add-file-24.png" />
+              <span>Import background</span>
+            </div>
           </div>
           <div class="song_bible_area">
             <div class="ml_list song_bible_button">
@@ -728,40 +737,6 @@
       <div class="popup_v_spacer"></div>
     </div>
 
-    <!-- POPUP: Export service as dialog -->
-    <div id="popup_export_service_as" class="popup_wrapper">
-      <div class="popup_v_spacer"></div>
-      <div style="display: flex">
-        <div class="popup_h_spacer"></div>
-        <div style="display: flex; flex-direction: column">
-          <div class="popup_header">
-            <span>Export service as...</span>
-          </div>
-          <div class="popup_panel">
-            <p>Choose filename to export service as:</p>
-            <input
-              id="exp_name"
-              name="exp_name"
-              type="text"
-              value=""
-              class="mi_textinput"
-              placeholder="service.zip"
-            />
-            <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="export_service_as()">
-                Export
-              </div>
-              <div class="cmd_button menu_button dialog_button" onclick="close_export_as_popup()">
-                Cancel
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="popup_h_spacer"></div>
-      </div>
-      <div class="popup_v_spacer"></div>
-    </div>
-
     <!-- POPUP: Load service dialog -->
     <div id="popup_load_service" class="popup_wrapper">
       <div class="popup_v_spacer"></div>
@@ -781,6 +756,10 @@
             <div class="popup_buttons">
               <div class="cmd_button menu_button dialog_button" onclick="load_service(false)">
                 Load
+              </div>
+              <div id="import_service_btn" class="cmd_button menu_button dialog_button" onclick="import_service()">
+                <img src="/html/icons/icons8-add-file-24.png" />
+                <span>Import</span>
               </div>
               <div
                 class="cmd_button menu_button dialog_button"
@@ -815,6 +794,10 @@
             <div class="popup_buttons">
               <div class="cmd_button menu_button dialog_button" onclick="attach_audio()">
                 Attach
+              </div>
+              <div id="import_audio_btn" class="cmd_button menu_button dialog_button" onclick="import_audio()">
+                <img src="/html/icons/icons8-add-file-24.png" />
+                <span>Import</span>
               </div>
               <div
                 class="cmd_button menu_button dialog_button"
@@ -1014,6 +997,7 @@ just make sure to start it with a : (e.g. C1 :1 V2)."
             >
               <img src="/html/icons/icons8-remove-24.png" />Delete song
             </div>
+            <div style="flex-grow: 1"></div>
             <div class="popup_buttons">
               <div class="cmd_button menu_button dialog_button" onclick="save_song()">
                 <img src="/html/icons/icons8-save-24.png" />Save

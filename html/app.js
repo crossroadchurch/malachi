@@ -31,7 +31,7 @@ const DOM_KEYS = [
   "video_list", "loop_list", "background_list", "b_version_radios",
   "b_main_version_radios", "b_alt_version_radios", "bible_controls",
   "e_title", "e_author", "e_book", "e_number", "e_audio", "add_audio_btn",
-  "remove_audio_btn", "e_copyright", "e_lyrics", "e_fills",
+  "import_audio_btn", "remove_audio_btn", "e_copyright", "e_lyrics", "e_fills",
   "e_order", "e_transpose_out", "e_title_span", "line_numbers",
   "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
   "pl_width", "pl_width_out", "pl_font_size", "pl_font_size_out", "pl_lines", "pl_lines_out",
@@ -41,12 +41,14 @@ const DOM_KEYS = [
   "vo_width", "vo_width_out", "at_scale", "at_scale_out", "song_bg_icon", "bible_bg_icon",
   "tc_red", "tc_red_out", "tc_green", "tc_green_out", "tc_blue", "tc_blue_out", "tc_preview",
   "popup_new_service", "popup_load_service", "popup_save_before_load_service",
-  "popup_save_service_as", "popup_export_service_as", "f_name", "exp_name",
+  "popup_save_service_as", "f_name",
   "popup_edit_mode", "popup_edit_song", "load_files_radio",
   "popup_attach_audio", "attach_audio_radio", "d_version_radios", 
   "updater_elt_button", "updater_btn", "delete_song_btn", "popup_confirm_delete_song",
   "recycle_bin", "popup_confirm_empty_bin",
-  "regular_update_instructions", "python_update_instructions", "python_version_needed"
+  "regular_update_instructions", "python_update_instructions", "python_version_needed",
+  "import_presentation_btn", "import_video_btn", "import_loop_btn", "import_background_btn",
+  "import_service_btn", "export_service_btn"
 ];
 
 style_dict["s_width"] = "div-width-vw";
@@ -165,10 +167,6 @@ function open_save_service_popup() {
   DOM_dict["popup_save_service_as"].style.display = "flex";
 }
 
-function open_export_service_popup() {
-  DOM_dict["popup_export_service_as"].style.display = "flex";
-}
-
 function save_service_as() {
   const f_name = DOM_dict["f_name"].value;
   DOM_dict["popup_save_service_as"].style.display = "none";
@@ -185,24 +183,6 @@ function save_service_as() {
   );
   // Reset input for next time
   DOM_dict["f_name"].value = "";
-}
-
-function export_service_as() {
-  const f_name = DOM_dict["exp_name"].value;
-  DOM_dict["popup_export_service_as"].style.display = "none";
-  // Replace invalid characters to avoid errors and prevent file being saved in other directories
-  let clean_name = f_name.replace(/[\\\/\"\':;*<>|]/g, "");
-  if (clean_name.endsWith(".zip") == false) {
-    clean_name += ".zip";
-  }
-  websocket.send(
-    JSON.stringify({
-      action: "command.export-service",
-      params: { filename: clean_name },
-    })
-  );
-  // Reset input for next time
-  DOM_dict["exp_name"].value = "";
 }
 
 function save_service(action_after) {
@@ -566,6 +546,106 @@ function add_presentation(pres_url) {
       params: {
         url: pres_url,
       },
+    })
+  );
+}
+
+function import_audio() {
+  websocket.send(
+    JSON.stringify({
+      action: "command.import-audio",
+      params: {},
+    })
+  );
+}
+
+function import_service() {
+  websocket.send(
+    JSON.stringify({
+      action: "command.import-service",
+      params: {},
+    })
+  );
+}
+
+function export_service() {
+  websocket.send(
+    JSON.stringify({
+      action: "command.export-service",
+      params: {},
+    })
+  );
+}
+
+function import_presentation() {
+  websocket.send(
+    JSON.stringify({
+      action: "command.import-presentation",
+      params: {},
+    })
+  );
+}
+
+function import_video() {
+  websocket.send(
+    JSON.stringify({
+      action: "command.import-video",
+      params: {},
+    })
+  );
+}
+
+function indicate_importing_media(fname, dom_elt, is_transparent) {
+  let new_node;
+  if (is_transparent) {
+    new_node =
+      "<div class='ml_row'><img src='./html/icons/icons8-spinner-transparent.gif'>" +
+      "<div class='ml_text' style='border-left:none'>" +
+      fname +
+      "</div></div>";
+  } else {
+    new_node =
+      "<div class='ml_row'><img class='spinner' src='./html/icons/icons8-spinner.gif'><div class='ml_text'>" +
+      fname +
+      "</div></div>";
+  }
+  let pos = 0;
+  while (
+    pos < DOM_dict[dom_elt].children.length &&
+    DOM_dict[dom_elt].children[pos].innerText < fname
+  ) {
+    pos += 1;
+  }
+  if (pos == 0) {
+    DOM_dict[dom_elt].children[0].insertAdjacentHTML("beforebegin", new_node);
+  } else {
+    DOM_dict[dom_elt].children[pos - 1].insertAdjacentHTML("afterend", new_node);
+  }
+}
+
+function indicate_importing_service(fname) {
+  let new_node =
+    "<div class='ml_row'><img src='./html/icons/icons8-spinner-transparent.gif'>" +
+    "<div class='ml_text' style='border-left:none'>" +
+    fname +
+    "</div></div>";
+  DOM_dict["load_files_radio"].children[0].insertAdjacentHTML("beforebegin", new_node);
+}
+
+function import_loop() {
+  websocket.send(
+    JSON.stringify({
+      action: "command.import-loop",
+      params: {},
+    })
+  );
+}
+
+function import_background() {
+  websocket.send(
+    JSON.stringify({
+      action: "command.import-background",
+      params: {},
     })
   );
 }
@@ -981,11 +1061,6 @@ function close_save_as_popup() {
   DOM_dict["popup_save_service_as"].style.display = "none";
 }
 
-function close_export_as_popup() {
-  DOM_dict["exp_name"].value = "";
-  DOM_dict["popup_export_service_as"].style.display = "none";
-}
-
 function load_element(short_elt) {
   document.querySelectorAll(".element_button").forEach((elt) => {
     elt.classList.remove("active_element");
@@ -1003,6 +1078,13 @@ function load_element(short_elt) {
     DOM_dict["bible_search"].focus();
     let b_len = DOM_dict["bible_search"].value.length;
     DOM_dict["bible_search"].setSelectionRange(b_len, b_len);
+  } else if (short_elt == "presentation") {
+    websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
+  } else if (short_elt == "video") {
+    websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
+  } else if (short_elt == "backgrounds") {
+    websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
+    websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
   }
 }
 
@@ -1191,6 +1273,7 @@ function update_display_state(json_data) {
 }
 
 function result_all_presentations(json_data) {
+  let saved_list = DOM_dict["presentation_list"].innerHTML;
   let pres_list = "";
   for (const url of json_data.params.urls) {
     pres_list += "<div class='ml_row'>";
@@ -1199,10 +1282,13 @@ function result_all_presentations(json_data) {
     pres_list += "onclick='add_presentation(\"" + url + "\");'></a>";
     pres_list += "</div>";
   }
-  DOM_dict["presentation_list"].innerHTML = pres_list;
+  if (pres_list != saved_list) {
+    DOM_dict["presentation_list"].innerHTML = pres_list;
+  }
 }
 
 function result_all_videos(json_data) {
+  let saved_list = DOM_dict["video_list"].innerHTML;
   let vid_list = "";
   for (const url of json_data.params.urls) {
     vid_list += "<div class='ml_row'>";
@@ -1212,10 +1298,13 @@ function result_all_videos(json_data) {
     vid_list += "onclick='add_video(\"" + url + "\");'></a>";
     vid_list += "</div>";
   }
-  DOM_dict["video_list"].innerHTML = vid_list;
+  if (vid_list != saved_list) {
+    DOM_dict["video_list"].innerHTML = vid_list;
+  }
 }
 
 function result_all_loops(json_data) {
+  let saved_list = DOM_dict["loop_list"].innerHTML;
   let loop_list = "";
   for (const url of json_data.params.urls) {
     loop_list += "<div class='ml_row'>";
@@ -1225,10 +1314,13 @@ function result_all_loops(json_data) {
     loop_list += "onclick='set_loop(\"" + url + "\");'></a>";
     loop_list += "</div>";
   }
-  DOM_dict["loop_list"].innerHTML = loop_list;
+  if (loop_list != saved_list) {
+    DOM_dict["loop_list"].innerHTML = loop_list;
+  }
 }
 
 function result_all_backgrounds(json_data) {
+  let saved_list = DOM_dict["background_list"].innerHTML;
   let bg_list = "";
   for (const bg of json_data.params.bg_data) {
     short_url = bg["url"].substring(14);
@@ -1242,7 +1334,9 @@ function result_all_backgrounds(json_data) {
     bg_list += 'onclick="set_background_bible(' + fn_params + ');"></a>';
     bg_list += "</div>";
   }
-  DOM_dict["background_list"].innerHTML = bg_list;
+  if (bg_list != saved_list) {
+    DOM_dict["background_list"].innerHTML = bg_list;
+  }
 }
 
 function result_song_details(json_data) {
@@ -1792,6 +1886,42 @@ function start_websocket() {
           "Problem adding presentation"
         );
         break;
+      case "response.importing-presentation":
+        indicate_importing_media(json_data.params.url, "presentation_list", true);
+        break;
+      case "response.import-presentation":
+        json_toast_response(json_data, "Presentation imported", "Problem importing presentation");
+        break;
+      case "response.importing-background":
+        indicate_importing_media(json_data.params.url, "background_list", false);
+        break;
+      case "response.import-background":
+        json_toast_response(json_data, "Background imported", "Problem importing background");
+        break;
+      case "response.importing-video":
+        indicate_importing_media(json_data.params.url, "video_list", false);
+        break;
+      case "response.import-video":
+        json_toast_response(json_data, "Video imported", "Problem importing video");
+        break;
+      case "response.importing-loop":
+        indicate_importing_media(json_data.params.url, "loop_list", false);
+        break;
+      case "response.import-loop":
+        json_toast_response(json_data, "Loop imported", "Problem importing loop");
+        break;
+      case "response.importing-audio":
+        indicate_importing_media(json_data.params.url, "attach_audio_radio", true);
+        break;
+      case "response.import-audio":
+        json_toast_response(json_data, "Audio imported", "Problem importing audio");
+        break;
+      case "response.importing-service":
+        indicate_importing_service(json_data.params.url);
+        break;
+      case "response.import-service":
+        json_toast_response(json_data, "Service imported", "Problem importing service");
+        break;
       case "response.set-loop":
         json_toast_response(json_data, "Video loop set", "Problem setting video loop");
         break;
@@ -1825,12 +1955,6 @@ function start_websocket() {
       case "response.remove-item":
         json_toast_response(json_data, "Item removed", "Problem removing item");
         break;
-      case "response.stop-capture":
-        json_toast_response(json_data, "Capturing stopped", "Problem stopping capture");
-        break;
-      case "response.start-capture":
-        json_toast_response(json_data, "Capturing started", "Problem starting capture");
-        break;
       case "response.start-presentation":
         json_toast_response(json_data, "Starting presentation...", "Problem starting presentation");
         break;
@@ -1853,9 +1977,6 @@ function start_websocket() {
         refresh_recycle_bin();
         break;
       case "update.video-loop":
-      case "update.capture-update":
-      case "update.start-capture":
-      case "update.stop-capture":
       case "response.move-item":
       case "response.next-item":
       case "response.previous-item":
@@ -1872,7 +1993,6 @@ function start_websocket() {
       case "response.stop-audio":
       case "response.edit-style-param":
       case "response.edit-style-params":
-      case "response.change-capture-rate":
       case "response.start-countdown":
       case "trigger.start-countdown":
       case "response.clear-countdown":
@@ -2005,6 +2125,16 @@ ready(() => {
   });
 
   DOM_dict["cd_time"].value = String((new Date().getHours() + 1) % 24).padStart(2, "0") + ":00";
+
+  if (window.location.hostname != "localhost") {
+    DOM_dict["import_presentation_btn"].style.display = "none";
+    DOM_dict["import_video_btn"].style.display = "none";
+    DOM_dict["import_loop_btn"].style.display = "none";
+    DOM_dict["import_background_btn"].style.display = "none";
+    DOM_dict["import_service_btn"].style.display = "none";
+    DOM_dict["export_service_btn"].style.display = "none";
+    DOM_dict["import_audio_btn"].style.display = "none";
+  }
 
   window.addEventListener("resize", (e) => {
     // Size screen_view div and current_item div based on style

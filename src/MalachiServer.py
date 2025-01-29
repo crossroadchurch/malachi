@@ -16,7 +16,8 @@ import json
 from json.decoder import JSONDecodeError
 from distutils import file_util
 import os
-import io
+from pathlib import Path
+import glob
 import platform
 import re
 import shutil
@@ -27,6 +28,7 @@ from requests.exceptions import ConnectionError
 from websockets.exceptions import ConnectionClosed
 import cv2
 import pyautogui
+import filedialpy
 from Service import Service
 from BiblePassage import BiblePassage
 from Song import Song
@@ -34,13 +36,11 @@ from Presentation import Presentation
 from Video import Video
 from Background import Background
 from Tracker import Tracker
-from ScreenCapturer import ScreenCapturer
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError
 from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError, UnknownReferenceError
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
 from MalachiExceptions import InvalidVideoUrlError, InvalidVideoError, UnspecifiedServiceUrl
-from MalachiExceptions import InvalidBackgroundUrlError
 from MalachiExceptions import MissingStyleParameterError, MissingDataFilesError
 from MalachiExceptions import InvalidPresentationUrlError
 
@@ -56,6 +56,7 @@ class MalachiServer():
     GITHUB_URL = 'https://github.com/crossroadchurch/malachi/commits/master'    
     PYTHON_VERSION_URL = 'https://raw.githubusercontent.com/crossroadchurch/malachi/master/src/python-required.txt'
     UPDATER_FILE = 'UpdateMalachi.py'
+    ROOT_PATH = Path(__file__).parent.parent.absolute()
 
     def __init__(self):
         try:
@@ -66,7 +67,6 @@ class MalachiServer():
             self.setup_commands()
             self.bible_versions = []  # Loaded within check_data_files()
             self.screen_style = []
-            self.capture_refresh_rate = 1000
             self.video_loop = ""
             self.loop_width, self.loop_height = 0, 0
             self.check_data_files()
@@ -77,13 +77,9 @@ class MalachiServer():
             self.STYLE_STATE_SOCKETS = set()
             self.APP_SOCKETS = set()
             self.MEDIA_SOCKETS = set()
-            self.MONITOR_SOCKETS = set()
-            self.LOCKED_SOCKETS = set()
             self.CAPOS = dict()
             self.screen_state = "off"
             self.s = Service()
-            self.scap = ScreenCapturer(self, 1)
-            self.last_cap = ""
             self.load_settings()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
@@ -108,6 +104,13 @@ class MalachiServer():
             "command.add-song-item": [self.add_song_item, ["song-id"]],
             "command.add-video": [self.add_video, ["url"]],
             "command.add-presentation": [self.add_presentation, ["url"]],
+            "command.import-presentation": [self.import_presentation, []],
+            "command.import-video": [self.import_video, []],
+            "command.import-loop": [self.import_loop, []],
+            "command.import-background": [self.import_background, []],
+            "command.import-audio": [self.import_audio, []],
+            "command.import-service": [self.import_service, []],
+            "command.export-service": [self.export_service, []],
             "command.remove-item": [self.remove_item, ["index"]],
             "command.move-item": [self.move_item, ["from-index", "to-index"]],
             "command.set-display-state": [self.set_display_state, ["state"]],
@@ -116,7 +119,6 @@ class MalachiServer():
             "command.load-service": [self.load_service, ["filename", "force"]],
             "command.save-service": [self.save_service, []],
             "command.save-service-as": [self.save_service_as, ["filename"]],
-            "command.export-service": [self.export_service, ["filename"]],
             "command.edit-style-param": [self.edit_style_param, ["param", "value"]],
             "command.edit-style-params": [self.edit_style_params, ["style_params"]],
             "command.set-loop": [self.set_loop, ["url"]],
@@ -141,11 +143,6 @@ class MalachiServer():
             "command.generic-play": [self.generic_play, []],
             "command.generic-stop": [self.generic_stop, []],
             "command.transpose-by": [self.transpose_by, ["amount"]],
-            "command.start-capture": [self.start_capture, ["monitor"]],
-            "command.stop-capture": [self.stop_capture, []],
-            "command.change-capture-monitor": [self.change_capture_monitor, ["monitor"]],
-            "command.change-capture-rate": [self.change_capture_rate, ["rate"]],
-            "command.unlock-socket": [self.unlock_socket, []],
             "command.start-countdown": [self.start_countdown, ["hr", "min"]],
             "command.clear-countdown": [self.clear_countdown, []],
             "client.set-capo": [self.set_capo, ["capo"]],
@@ -154,8 +151,6 @@ class MalachiServer():
             "query.song-by-text": [self.song_text_query, ["search-text", "remote"]],
             "request.full-song": [self.request_full_song, ["song-id"]],
             "request.bible-versions": [self.request_bible_versions, []],
-            "request.bible-books": [self.request_bible_books, ["version"]],
-            "request.chapter-structure": [self.request_chapter_structure, ["version"]],
             "request.recycle-bin": [self.request_recycle_bin, []],
             "request.all-videos": [self.request_all_videos, []],
             "request.all-loops": [self.request_all_loops, []],
@@ -163,7 +158,6 @@ class MalachiServer():
             "request.all-services": [self.request_all_services, []],
             "request.all-presentations": [self.request_all_presentations, []],
             "request.all-audio": [self.request_all_audio, []],
-            "request.capture-update": [self.capture_update, []],
             "utility.update-malachi": [self.update_malachi, []]
         }
 
@@ -187,8 +181,6 @@ class MalachiServer():
             self.MEDIA_SOCKETS.add((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.add((websocket, path[1:]))
-        if path[1:] in ["monitor", "leader"]:
-            self.MONITOR_SOCKETS.add((websocket, path[1:]))
         print("Websocket registered: " + websocket.remote_address[0] + ":" +
               str(websocket.remote_address[1]) + " (" + path + ")")
 
@@ -206,10 +198,6 @@ class MalachiServer():
             self.MEDIA_SOCKETS.remove((websocket, path[1:]))
         if path[1:] in ["leader", "display", "app"]:
             self.DISPLAY_STATE_SOCKETS.remove((websocket, path[1:]))
-        if path[1:] in ["monitor", "leader"]:
-            self.MONITOR_SOCKETS.remove((websocket, path[1:]))
-        if websocket in self.LOCKED_SOCKETS:
-            self.LOCKED_SOCKETS.remove(websocket)
         print("Websocket unregistered: " + websocket.remote_address[0] + ":" +
               str(websocket.remote_address[1]) + " (" + path + ")")
 
@@ -266,7 +254,6 @@ class MalachiServer():
         """Send initialisation message to new app client"""
         service_data = json.loads(self.s.to_JSON_full())
         service_data['style'] = self.screen_style
-        service_data['refresh_rate'] = self.capture_refresh_rate
         service_data['screen_state'] = self.screen_state
         service_data['video_loop'] = self.video_loop
         service_data['loop-width'] = self.loop_width
@@ -385,89 +372,6 @@ class MalachiServer():
                 "action": "update.service-overview-update",
                 "params": json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[socket[0]]))
             }))
-
-    # Screen capture commands
-    async def start_capture(self, websocket, params):
-        """
-        Start screen capture of the specified screen.
-
-        Arguments:
-        params["monitor"] -- the number of the monitor to capture (1 = main desktop, 2 = extended)
-        """
-        status, details = "ok", ""
-        self.scap.stop()
-        self.scap = ScreenCapturer(self, int(params["monitor"]))
-        self.scap.start()
-        await self.server_response(websocket, "response.start-capture", status, details)
-
-    async def stop_capture(self, websocket, params):
-        """Stop any active screen captures and inform any monitor clients."""
-        status, details = "ok", ""
-        self.scap.stop()
-        await self.broadcast(self.MONITOR_SOCKETS, "update.stop-capture", {})
-        await self.server_response(websocket, "response.stop-capture", status, details)
-
-    async def change_capture_monitor(self, websocket, params):
-        """
-        Change the monitor that is being used for screen captures.
-
-        Arguments:
-        params["monitor"] -- the new monitor to capture from
-        """
-        status, details = "ok", ""
-        self.scap.change_monitor(int(params["monitor"]))
-        await self.server_response(websocket, "response.change-capture-monitor", status, details)
-
-    async def change_capture_rate(self, websocket, params):
-        """
-        Change the capture rate that is being used for screen captures.
-
-        Arguments:
-        params["rate"] -- the new capture rate in milliseconds, must be in the range [200,5000]
-        """
-        status, details = "ok", ""
-        rate = int(params["rate"])
-        if 200 <= rate <= 5000:
-            self.capture_refresh_rate = rate
-            self.save_settings()
-            await self.broadcast(self.APP_SOCKETS, "update.capture-rate", {
-                "refresh_rate": self.capture_refresh_rate
-            })
-        else:
-            status, details = "invalid-rate", "Capture rate must be in the range [200, 5000]"
-        await self.server_response(websocket, "response.change-capture-rate", status, details)
-
-    async def unlock_socket(self, websocket, params):
-        """
-        Unlock the current socket to allow it to receive further capture updates.
-        """
-        status, details = "ok", ""
-        if websocket in self.LOCKED_SOCKETS:
-            self.LOCKED_SOCKETS.remove(websocket)
-        else:
-            status, details = "unlock-error", "Socket was not locked"
-        await self.server_response(websocket, "response.unlock-socket", status, details)
-
-    async def capture_ready(self, capture_src):
-        """
-        Inform all monitor clients that a new capture is available.
-
-        Arguments:
-        capture_src -- the new capture image as a base64 URI.
-        """
-        self.last_cap = capture_src
-        await self.broadcast(self.MONITOR_SOCKETS, "update.capture-ready", {})
-
-    async def capture_update(self, websocket, params):
-        """
-        Send current captured image as a base64 URI to the specified websocket.
-        """
-        self.LOCKED_SOCKETS.add(websocket)
-        await self.send_message(websocket, "result.capture-update", {
-            "capture_src": self.last_cap,
-            "width": self.scap.mon_w,
-            "height": self.scap.mon_h
-        })
 
     async def create_song(self, websocket, params):
         """
@@ -859,6 +763,124 @@ class MalachiServer():
             await self.server_response(websocket, "response.add-presentation", status, details)
             await self.clients_service_items_update()
 
+    async def import_file(self, websocket, title, extensions, folder):
+        initial_dir = MalachiServer.ROOT_PATH
+        initial_file = None
+        if sys.platform == "linux" and shutil.which("kdialog") is not None:
+            # Prefer kdialog over zenity
+            kd_extensions = folder.capitalize() + " (" + extensions[0] + ")"
+            cmd = ["kdialog", "--getopenfilename", str(initial_dir), "--title", title, kd_extensions]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            file_string = result.stdout.strip()
+        elif sys.platform == "linux":
+            if shutil.which("zenity") is not None:
+                initial_file=extensions[0].split()[0]
+            file_string = filedialpy.openFile(initial_dir=str(initial_dir), initial_file=initial_file,
+                                              title=title, filter=extensions)
+        else:
+            file_string = filedialpy.openFile(title=title, filter=extensions)
+        os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file open dialog
+        if file_string:
+            file_path = Path(file_string)
+            test_path = Path(MalachiServer.ROOT_PATH, folder, file_path.name)
+            if not test_path.exists():
+                import_type = folder if folder[-1] != "s" else folder[:-1]
+                await self.send_message(websocket, 
+                                        "response.importing-{t}".format(t=import_type),
+                                        {"url": file_path.name} )
+                shutil.copyfile(file_path, test_path)
+                return (True, "ok", "")
+            return (False, 
+                    "file-exists", 
+                    "A file named {fn} already exists in the {fd} folder".format(fn=file_path.name,fd=folder))
+        return (False, "none-selected", "Import cancelled")
+
+    async def import_presentation(self, websocket, params):
+        """
+        Import a Presentation to the presentations folder.
+        """
+        refresh, status, details = await self.import_file(websocket, "Select a presentation", 
+                                                         ["*.ppt *.pptx *.odp *.ppsx"], 'presentations')
+        if refresh:
+            fnames = Presentation.get_all_presentations()
+            await self.send_message(websocket, "result.all-presentations", {"urls": fnames})
+        if status != "none-selected":
+            await self.server_response(websocket, "response.import-presentation", status, details)
+
+    async def import_video(self, websocket, params):
+        refresh, status, details = await self.import_file(websocket, "Select a video",
+                                                          ["*.mpg *.mp4 *.mov"], 'videos')
+        if refresh:
+            urls = Video.get_all_videos()
+            await self.send_message(websocket, "result.all-videos", {"urls": urls})
+        if status != "none-selected":
+            await self.server_response(websocket, "response.import-video", status, details)
+
+    async def import_loop(self, websocket, params):
+        refresh, status, details = await self.import_file(websocket, "Select a loop video",
+                                                          ["*.mpg *.mp4 *.mov"], 'loops')
+        if refresh:
+            Video.generate_video_thumbnails()
+            urls = ['./loops/' + f for f in os.listdir('./loops')
+                if f.endswith('.mpg') or f.endswith('.mp4') or f.endswith('.mov')]
+            if urls:
+                urls.sort()
+            await self.send_message(websocket, "result.all-loops", {"urls": urls})
+        if status != "none-selected":
+            await self.server_response(websocket, "response.import-loop", status, details)
+
+    async def import_background(self, websocket, params):
+        refresh, status, details = await self.import_file(websocket, "Select a background",
+                                                          ["*.jpg *.png *.JPG *.PNG"], 'backgrounds')
+        if refresh:
+            bgs = [Background(url) for url in Background.get_all_backgrounds()]
+            bg_json = [{"url": './backgrounds/' + bg.title, 
+                "width": bg.image_width, "height": bg.image_height} for bg in bgs]
+            await self.send_message(websocket, "result.all-backgrounds", {"bg_data": bg_json})
+        if status != "none-selected":
+            await self.server_response(websocket, "response.import-background", status, details)
+
+    async def import_audio(self, websocket, params):
+        refresh, status, details = await self.import_file(websocket, "Select an audio track", 
+                                                          ["*.mp3"], 'audio')
+        if refresh:
+            urls = glob.glob('*.mp3', root_dir='./audio')
+            urls.sort(key=os.path.basename)
+            await self.send_message(websocket, "result.all-audio", {"urls": urls})
+        if status != "none-selected":
+            await self.server_response(websocket, "response.import-audio", status, details)
+    
+    async def import_service(self, websocket, params):
+        refresh, status, details = await self.import_file(websocket, "Select a service file", 
+                                                          ["*.zip"], 'services')
+        if refresh:
+            urls = Service.get_all_services()
+            await self.send_message(websocket, "result.all-services", {"filenames":urls})
+        if status != "none-selected":
+            await self.server_response(websocket, "response.import-service", status, details)
+    
+    async def export_service(self, websocket, params):
+        initial_dir = MalachiServer.ROOT_PATH
+        initial_file = None
+        extensions = ["*.zip"]
+        if sys.platform == "linux" and shutil.which("kdialog") is not None:
+            # Prefer kdialog over zenity
+            extensions = "Zip files (*.zip)"
+            cmd = ["kdialog", "--getsavefilename", str(initial_dir), "--title", "Export service", extensions]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            file_string = result.stdout.strip()
+        elif sys.platform == "linux":
+            if shutil.which("zenity") is not None:
+                initial_file="*.zip"
+            file_string = filedialpy.saveFile(initial_dir=initial_dir, initial_file=initial_file,
+                                              title="Export service", filter=extensions)
+        else:
+            file_string = filedialpy.saveFile(title="Export service", filter=extensions)
+        os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file save dialog
+        if file_string:
+            self.s.export_as(file_string)
+            await self.server_response(websocket, "response.export-service", "ok", "")
+
     async def set_display_state(self, websocket, params):
         """
         Set the current display state and send update to appropriate clients.
@@ -970,16 +992,6 @@ class MalachiServer():
         """
         self.s.save_as(params["filename"])
         await self.server_response(websocket, "response.save-service", "ok", "")
-
-    async def export_service(self, websocket, params):
-        """
-        Export the current service to a specified zip file.
-
-        Arguments:
-        params["filename"] -- the name of the export zip file, within the ./services directory.
-        """
-        self.s.export_as(params["filename"])
-        await self.server_response(websocket, "response.export-service", "ok", "")
 
     async def edit_style_param(self, websocket, params):
         """
@@ -1446,46 +1458,6 @@ class MalachiServer():
             "versions": self.bible_versions
         })
 
-    async def request_bible_books(self, websocket, params):
-        """
-        Return a list of all Bible books in a specified version of the Bible to websocket.
-
-        Arguments:
-        params["version"] -- the Bible version to use.
-        """
-        status, books = "ok", []
-        try:
-            books = BiblePassage.get_books(
-                params["version"], self.bible_versions)
-        except InvalidVersionError:
-            status = "invalid-version"
-        finally:
-            await self.send_message(websocket, "result.bible-books", {
-                "status": status,
-                "books": books
-            })
-
-    async def request_chapter_structure(self, websocket, params):
-        """
-        Return the chapter structure of the specified version of the Bible to websocket.
-        The structure is returned as a list of tuples, each tuple of the form
-        [book name, number of chapters]
-
-        Arguments:
-        version -- the Bible version to use.
-        """
-        status, chapters = "ok", []
-        try:
-            chapters = BiblePassage.get_chapter_structure(
-                params["version"], self.bible_versions)
-        except InvalidVersionError:
-            status = "invalid-version"
-        finally:
-            await self.send_message(websocket, "result.chapter-structure", {
-                "status": status,
-                "chapter-structure": chapters
-            })
-
     async def request_recycle_bin(self, websocket, params):
         """
         Returns a list of all songs that have been marked as deleted.
@@ -1503,7 +1475,7 @@ class MalachiServer():
     async def request_all_loops(self, websocket, params):
         """Return a list of all video URLs in the ./loops directory to websocket."""
         urls = ['./loops/' + f for f in os.listdir('./loops')
-                if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
+                if f.endswith('.mpg') or f.endswith('.mp4') or f.endswith('.mov')]
         if urls:
             urls.sort()
         await self.send_message(websocket, "result.all-loops", {"urls": urls})
@@ -1527,9 +1499,8 @@ class MalachiServer():
 
     async def request_all_audio(self, websocket, params):
         """Return a list of all MP3 URLs in the ./audio directory to websocket."""
-        urls = [f for f in os.listdir('./audio') if f.endswith('.mp3')]
-        if urls:
-            urls.sort()
+        urls = glob.glob('*.mp3', root_dir='./audio')
+        urls.sort(key=os.path.basename)
         await self.send_message(websocket, "result.all-audio", {"urls": urls})
 
     # Song usage tracking
@@ -1543,13 +1514,11 @@ class MalachiServer():
         with open(MalachiServer.GLOBAL_SETTINGS_FILE) as f:
             json_data = json.load(f)
         self.screen_style = json_data["style"]
-        self.capture_refresh_rate = json_data["capture_refresh"]
 
     def save_settings(self):
         """Save settings information to ./data/global_settings.json"""
         json_data = {}
         json_data["style"] = self.screen_style
-        json_data["capture_refresh"] = self.capture_refresh_rate
         with open(MalachiServer.GLOBAL_SETTINGS_FILE, "w") as f:
             f.write(json.dumps(json_data, indent=2))
 

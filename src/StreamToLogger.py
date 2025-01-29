@@ -17,7 +17,7 @@ class StreamToLogger(object):
          for line in buf.rstrip().splitlines():
             self.stdout.write(line + '\n')
             self.logger.log(self.level, line.rstrip())
-      except UnicodeEncodeError as e:
+      except UnicodeEncodeError as _:
          print("UnicodeEncodeError encountered")
 
    def flush(self):

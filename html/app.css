@@ -621,13 +621,27 @@ p.ml_bibleverse {
   width: 11em;
 }
 
+#import_presentation_btn,
+#import_background_btn {
+  justify-content: center;
+  width: 14em;
+}
+
+#import_video_btn,
+#import_loop_btn {
+  justify-content: center;
+  width: 11em;
+}
+
 #service_menu {
   display: flex;
+  column-gap: 5px;
   justify-content: space-between;
 }
 
 .menu_button {
-  width: 19%;
+  display: flex;
+  flex-grow: 1;
   justify-content: center;
 }
 
@@ -1241,6 +1255,10 @@ p.ml_bibleverse {
   display: flex;
 }
 
+#import_audio_btn {
+  display: flex;
+}
+
 #remove_audio_btn {
   display: none;
 }
@@ -1255,4 +1273,10 @@ p.ml_bibleverse {
 
 #e_key_div input + label {
   flex-grow: 1;
+}
+
+.spinner {
+  background: white;
+  padding-left: 1em;
+  padding-right: 1em;
 }

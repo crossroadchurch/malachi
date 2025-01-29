@@ -7,6 +7,7 @@
 """Represent a complete service plan in Malachi"""
 
 import os
+import glob
 import json
 from json import JSONDecodeError
 from zipfile import ZipFile
@@ -449,26 +450,26 @@ class Service():
 
     def export_as(self, fname):
         """
-        Exports the current service plan to the specified zip file.
+        Exports the current service plan to the specified zip file, which can exist anywhere in the filesystem.
 
         Arguments:
-        fname -- the name of the export zip file within the ./services directory.
+        fname -- the name of the export zip file.
         """
         # x.export_to_JSON calls will add video and presentation resources to the zip file.
-        export_zip = "./services/" + fname
+        if not fname.endswith('.zip'):
+            fname += ".zip"
         exported_service = json.dumps(
-            {"items": [json.loads(x.export_to_JSON(export_zip)) for x in self.items]}, indent=2)
-        with ZipFile(export_zip, 'a') as out_zip:
+            {"items": [json.loads(x.export_to_JSON(fname)) for x in self.items]}, indent=2)
+        with ZipFile(fname, 'a') as out_zip:
             out_zip.writestr('manifest.json', exported_service)
 
     @classmethod
     def get_all_services(cls):
         """Return a list of all saved services within the ./services directory."""
-        fnames = [f for f in os.listdir('./services') if f.endswith('.json') or f.endswith('.zip')]
-        if fnames:
-            fnames.sort()
-            fnames.reverse()
-        return fnames
+        fnames = glob.glob('./services/*.json')
+        fnames += glob.glob('./services/*.zip')
+        fnames.sort(key=os.path.getmtime, reverse=True)
+        return [os.path.basename(fname) for fname in fnames]
 
 ### TESTING ONLY ###
 if __name__ == "__main__":

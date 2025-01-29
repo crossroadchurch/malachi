@@ -147,9 +147,9 @@ class Video():
     def generate_video_thumbnails(cls):
         """Ensure that all videos and loops have a corresponding thumbnail."""
         loops = ['./loops/' + f for f in os.listdir('./loops')
-                 if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
+                 if f.endswith('.mpg') or f.endswith('.mp4') or f.endswith('.mov')]
         videos = ['./videos/' + f for f in os.listdir('./videos')
-                  if f.endswith('.mpg') or f.endswith('mp4') or f.endswith('mov')]
+                  if f.endswith('.mpg') or f.endswith('.mp4') or f.endswith('.mov')]
         for url in loops + videos:
             if not os.path.isfile(url + ".jpg") or not os.path.isfile(url + "_still.jpg"):
                 try:

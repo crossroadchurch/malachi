@@ -554,9 +554,6 @@ function start_websocket() {
       case "update.display-state":
         update_display_state(json_data);
         break;
-      case "result.capture-update":
-      case "update.stop-capture":
-      case "update.capture-ready":
       case "response.set-display-state":
       case "response.next-slide":
       case "response.previous-slide":
@@ -569,7 +566,6 @@ function start_websocket() {
       case "response.goto-slide":
       case "response.goto-item":
       case "response.transpose-by":
-      case "response.unlock-socket":
         break;
       default:
         console.error("Unsupported event", json_data);
