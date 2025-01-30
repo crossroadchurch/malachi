@@ -1585,5 +1585,5 @@ class MalachiServer():
 
     def update_malachi(self, websocket, params):
         file_util.copy_file("./src/" + MalachiServer.UPDATER_FILE, './' + MalachiServer.UPDATER_FILE)
-        subprocess.Popen(['python', './' + MalachiServer.UPDATER_FILE])
+        subprocess.Popen(['python', './' + MalachiServer.UPDATER_FILE, str(os.getpid())])
         sys.exit()

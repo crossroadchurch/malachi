@@ -16,6 +16,7 @@ import os
 import re
 import requests
 import shutil
+import signal
 import subprocess
 import sys
 import zipfile
@@ -185,7 +186,17 @@ if __name__ == "__main__":
             os_version = 'linux'
     elif sys.platform == 'darwin':
         os_version = 'darwin'
-        
+    
+    # Ensure http server is released by killing Malachi.py Python process (not on win32)
+    if os_version != 'win32':
+        pid = int(sys.argv[1])
+        try:
+            print("Terminating process {p} from process {u}.".format(p=str(pid), u=str(os.getpid())))
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError as _:
+            print("Process {p} already terminated.".format(p=str(pid)))
+        print("Continuing with installation process...")
+
     if update_needed():
         result = download_malachi_repo()
 

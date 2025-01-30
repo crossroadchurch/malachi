@@ -1011,6 +1011,7 @@ p.ml_bibleverse {
 
 .restore_button {
   width: 10em;
+  justify-content: center;
 }
 
 #o_style_div,
