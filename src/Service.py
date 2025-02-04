@@ -10,6 +10,7 @@ import os
 import glob
 import json
 from json import JSONDecodeError
+from datetime import datetime
 from zipfile import ZipFile
 from BiblePassage import BiblePassage
 from Song import Song
@@ -86,7 +87,6 @@ class Service():
         for idx, item in enumerate(self.items):
             if type(item).__name__ == "Song" and item.song_id == s_id:
                 song_instances.append(idx)
-        print("Indices to delete:", song_instances)
         if song_instances:
             for idx in reversed(song_instances):
                 self.remove_item_at(idx)
@@ -250,7 +250,8 @@ class Service():
         Return a JSON object containing the JSON representation of all items in the current
         service plan, as well as the current item_index and slide_index.
         """
-        return json.dumps({"items": [json.loads(x.to_JSON(0)) for x in self.items],
+        return json.dumps({"filename": self.file_name,
+                           "items": [json.loads(x.to_JSON(0)) for x in self.items],
                            "item_index": self.item_index,
                            "slide_index": self.slide_index}, indent=2)
 
@@ -272,6 +273,7 @@ class Service():
                 type_list.append(item["type"])
         if self.item_index > -1 and self.items:
             return json.dumps({
+                "filename": self.file_name,
                 "items": [x.get_title() for x in self.items],
                 "types": type_list,
                 "current_item": json.loads(self.items[self.item_index].to_JSON(capo)),
@@ -279,6 +281,7 @@ class Service():
                 "slide_index": self.slide_index}, indent=2)
         else:
             return json.dumps({
+                "filename": self.file_name,
                 "items": [x.get_title() for x in self.items],
                 "types": type_list,
                 "current_item": {},
@@ -349,42 +352,41 @@ class Service():
             self.slide_index = 0
         self.modified = False
 
-    def import_service(self, fname, cur_style, bible_versions):
+    @classmethod
+    def import_service(cls, zip_path, cur_style, bible_versions):
         """
         Import a zipped service plan, paginating items according to the specified style.
 
         Arguments:
-        fname -- the filename of the zipped service within the ./services directory.
+        zip_path -- the full path of the zipped service, probably on external drive
         cur_style -- the style to use when paginating service items.
 
         Possible exceptions:
         MalformedServiceFileError -- raised if the saved service does not have the correct structure
-        InvalidServiceURLError -- raised if fname does not exist in the ./services directory
         MissingStyleParameterError - raised if one or more style parameters have not been specified.
         """
-        # Precondition: fname is a zipped archive in the folder ./services
-        full_path = "./services/" + fname
-        if not os.path.isfile(full_path):
-            raise InvalidServiceUrlError(full_path)
-        with ZipFile(full_path, 'r') as z:
+        imported_service = Service()
+        with ZipFile(zip_path, 'r') as z:
             if not 'manifest.json' in z.namelist():
-                raise MalformedServiceFileError(full_path, "Missing service manifest")
+                raise MalformedServiceFileError(zip_path, "Missing service manifest")
             try:
                 json_data = json.loads(z.read('manifest.json').decode('utf-8'))
-            except JSONDecodeError as e:
-                raise MalformedServiceFileError(full_path, "Service file couldn't be decoded")
+            except JSONDecodeError as _:
+                raise MalformedServiceFileError(zip_path, "Service file couldn't be decoded")
         if "items" not in json_data:
-            raise MalformedServiceFileError(full_path, "Missing key: 'items'")
-        self.items = []
-        self.file_name = fname + ".json"
+            raise MalformedServiceFileError(zip_path, "Missing key: 'items'")
+        imported_service.file_name = os.path.basename(zip_path)[:-4] + ".json"
+        if os.path.exists('./services/' + imported_service.file_name):
+            timestamp = datetime.now().strftime('_%Y%m%d_%H%M%S')
+            imported_service.file_name = imported_service.file_name[:-5] + timestamp + ".json"
         for item in json_data["items"]:
             if not "type" in item:
-                raise MalformedServiceFileError(full_path, "Missing key: 'type'")
+                raise MalformedServiceFileError(zip_path, "Missing key: 'type'")
             if item["type"] == "bible":
                 if "version" in item and "ref" in item:
                     try:
                         b = BiblePassage.import_from_JSON(item, cur_style, bible_versions)
-                        self.add_item(b)
+                        imported_service.add_item(b)
                     except MissingStyleParameterError as style_e:
                         raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                     except InvalidVersionError as inv_e:
@@ -394,29 +396,29 @@ class Service():
                     except UnknownReferenceError as un_e:
                         raise UnknownReferenceError(un_e.msg[61:]) from un_e
                 else:
-                    raise MalformedServiceFileError(full_path, "Missing key for Bible passage")
+                    raise MalformedServiceFileError(zip_path, "Missing key for Bible passage")
             elif item["type"] == "song":
                 if "title" in item and "lyrics_chords" in item and "verse_order" in item:
                     try:
-                        s = Song.import_from_JSON(item, cur_style)
-                        self.add_item(s)
+                        s = Song.import_from_JSON(item, zip_path, cur_style)
+                        imported_service.add_item(s)
                     except MissingStyleParameterError as style_e:
                         raise MissingStyleParameterError(style_e.msg[42:]) from style_e
                 else:
-                    raise MalformedServiceFileError(full_path, "Missing key(s) for Song")
+                    raise MalformedServiceFileError(zip_path, "Missing key(s) for Song")
             elif item["type"] == "video":
                 if "url" in item:
-                    v = Video.import_from_JSON(item, full_path)
-                    self.add_item(v)
+                    v = Video.import_from_JSON(item, zip_path)
+                    imported_service.add_item(v)
                 else:
-                    raise MalformedServiceFileError(full_path, "Missing key: 'url'")
+                    raise MalformedServiceFileError(zip_path, "Missing key: 'url'")
             elif item["type"] == "presentation":
                 if "url" in item:
-                    p = Presentation.import_from_JSON(item, full_path)
-                    self.add_item(p)
+                    p = Presentation.import_from_JSON(item, zip_path)
+                    imported_service.add_item(p)
                 else:
-                    raise MalformedServiceFileError(full_path, "Missing key: 'url'")
-        self.modified = False
+                    raise MalformedServiceFileError(zip_path, "Missing key: 'url'")
+        imported_service.save()
 
     def save(self):
         """
@@ -467,7 +469,6 @@ class Service():
     def get_all_services(cls):
         """Return a list of all saved services within the ./services directory."""
         fnames = glob.glob('./services/*.json')
-        fnames += glob.glob('./services/*.zip')
         fnames.sort(key=os.path.getmtime, reverse=True)
         return [os.path.basename(fname) for fname in fnames]
 

@@ -12,12 +12,14 @@
 import sqlite3
 import json
 import os
+import binascii
 import pickle
 import re
+from datetime import datetime
 from PIL import ImageFont
+from zipfile import ZipFile
 from Chords import Chords
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError, MissingStyleParameterError
-
 
 class Song():
     """Represent a Song object in Malachi."""
@@ -77,7 +79,7 @@ class Song():
         """Retrieve non-lyric Song data from the songs database."""
         song_db, cursor = Song.db_connect()
         cursor.execute('''
-            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number, s.remote, s.audio, s.deleted
+            SELECT s.title, s.author, s.song_key, s.transpose_by, s.copyright, s.song_book_name, s.song_number, s.audio, s.deleted
             FROM songs AS s
             WHERE s.id={s_id}
         '''.format(s_id=self.song_id))
@@ -98,9 +100,8 @@ class Song():
         self.copyright = result[4]
         self.song_book_name = result[5]
         self.song_number = result[6]
-        self.remote = result[7]
-        self.audio = result[8]
-        self.deleted = result[9]
+        self.audio = result[7]
+        self.deleted = result[8]
 
     def get_title(self):
         """Return the title of this Song."""
@@ -169,7 +170,7 @@ class Song():
             "song-key": self.song_key, "transpose-by": self.transpose_by,
             "parts": tr_parts, "verse-order": self.full_verse_order, "copyright": self.copyright,
             "song-book-name": self.song_book_name, "song-number": self.song_number,
-            "remote": self.remote, "audio": self.audio, "fills": self.fills, "deleted": self.deleted })
+            "audio": self.audio, "fills": self.fills, "deleted": self.deleted })
 
     def __str__(self):
         return self.get_title()
@@ -181,7 +182,7 @@ class Song():
     def export_to_JSON(self, export_zip):
         """
         Return a JSON object representing this Song for exporting to another
-        instance of Malachi.
+        instance of Malachi, adding the attached audio (if present) to export_zip.
         """
         song_db, cursor = Song.db_connect()
         cursor.execute('''
@@ -191,6 +192,11 @@ class Song():
         '''.format(s_id=self.song_id))
         result = cursor.fetchone()
         song_db.close()
+        if self.audio:
+            with ZipFile(export_zip, 'a') as out_zip:
+                # Test if audio has already been written to out_zip
+                if 'audio/{f}'.format(f=self.audio) not in out_zip.namelist():
+                    out_zip.write('./audio/{f}'.format(f=self.audio))
         return json.dumps({
             "type": "song",
             "id": self.song_id,
@@ -205,11 +211,62 @@ class Song():
             "verse_order": result[1],
             "search_title": result[2],
             "search_lyrics": result[3],
-            "fills": result[4]
+            "fills": result[4],
+            "audio": self.audio
         })
 
     @classmethod
-    def import_from_JSON(cls, json_data, cur_style):
+    def import_attached_audio(cls, audio_filename, export_zip):
+        audio_url = './audio/{f}'.format(f=audio_filename)
+        with ZipFile(export_zip, 'a') as out_zip: # mode must be 'a' in case we need to modify filename in zip
+            if not os.path.exists(audio_url):
+                out_zip.extract(audio_url[2:])
+            else:
+                # An audio file with that name exists.  Use CRC32 to test if it is the same
+                # as the one stored in out_zip
+                idx = [index for index, element in enumerate(out_zip.infolist()) 
+                    if element.filename == audio_url[2:]][0]
+                crc_zip = out_zip.infolist()[idx].CRC
+                disk_pres = open(audio_url, 'rb').read()
+                crc_disk = binascii.crc32(disk_pres)
+                if crc_zip != crc_disk:
+                    # Audio file on disk is different to one stored in zip file.
+                    # Append timestamp to audio file in zip file before extracting and
+                    #  update url used in Malachi accordingly
+                    path_parts = os.path.splitext(audio_url)
+                    timestamp = datetime.now().strftime('_%Y%m%d_%H%M%S')
+                    audio_url = path_parts[0] + timestamp + path_parts[1]
+                    audio_filename = audio_url[8:]
+                    out_zip.infolist()[idx].filename = audio_url[2:]
+                    out_zip.extract(out_zip.infolist()[idx])
+        return audio_filename
+
+    @classmethod
+    def make_unique_title(cls, title):
+        song_db, cursor = Song.db_connect()
+        cursor.execute('''
+            SELECT s.title
+            FROM songs AS s
+            WHERE (s.title LIKE "{txt}%")
+            AND (s.deleted = 0)
+            ORDER BY s.title ASC
+        '''.format(txt=title))
+        title_tuples = cursor.fetchall()
+        titles = [x[0] for x in title_tuples]
+        if title not in titles:
+            unique_title = title
+        else:
+            prefix_len = len(title) + 2
+            filtered_titles = [int(x[prefix_len:-1]) for x in titles if x.startswith(title + " [") and x[prefix_len:-1].isdigit()]
+            if filtered_titles:
+                unique_title = "{t} [{n}]".format(t=title, n=str(max(filtered_titles)+1))
+            else:
+                unique_title = "{t} [1]".format(t=title)
+        song_db.close()
+        return unique_title
+
+    @classmethod
+    def import_from_JSON(cls, json_data, export_zip, cur_style):
         """
         Return a Song object corresponding to the song stored in json_data, which
         has been exported (possibly from another instance of Malachi) using the
@@ -220,12 +277,13 @@ class Song():
         # See whether the song exists in the songs database (based on lyrics and chords)
         song_db, cursor = Song.db_connect()
         cursor.execute('''
-            SELECT s.id, s.lyrics_chords, s.verse_order, s.transpose_by
+            SELECT s.id, s.lyrics_chords, s.verse_order, s.transpose_by, s.audio
             FROM songs AS s
             WHERE s.lyrics_chords = ?
         ''', [json_data["lyrics_chords"]])
         result = cursor.fetchone()
         if result:
+            print("Song match found in database, not importing")
             # Song match found in database
             s_id = result[0]
             # Update verse_order and transpose_by based on values in json_data
@@ -235,13 +293,33 @@ class Song():
                 WHERE id = ? 
             ''', (json_data["verse_order"], json_data["transpose_by"], s_id))
             song_db.commit()
+            # Add attached audio (won't replace existing attached audio)
+            if not result[4] and json_data["audio"]: # No attached audio in database, attached audio in zip
+                audio_file = Song.import_attached_audio(json_data["audio"], export_zip)
+                print("Attaching audio [{f}] to existing song (without existing audio)".format(f=audio_file))
+                cursor.execute('''
+                    UPDATE songs
+                    SET audio = ?
+                    WHERE id = ?
+                ''', (audio_file, s_id))
+                song_db.commit()
         else:
-            # Song match not found, create remote song in database
+            print("Song match not found, importing song into database")
+            # Song match not found, import song into database
+            # First deal with any attached audio in case we need to change the audio url
+            if json_data["audio"]:
+                audio_file = Song.import_attached_audio(json_data["audio"], export_zip)
+            else:
+                audio_file = "" 
+            print("Song has [{f}] as audio".format(f=audio_file))
+            # Get unique title for song - by adding [n] if needed
+            song_title = Song.make_unique_title(json_data["title"])
+            # Now insert song into database
             cursor.execute('''
-                INSERT INTO songs(title, author, song_key, transpose_by, copyright, song_book_name, song_number, lyrics_chords, verse_order, search_title, search_lyrics, fills, remote)
+                INSERT INTO songs(title, author, song_key, transpose_by, copyright, song_book_name, song_number, lyrics_chords, verse_order, search_title, search_lyrics, fills, audio)
                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                json_data["title"], 
+                song_title, 
                 json_data["author"], 
                 json_data["song_key"], 
                 json_data["transpose_by"],
@@ -253,7 +331,7 @@ class Song():
                 json_data["search_title"],
                 json_data["search_lyrics"],
                 json_data["fills"],
-                1))
+                audio_file))
             song_db.commit()
             s_id = cursor.lastrowid
         song_db.close()
@@ -440,23 +518,21 @@ class Song():
                 cur_slide += self.part_slide_count[idx-offset]
 
     @classmethod
-    def text_search(cls, search_text, remote):
+    def text_search(cls, search_text):
         """Perform a text search on the Song database.
         Return all matching non-deleted Songs (id and title) in a JSON array.
 
         Arguments:
         search_text -- the text to search for, in either the song's title, lyrics or song number.
-        remote -- 0 = search local songs, 1 = search remote songs
         """
         song_db, cursor = Song.db_connect()
         cursor.execute('''
             SELECT s.id, s.title
             FROM songs AS s
             WHERE (s.search_title LIKE "%{txt}%" OR s.search_lyrics LIKE "%{txt}%" OR s.song_number LIKE "{txt}")
-            AND (s.remote = {rem})
             AND (s.deleted = 0)
             ORDER BY s.title ASC
-        '''.format(txt=search_text, rem=remote))
+        '''.format(txt=search_text))
         songs = cursor.fetchall()
         song_db.close()
         return json.dumps(songs, indent=2)

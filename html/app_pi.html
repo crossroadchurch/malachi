@@ -119,7 +119,7 @@
             <div class="cmd_button menu_button" onclick="open_save_service_popup()">Save as</div>
             <div id="export_service_btn" class="cmd_button menu_button" onclick="export_service()">Export</div>
           </div>
-          <h3>Service plan</h3>
+          <h3>Service plan <span id="service_name"></span></h3>
           <div id="service_list" class="ml_list"></div>
           <div id="countdown_control">
             <div class="cmd_button small_button" onclick="start_countdown()">
@@ -149,12 +149,6 @@
             <div class="cmd_button small_button" onclick="song_search()">
               <img src="/html/icons/icons8-search-24.png" />
               <span>Search</span>
-            </div>
-            <div class="radio_toggle_group">
-              <input type="radio" name="lr_search" id="lr_search_0" data-lrs="0" />
-              <label for="lr_search_0">Local</label>
-              <input type="radio" name="lr_search" id="lr_search_1" data-lrs="1" />
-              <label for="lr_search_1">Remote</label>
             </div>
           </div>
           <div id="song_list" class="ml_list"></div>
@@ -713,14 +707,14 @@
             <span>Save service as...</span>
           </div>
           <div class="popup_panel">
-            <p>Choose filename to save service as:</p>
+            <p>Give the service a name:</p>
             <input
               id="f_name"
               name="f_name"
               type="text"
               value=""
               class="mi_textinput"
-              placeholder="service.json"
+              placeholder="Service name"
             />
             <div class="popup_buttons">
               <div class="cmd_button menu_button dialog_button" onclick="save_service_as()">
@@ -890,12 +884,6 @@
             <div class="popup_column">
               <span>Author:</span>
               <input type="text" id="e_author" class="mi_textinput" />
-            </div>
-            <div id="e_remote_div" class="radio_toggle_group">
-              <input type="radio" name="e_remote" id="e_remote_0" data-lr="0" />
-              <label for="e_remote_0">Local</label>
-              <input type="radio" name="e_remote" id="e_remote_1" data-lr="1" />
-              <label for="e_remote_1">Remote</label>
             </div>
           </div>
           <span>Copyright:</span>

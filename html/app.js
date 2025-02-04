@@ -48,7 +48,7 @@ const DOM_KEYS = [
   "recycle_bin", "popup_confirm_empty_bin",
   "regular_update_instructions", "python_update_instructions", "python_version_needed",
   "import_presentation_btn", "import_video_btn", "import_loop_btn", "import_background_btn",
-  "import_service_btn", "export_service_btn"
+  "import_service_btn", "export_service_btn", "service_name"
 ];
 
 style_dict["s_width"] = "div-width-vw";
@@ -154,7 +154,8 @@ function load_service_preload() {
 function load_service(force) {
   DOM_dict["popup_save_before_load_service"].style.display = "none";
   DOM_dict["popup_load_service"].style.display = "none";
-  const sel_text = document.querySelector("#load_files_radio .selected .ml_text").innerText;
+  const sel_text =
+    document.querySelector("#load_files_radio .selected .ml_text").innerText + ".json";
   websocket.send(
     JSON.stringify({
       action: "command.load-service",
@@ -235,16 +236,12 @@ function song_search() {
     .getElementById("song_search")
     .value.replace(/[^0-9a-z ]/gi, "")
     .trim();
-  const remote_val = parseInt(
-    document.querySelector("input[name=lr_search]:checked").getAttribute("data-lrs")
-  );
   if (song_val !== "") {
     websocket.send(
       JSON.stringify({
         action: "query.song-by-text",
         params: {
           "search-text": song_val,
-          remote: remote_val,
         },
       })
     );
@@ -499,10 +496,6 @@ function save_song() {
         .querySelector("input[name=e_key]:checked")
         .getAttribute("data-ek");
     }
-
-    fields["remote"] = parseInt(
-      document.querySelector("input[name=e_remote]:checked").getAttribute("data-lr")
-    );
 
     if (DOM_dict["popup_edit_mode"].innerText == "Edit song") {
       fields["title"] = DOM_dict["e_title"].value;
@@ -1177,6 +1170,13 @@ function update_app_init(json_data) {
   update_style_sliders(json_data.params.style);
   update_text_scale(json_data.params.style);
 
+  // Update service name
+  if (json_data.params.filename) {
+    DOM_dict["service_name"].innerHTML = "(" + json_data.params.filename.split(".")[0] + ")";
+  } else {
+    DOM_dict["service_name"].innerHTML = "";
+  }
+
   // Populate service plan list
   let service_list = "";
   for (const [idx, item] of json_data.params.items.entries()) {
@@ -1225,6 +1225,11 @@ function update_app_init(json_data) {
 }
 
 function update_service_overview_update(json_data) {
+  if (json_data.params.filename) {
+    DOM_dict["service_name"].innerHTML = "(" + json_data.params.filename.split(".")[0] + ")";
+  } else {
+    DOM_dict["service_name"].innerHTML = "";
+  }
   // Populate service plan list
   let service_list = "";
   for (const [idx, item] of json_data.params.items.entries()) {
@@ -1355,10 +1360,6 @@ function result_song_details(json_data) {
       DOM_dict["remove_audio_btn"].style.display = "flex";
     }
     DOM_dict["e_copyright"].value = full_song["copyright"];
-    document.querySelectorAll("input[name=e_remote]").forEach((elt) => {
-      elt.checked = false;
-    });
-    document.querySelector("input[data-lr='" + full_song["remote"] + "']").checked = true;
     let lyrics = "";
     for (const part of full_song["parts"]) {
       lyrics += "<" + part["part"].toUpperCase() + ">\n";
@@ -1459,7 +1460,7 @@ function response_save_service(json_data) {
   if (json_data.params.status == "unspecified-service") {
     const cur_date = new Date();
     const date_str = cur_date.toISOString().replace("T", " ").replace(/:/g, "-");
-    DOM_dict["f_name"].value = date_str.substring(0, date_str.length - 5) + ".json";
+    DOM_dict["f_name"].value = date_str.substring(0, date_str.length - 5);
     DOM_dict["popup_save_service_as"].style.display = "flex";
   } else {
     // Save has been successful
@@ -1489,7 +1490,7 @@ function result_all_services(json_data) {
     for (const [idx, file] of json_data.params.filenames.entries()) {
       files_list += "<div class='ml_row' id='files-" + idx + "' ";
       files_list += "onclick=select_file(" + idx + ")>";
-      files_list += "<div class='ml_text'>" + file + "</div>";
+      files_list += "<div class='ml_text'>" + file.replace(".json", "") + "</div>";
       files_list += "</div>";
     }
     DOM_dict["load_files_radio"].innerHTML = files_list;
@@ -2041,12 +2042,6 @@ ready(() => {
     if (key_code == 13) {
       song_search();
     }
-  });
-
-  document.querySelector('input[data-lrs="0"]').checked = true;
-  document.querySelector('input[data-lrs="1"]').checked = false;
-  document.querySelectorAll('input[name="lr_search"]').forEach((elt) => {
-    elt.addEventListener("change", song_search);
   });
 
   document.querySelectorAll('input[name="e_key"]').forEach((elt) => {

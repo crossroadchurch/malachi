@@ -148,7 +148,7 @@ class MalachiServer():
             "client.set-capo": [self.set_capo, ["capo"]],
             "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
             "query.bible-by-ref": [self.bible_ref_query, ["version", "search-ref"]],
-            "query.song-by-text": [self.song_text_query, ["search-text", "remote"]],
+            "query.song-by-text": [self.song_text_query, ["search-text"]],
             "request.full-song": [self.request_full_song, ["song-id"]],
             "request.bible-versions": [self.request_bible_versions, []],
             "request.recycle-bin": [self.request_recycle_bin, []],
@@ -851,13 +851,44 @@ class MalachiServer():
             await self.server_response(websocket, "response.import-audio", status, details)
     
     async def import_service(self, websocket, params):
-        refresh, status, details = await self.import_file(websocket, "Select a service file", 
-                                                          ["*.zip"], 'services')
-        if refresh:
-            urls = Service.get_all_services()
-            await self.send_message(websocket, "result.all-services", {"filenames":urls})
-        if status != "none-selected":
-            await self.server_response(websocket, "response.import-service", status, details)
+        initial_dir = MalachiServer.ROOT_PATH
+        initial_file = None
+        status, details = "none-selected", ""
+        if sys.platform == "linux" and shutil.which("kdialog") is not None:
+            # Prefer kdialog over zenity
+            kd_extensions = "Services (*.zip)"
+            cmd = ["kdialog", "--getopenfilename", str(initial_dir), 
+                   "--title", "Select a service file", "Services (*.zip)"]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            file_string = result.stdout.strip()
+        elif sys.platform == "linux":
+            if shutil.which("zenity") is not None:
+                initial_file="*.zip"
+            file_string = filedialpy.openFile(initial_dir=str(initial_dir), initial_file=initial_file,
+                                              title="Select a service file", filter=["*.zip"])
+        else:
+            file_string = filedialpy.openFile(title="Select a service file", filter=["*.zip"])
+        os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file open dialog
+        if file_string:
+            status = "ok"
+            try:
+                Service.import_service(file_string, self.screen_style, self.bible_versions)
+            except InvalidServiceUrlError as e:
+                status, details = "invalid-url", e.msg
+            except MalformedServiceFileError as e:
+                status, details = "malformed-json", e.msg
+            except MissingStyleParameterError as e:
+                status, details = "invalid-style", e.msg
+            except InvalidVersionError as e:
+                status, details = "invalid-version", e.msg
+            except MalformedReferenceError as e:
+                status, details = "malformed-reference", e.msg
+            except UnknownReferenceError as e:
+                status, details = "unknown-reference", e.msg
+            finally:
+                urls = Service.get_all_services()
+                await self.send_message(websocket, "result.all-services", {"filenames":urls})
+                await self.server_response(websocket, "response.import-service", status, details)
     
     async def export_service(self, websocket, params):
         initial_dir = MalachiServer.ROOT_PATH
@@ -940,15 +971,7 @@ class MalachiServer():
         status, details = "ok", ""
         if not self.s.modified or params["force"]:
             try:
-                if params["filename"][-4:] == "json":
-                    self.s.load_service(
-                        params["filename"], self.screen_style, self.bible_versions)
-                elif params["filename"][-3:] == "zip":
-                    self.s.import_service(
-                        params["filename"], self.screen_style, self.bible_versions)
-                else:
-                    self.s = Service()
-                    status, details = "invalid-url", "Could not find a service file at the url {url}".format(url=params["filename"])
+                self.s.load_service(params["filename"], self.screen_style, self.bible_versions)
             except InvalidServiceUrlError as e:
                 self.s = Service()
                 status, details = "invalid-url", e.msg
@@ -981,6 +1004,7 @@ class MalachiServer():
         except UnspecifiedServiceUrl as e:
             status, details = "unspecified-service", e.msg
         finally:
+            await self.clients_service_items_update()
             await self.server_response(websocket, "response.save-service", status, details)
 
     async def save_service_as(self, websocket, params):
@@ -991,6 +1015,7 @@ class MalachiServer():
         params["filename"] -- the name of the save file, within the ./services directory.
         """
         self.s.save_as(params["filename"])
+        await self.clients_service_items_update()
         await self.server_response(websocket, "response.save-service", "ok", "")
 
     async def edit_style_param(self, websocket, params):
@@ -1425,9 +1450,8 @@ class MalachiServer():
         Arguments:
         params["search-text"] -- the text to search for, in either the
         Song title or lyrics
-        params["remote"] -- 0 = search local songs, 1 = search remote songs
         """
-        result = Song.text_search(params["search-text"], params["remote"])
+        result = Song.text_search(params["search-text"])
         await self.send_message(websocket, "result.song-titles", {
                 "songs": json.loads(result)
         })
