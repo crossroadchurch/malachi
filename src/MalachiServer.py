@@ -871,6 +871,7 @@ class MalachiServer():
         os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file open dialog
         if file_string:
             status = "ok"
+            await self.send_message(websocket, "response.importing-service", {})
             try:
                 Service.import_service(file_string, self.screen_style, self.bible_versions)
             except InvalidServiceUrlError as e:

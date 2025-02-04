@@ -619,9 +619,7 @@ function indicate_importing_media(fname, dom_elt, is_transparent) {
 function indicate_importing_service(fname) {
   let new_node =
     "<div class='ml_row'><img src='./html/icons/icons8-spinner-transparent.gif'>" +
-    "<div class='ml_text' style='border-left:none'>" +
-    fname +
-    "</div></div>";
+    "<div class='ml_text' style='border-left:none'>Importing service...</div></div>";
   DOM_dict["load_files_radio"].children[0].insertAdjacentHTML("beforebegin", new_node);
 }
 
@@ -1918,7 +1916,7 @@ function start_websocket() {
         json_toast_response(json_data, "Audio imported", "Problem importing audio");
         break;
       case "response.importing-service":
-        indicate_importing_service(json_data.params.url);
+        indicate_importing_service();
         break;
       case "response.import-service":
         json_toast_response(json_data, "Service imported", "Problem importing service");
