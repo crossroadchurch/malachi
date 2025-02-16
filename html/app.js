@@ -1060,22 +1060,30 @@ function load_element(short_elt) {
     elt.style.display = "none";
   });
   document.getElementById(short_elt + "_element").style.display = "block";
+  document.getElementById(short_elt + "_element").scrollTop = 0;
   document.getElementById(short_elt + "_elt_button").classList.add("active_element");
-  if (short_elt == "song") {
-    DOM_dict["song_search"].focus();
-    let s_len = DOM_dict["song_search"].value.length;
-    DOM_dict["song_search"].setSelectionRange(s_len, s_len);
-  } else if (short_elt == "bible") {
-    DOM_dict["bible_search"].focus();
-    let b_len = DOM_dict["bible_search"].value.length;
-    DOM_dict["bible_search"].setSelectionRange(b_len, b_len);
-  } else if (short_elt == "presentation") {
-    websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
-  } else if (short_elt == "video") {
-    websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
-  } else if (short_elt == "backgrounds") {
-    websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
-    websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
+
+  switch (short_elt) {
+    case "song":
+      DOM_dict["song_search"].focus();
+      let s_len = DOM_dict["song_search"].value.length;
+      DOM_dict["song_search"].setSelectionRange(s_len, s_len);
+      break;
+    case "bible":
+      DOM_dict["bible_search"].focus();
+      let b_len = DOM_dict["bible_search"].value.length;
+      DOM_dict["bible_search"].setSelectionRange(b_len, b_len);
+      break;
+    case "presentation":
+      websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
+      break;
+    case "video":
+      websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
+      break;
+    case "backgrounds":
+      websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
+      websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
+      break;
   }
 }
 

@@ -1,16 +1,35 @@
+@font-face {
+  font-family: "Roboto Condensed";
+  font-style: normal;
+  src: local("RobotCondensed-Regular"),
+    url(/html/fonts/RobotoCondensed-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  src: local("Roboto-Regular"), url(/html/fonts/Roboto-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Roboto Mono";
+  font-style: normal;
+  src: local("RobotoMono-Regular"), url(/html/fonts/RobotoMono-Regular.ttf) format("truetype");
+}
+
 body {
   margin: 0;
   overflow: hidden;
   background-color: #f9f9f9;
   line-height: 1.3;
   font-size: 1em;
-  font-family: sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 input {
   line-height: 1.3;
   font-size: 1em;
-  font-family: sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 #main_area {
@@ -81,6 +100,7 @@ input {
 
 .element_button {
   display: flex;
+  flex-direction: row;
   cursor: pointer;
   justify-content: center;
   align-items: center;
@@ -92,17 +112,41 @@ input {
   background-color: #f6f6f6;
 }
 
+.element_button span {
+  display: none;
+}
+
+.element_icon {
+  height: 24px;
+  width: 24px;
+}
+
+@media screen and (min-width: 1500px) {
+  .element_button span {
+    font-size: 0.9em;
+    font-family: "Roboto Condensed", sans-serif;
+    padding-left: 0.25em;
+    display: block;
+  }
+
+  .element_button {
+    width: auto;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+  }
+
+  .element_icon {
+    height: 20px;
+    width: 20px;
+  }
+}
+
 .element_button:hover {
   background-color: #e8e8e8;
 }
 
 .element_button.active_element {
   background-color: gold;
-}
-
-.element_icon {
-  height: 24px;
-  width: 24px;
 }
 
 #service_element {
@@ -126,7 +170,7 @@ input {
 #e_lyrics {
   height: 375px;
   font-size: 0.9rem;
-  font-family: "Courier New", Courier, monospace;
+  font-family: "Roboto Mono", "Courier New", Courier, monospace;
 }
 
 #current_item_list div.ml_text sup {
@@ -1186,14 +1230,14 @@ p.ml_bibleverse {
 
 #fill_editor {
   display: inline-flex;
-  font-family: monospace;
+  font-family: "Roboto Mono", "Courier New", Courier, monospace;
   height: 100px;
   overflow: hidden;
 }
 
 #e_fills {
   font-size: 0.9rem;
-  font-family: "Courier New", Courier, monospace;
+  font-family: "Roboto Mono", "Courier New", Courier, monospace;
   border-left: none;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
