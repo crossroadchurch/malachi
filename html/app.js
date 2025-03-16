@@ -408,8 +408,6 @@ function create_song() {
     elt.checked = false;
   });
   document.querySelector("input[data-ek='C']").checked = true;
-  document.querySelector("input[data-lr='0']").checked = true;
-  document.querySelector("input[data-lr='1']").checked = false;
   e_transpose = 0;
   DOM_dict["e_transpose_out"].value = "C";
   // Switch into create song mode
