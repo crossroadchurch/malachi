@@ -1,0 +1,113 @@
+@font-face {
+  font-family: "Inter Semi Bold";
+  font-style: normal;
+  src: local("Inter-SemiBold"), url(/html/fonts/Inter-SemiBold.otf) format("opentype");
+}
+
+@font-face {
+  font-family: "Ubuntu Condensed";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Ubuntu Condensed"), url(/html/fonts/Ubuntu-C.ttf) format("truetype");
+}
+
+p {
+  line-height: 1.2;
+}
+
+body {
+  font-size: 16px;
+  background-color: rgb(20, 22, 29);
+  font-family: "Ubuntu Condensed", "Open Sans", sans-serif;
+  overflow: hidden;
+}
+
+#songarea {
+  max-width: 95%;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 0.25rem;
+  font-size: 16px;
+}
+
+#currentslide {
+  font-family: "Inter Semi Bold", sans-serif;
+  color: white;
+}
+
+#currentslide p {
+  margin: 0;
+}
+
+sup {
+  padding-right: 0.5em;
+  font-size: 0.5em;
+}
+
+#header {
+  display: block;
+  height: 4em;
+  width: 100%;
+  padding-top: 0.5em;
+  padding-bottom: 1.5em;
+}
+
+#buttonarea {
+  padding-right: 1em;
+  display: flex;
+  flex-direction: row;
+  justify-content: right;
+  gap: 0.5em;
+}
+
+.icon_button {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  width: 5em;
+  height: 4em;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 5px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.icon_button:hover {
+  background-color: #ededed;
+}
+
+.icon_button:active {
+  background-color: #e8e8e8;
+}
+
+.icon_button::after {
+  content: "";
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.dark_button {
+  background-color: #f6f6f6;
+  border-color: #ddd;
+}
+
+.light_button {
+  background-color: #cecece;
+  border-color: #888888;
+}
+
+.up_icon::after {
+  background-image: url("/html/icons/icons8-increase-font-48.png");
+}
+
+.down_icon::after {
+  background-image: url("/html/icons/icons8-decrease-font-48.png");
+}
+
+.mode_icon::after {
+  background-image: url("/html/icons/icons8-day-and-night-48.png");
+}

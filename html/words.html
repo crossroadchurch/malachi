@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Malachi Words View</title>
+    <link rel="shortcut icon" href="/html/favicon.png" type="image/png" />
+    <link rel="stylesheet" href="/html/words.css" />
+    <link rel="stylesheet" href="/html/libs/toastify.css" />
+    <script type="text/javascript" src="/html/libs/toastify.min.js"></script>
+    <script type="text/javascript" src="/html/words.js"></script>
+  </head>
+  <body>
+    <div id="header">
+      <div id="buttonarea">
+        <div
+          id="text_up_btn"
+          class="icon_button dark_button up_icon"
+          onclick="increase_text_size()"
+        ></div>
+        <div
+          id="text_down_btn"
+          class="icon_button dark_button down_icon"
+          onclick="decrease_text_size()"
+        ></div>
+        <div
+          id="day_night_btn"
+          class="icon_button dark_button mode_icon"
+          onclick="toggle_text_mode()"
+        ></div>
+      </div>
+    </div>
+    <div id="songarea">
+      <div id="currentslide"></div>
+    </div>
+  </body>
+</html>
