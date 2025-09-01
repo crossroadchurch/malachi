@@ -171,7 +171,8 @@ span {
 #playedkey,
 #verseorder,
 #keyandcapo,
-#pres-controls {
+#pres_controls,
+#video_controls {
   display: inline-block;
   height: 3rem;
 }

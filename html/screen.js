@@ -11,6 +11,10 @@ let song_background = { url: "none", width: 1, height: 1 };
 let bible_background = { url: "none", width: 1, height: 1 };
 let countdown_to = new Date();
 let countdown_timer; // Interval reference
+let notices_count = 0;
+let notices_end_gap = 1;
+let notices_cycle_gap = 1;
+let notices_slide_time = 1;
 let screen_state = false;
 let video_displayed = false;
 let video_muted = false;
@@ -21,7 +25,7 @@ const DOM_dict = {};
 // prettier-ignore
 const DOM_KEYS = [
   "video_item", "video_item_src", "loop_video", "loop_video_src",
-  "countdown_p", "countdown_h", "countdown_area", "bg_image",
+  "countdown_p", "countdown_h", "countdown_area", "bg_image", "notices_area",
   "slide_area", "verseorder_area", "copyright_area",
   "pl_columns", "pl_left", "pl_right",
   "audio_item", "audio_item_src"
@@ -121,6 +125,23 @@ function update_optional_areas() {
   }
 }
 
+function load_notices(num_slides) {
+  let notice_html = "";
+  let query_suffix = Date.now();
+  for (let slide = 0; slide < num_slides; slide++) {
+    notice_html +=
+      "<img id='notice_" +
+      slide +
+      "' class='notice' src='/notices/notices-" +
+      slide +
+      ".png?q=" +
+      query_suffix +
+      "' />";
+  }
+  notices_count = num_slides;
+  DOM_dict["notices_area"].innerHTML = notice_html;
+}
+
 function stop_running_video() {
   video_displayed = false;
   if (play_videos) {
@@ -216,6 +237,9 @@ function update_from_style(style) {
   bible_background.width = style["bible-background-w"];
   bible_background.height = style["bible-background-h"];
   update_background();
+  notices_end_gap = parseInt(style["notices-end-gap"]);
+  notices_cycle_gap = parseInt(style["notices-cycle-gap"]);
+  notices_slide_time = parseInt(style["notices-slide-time"]);
 }
 
 function update_background() {
@@ -263,12 +287,18 @@ function decrease_countdown() {
   } else {
     clearInterval(countdown_timer);
     DOM_dict["countdown_area"].style.display = "none";
+    DOM_dict["notices_area"]
+      .getAnimations({ subtree: true })
+      .forEach((animation) => animation.cancel());
   }
 }
 
 function stop_countdown() {
   DOM_dict["countdown_area"].style.display = "none";
   countdown_to = new Date(); // Interval, if running, will stop on next call to decrease_countdown
+  DOM_dict["notices_area"]
+    .getAnimations({ subtree: true })
+    .forEach((animation) => animation.cancel());
 }
 
 function format_time(time_secs) {
@@ -321,6 +351,7 @@ function update_display_init(json_data) {
     DOM_dict["pl_columns"].style.display = "none";
   }
   update_optional_areas();
+  load_notices(json_data.params["notices-count"]);
 }
 
 function update_item_index_update(json_data) {
@@ -472,6 +503,84 @@ function trigger_start_countdown(json_data) {
       clearInterval(countdown_timer);
       countdown_timer = setInterval(decrease_countdown, 1000);
     }
+    if (json_data.params.notices) {
+      trigger_start_notices(
+        notices_count,
+        notices_slide_time,
+        notices_cycle_gap,
+        notices_end_gap,
+        countdown_left
+      );
+    }
+  }
+}
+
+function trigger_start_notices(num_slides, slide_time, cycle_gap, end_gap, total_time) {
+  let cycle_time = num_slides * slide_time + cycle_gap;
+  let active_time = total_time - end_gap;
+  // Calculate start time of first (probably incomplete) cycle - cycle begins with "cycle gap"
+  let initial_time = active_time - cycle_time * Math.ceil(active_time / cycle_time);
+  let initial_slide;
+  if (Math.abs(initial_time) < cycle_gap) {
+    initial_slide = -1; // We are starting with "cycle gap"
+  } else {
+    initial_slide = Math.floor(Math.abs(initial_time + cycle_gap) / slide_time);
+  }
+  all_time_keyframes = [];
+  all_opacity_values = [];
+  for (let slide = 0; slide < num_slides; slide++) {
+    time_kfs = [];
+    opacity_vs = [];
+    // Determine how long this slide is displayed for
+    slide_duration = slide + 1 == num_slides ? slide_time : slide_time * 1.5;
+    // Determine first time index that this slide is visible
+    first_time = initial_time + cycle_gap + slide * slide_time;
+    if (first_time <= -1 * slide_time) {
+      first_time += cycle_time;
+    }
+    // Populate keyframes and values
+    if (slide != initial_slide) {
+      time_kfs.push(0);
+      opacity_vs.push(0);
+    }
+    cur_time = first_time;
+    while (cur_time < active_time) {
+      // Slide on
+      time_kfs.push(cur_time / total_time);
+      opacity_vs.push(1);
+      // Slide off
+      time_kfs.push((cur_time + slide_duration) / total_time);
+      opacity_vs.push(0);
+      // Advance to next instance
+      cur_time += cycle_time;
+    }
+    all_time_keyframes.push(time_kfs);
+    all_opacity_values.push(opacity_vs);
+  }
+  // Adjust timings for first slide
+  if (initial_slide != -1) {
+    if (Math.abs(all_time_keyframes[initial_slide][0]) < (0.5 * slide_time) / total_time) {
+      // Initial slide too short; don't display, and lengthen slide two instead
+      all_opacity_values[initial_slide][0] = 0;
+      if (initial_slide < num_slides - 1) {
+        all_opacity_values[(initial_slide + 1) % num_slides][0] = 1;
+      }
+    }
+    all_time_keyframes[initial_slide][0] = 0;
+  }
+  // Initiate animation - first clear any running animation
+  DOM_dict["notices_area"]
+    .getAnimations({ subtree: true })
+    .forEach((animation) => animation.cancel());
+  for (let slide = num_slides - 1; slide >= 0; slide--) {
+    document.getElementById("notice_" + slide).animate(
+      {
+        opacity: all_opacity_values[slide],
+        offset: all_time_keyframes[slide],
+        easing: ["step-end"],
+      },
+      { duration: total_time * 1000, iterations: 1 }
+    );
   }
 }
 
@@ -500,6 +609,9 @@ function start_websocket() {
         break;
       case "update.video-loop":
         update_video_loop(json_data);
+        break;
+      case "update.notices-loaded":
+        load_notices(json_data.params["slide-count"]);
         break;
       case "trigger.suspend-loop":
         trigger_suspend_loop();

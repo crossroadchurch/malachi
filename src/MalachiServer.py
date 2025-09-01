@@ -29,6 +29,7 @@ from websockets.exceptions import ConnectionClosed
 import cv2
 import pyautogui
 import filedialpy
+from pypdf import PdfReader
 from Service import Service
 from BiblePassage import BiblePassage
 from Song import Song
@@ -41,7 +42,7 @@ from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError, Unk
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError
 from MalachiExceptions import InvalidServiceUrlError, MalformedServiceFileError
 from MalachiExceptions import InvalidVideoUrlError, InvalidVideoError, UnspecifiedServiceUrl
-from MalachiExceptions import MissingStyleParameterError, MissingDataFilesError
+from MalachiExceptions import MissingStyleParameterError, MissingDataFilesError, InkscapeVersionError
 from MalachiExceptions import InvalidPresentationUrlError
 
 
@@ -69,6 +70,7 @@ class MalachiServer():
             self.screen_style = []
             self.video_loop = ""
             self.loop_width, self.loop_height = 0, 0
+            self.loaded_notices = ""
             self.check_data_files()
             Video.generate_video_thumbnails()
             Background.generate_background_thumbnails()
@@ -81,6 +83,7 @@ class MalachiServer():
             self.screen_state = "off"
             self.s = Service()
             self.load_settings()
+            self.notices_count = self.count_notices()
         except MissingDataFilesError as crit_error:
             raise MissingDataFilesError(crit_error.msg[51:]) from crit_error
 
@@ -111,6 +114,7 @@ class MalachiServer():
             "command.import-audio": [self.import_audio, []],
             "command.import-service": [self.import_service, []],
             "command.export-service": [self.export_service, []],
+            "command.import-notices": [self.import_notices, []],
             "command.remove-item": [self.remove_item, ["index"]],
             "command.move-item": [self.move_item, ["from-index", "to-index"]],
             "command.set-display-state": [self.set_display_state, ["state"]],
@@ -143,7 +147,7 @@ class MalachiServer():
             "command.generic-play": [self.generic_play, []],
             "command.generic-stop": [self.generic_stop, []],
             "command.transpose-by": [self.transpose_by, ["amount"]],
-            "command.start-countdown": [self.start_countdown, ["hr", "min"]],
+            "command.start-countdown": [self.start_countdown, ["hr", "min", "notices"]],
             "command.clear-countdown": [self.clear_countdown, []],
             "client.set-capo": [self.set_capo, ["capo"]],
             "query.bible-by-text": [self.bible_text_query, ["version", "search-text"]],
@@ -245,6 +249,7 @@ class MalachiServer():
         service_data['video_loop'] = self.video_loop
         service_data['loop-width'] = self.loop_width
         service_data['loop-height'] = self.loop_height
+        service_data['notices-count'] = self.notices_count
         await websocket.send(json.dumps({
             "action": "update.display-init",
             "params": service_data
@@ -260,6 +265,7 @@ class MalachiServer():
         service_data['loop-height'] = self.loop_height
         service_data['update-available'] = self.updatable
         service_data['python-required'] = self.python_update_status
+        service_data['notices-file'] = self.loaded_notices
         await websocket.send(json.dumps({
             "action": "update.app-init",
             "params": service_data
@@ -763,12 +769,13 @@ class MalachiServer():
             await self.server_response(websocket, "response.add-presentation", status, details)
             await self.clients_service_items_update()
 
-    async def import_file(self, websocket, title, extensions, folder):
+    @staticmethod
+    def select_file_for_import(title, import_type, extensions):
         initial_dir = MalachiServer.ROOT_PATH
         initial_file = None
         if sys.platform == "linux" and shutil.which("kdialog") is not None:
             # Prefer kdialog over zenity
-            kd_extensions = folder.capitalize() + " (" + extensions[0] + ")"
+            kd_extensions = import_type + " (" + extensions[0] + ")"
             cmd = ["kdialog", "--getopenfilename", str(initial_dir), "--title", title, kd_extensions]
             result = subprocess.run(cmd, capture_output=True, text=True)
             file_string = result.stdout.strip()
@@ -780,6 +787,10 @@ class MalachiServer():
         else:
             file_string = filedialpy.openFile(title=title, filter=extensions)
         os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file open dialog
+        return file_string
+
+    async def import_file(self, websocket, title, extensions, folder):
+        file_string = MalachiServer.select_file_for_import(title, folder.capitalize(), extensions)
         if file_string:
             file_path = Path(file_string)
             test_path = Path(MalachiServer.ROOT_PATH, folder, file_path.name)
@@ -851,24 +862,8 @@ class MalachiServer():
             await self.server_response(websocket, "response.import-audio", status, details)
     
     async def import_service(self, websocket, params):
-        initial_dir = MalachiServer.ROOT_PATH
-        initial_file = None
         status, details = "none-selected", ""
-        if sys.platform == "linux" and shutil.which("kdialog") is not None:
-            # Prefer kdialog over zenity
-            kd_extensions = "Services (*.zip)"
-            cmd = ["kdialog", "--getopenfilename", str(initial_dir), 
-                   "--title", "Select a service file", "Services (*.zip)"]
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            file_string = result.stdout.strip()
-        elif sys.platform == "linux":
-            if shutil.which("zenity") is not None:
-                initial_file="*.zip"
-            file_string = filedialpy.openFile(initial_dir=str(initial_dir), initial_file=initial_file,
-                                              title="Select a service file", filter=["*.zip"])
-        else:
-            file_string = filedialpy.openFile(title="Select a service file", filter=["*.zip"])
-        os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file open dialog
+        file_string = MalachiServer.select_file_for_import("Select a service file", "Services", ["*.zip"])
         if file_string:
             status = "ok"
             await self.send_message(websocket, "response.importing-service", {})
@@ -912,6 +907,75 @@ class MalachiServer():
         if file_string:
             self.s.export_as(file_string)
             await self.server_response(websocket, "response.export-service", "ok", "")
+
+    async def import_notices(self, websocket, params):
+        status, details = "ok", ""
+        # Get notices file to import
+        file_string = MalachiServer.select_file_for_import(
+            "Select a notices file", "Notices", ["*.pdf *.ppt *.pptx *.odp *.ppsx"])
+        if not file_string:
+            return # Import was cancelled by user
+        try:
+            await self.server_response(websocket, "response.importing-notices", "ok", "")
+            # Determine what version of Inkscape (if any) is installed
+            output = subprocess.check_output(["inkscape", "--version"], text=True)
+            # Determine Inkscape version "Inkscape Major.Minor (details)"
+            inkscape_version = output.split()[1].split(".")
+            if int(inkscape_version[0]) == 1 and int(inkscape_version[1]) >= 3:
+                inkscape_option = "--pages="
+            elif int(inkscape_version[0]) == 1 and int(inkscape_version[1]) < 3:
+                inkscape_option = "--pdf-page="
+            else:
+                raise InkscapeVersionError('.'.join(inkscape_version))
+            file_path = Path(file_string)
+            if not file_string.lower().endswith("pdf"):
+                # Convert odp/ppt etc to pdf with LibreOffice command line
+                dest_path = Path(MalachiServer.ROOT_PATH, "notices")
+                output = subprocess.check_output(["soffice", "--convert-to", "pdf", file_string, "--outdir", dest_path], text=True)
+                pdf_path = Path(MalachiServer.ROOT_PATH, "notices", file_path.name.split(".")[0] + ".pdf")
+            else:
+                # Copy pdf to notices directory
+                pdf_path = Path(MalachiServer.ROOT_PATH, "notices", file_path.name)
+                shutil.copyfile(file_path, pdf_path)
+            # Get number of pages
+            reader = PdfReader(pdf_path)
+            pdf_pages = len(reader.pages)
+            # Assumed that all pages have same aspect ratio
+            pdf_width = reader.pages[0].mediabox.width
+            pdf_height = reader.pages[0].mediabox.height
+            pdf_aspect = pdf_width / pdf_height
+            if pdf_aspect < self.screen_style["aspect-ratio"]:
+                scale_option = "--export-height=1080"
+            else:
+                scale_option = "--export-width=1920"
+            # Delete old notices images
+            for notice_file in os.listdir("./notices"):
+                if notice_file.endswith(".png"):
+                    os.remove(os.path.join("./notices", notice_file))
+            # Import each page
+            for page in range(pdf_pages):
+                output = subprocess.check_output(["inkscape", 
+                                                  inkscape_option+str(page), 
+                                                  "--pdf-poppler", 
+                                                  pdf_path, 
+                                                  "-o", 
+                                                  Path(MalachiServer.ROOT_PATH, "notices", "notices-{p}.png".format(p=page)),
+                                                  scale_option], text=True)
+            self.notices_count = self.count_notices()
+            # Save notices info for future sessions
+            self.loaded_notices = file_path.name
+            self.save_settings()
+            # Inform screen and app of new notices
+            await self.broadcast(self.STYLE_STATE_SOCKETS, "update.notices-loaded", {
+                "slide-count": self.notices_count,
+                "filename": self.loaded_notices
+            })
+        except FileNotFoundError as _:
+            status, details = "missing-program", "Inkscape was not detected"
+        except InkscapeVersionError as _:
+            status, details = "unsupported-version", "Inkscape needs to be version 1.0 or greater"
+        finally:
+            await self.server_response(websocket, "response.import-notices", status, details)
 
     async def set_display_state(self, websocket, params):
         """
@@ -1217,14 +1281,22 @@ class MalachiServer():
         Arguments:
         params["hr"] -- the end hour of the countdown.
         params["min"] -- the end minute of the countdown.
+        params["notices"] -- whether to show notices during countdown or not.
         """
         status, details = "ok", ""
         hrs = int(params["hr"])
         mins = int(params["min"])
         if (0 <= mins < 60) and (0 <= hrs < 24):
+            # Toggle screen off
+            self.screen_state = "off"
+            await self.broadcast(self.DISPLAY_STATE_SOCKETS, "update.display-state", {
+                "state": self.screen_state
+            })
+            # Start countdown
             await self.broadcast(self.MEDIA_SOCKETS, "trigger.start-countdown", {
                 "hr": int(params["hr"]),
-                "min": int(params["min"])
+                "min": int(params["min"]),
+                "notices": bool(params["notices"])
             })
         else:
             status, details = "invalid-time", "Invalid countdown time: " + \
@@ -1539,11 +1611,13 @@ class MalachiServer():
         with open(MalachiServer.GLOBAL_SETTINGS_FILE) as f:
             json_data = json.load(f)
         self.screen_style = json_data["style"]
+        self.loaded_notices = json_data["loaded-notices"]
 
     def save_settings(self):
         """Save settings information to ./data/global_settings.json"""
         json_data = {}
         json_data["style"] = self.screen_style
+        json_data["loaded-notices"] = self.loaded_notices
         with open(MalachiServer.GLOBAL_SETTINGS_FILE, "w") as f:
             f.write(json.dumps(json_data, indent=2))
 
@@ -1581,6 +1655,9 @@ class MalachiServer():
         Song.load_length_data(font_name)
         print("Malachi has loaded successfully!")
 
+    def count_notices(self):
+        notices = [f for f in os.listdir('./notices') if f.startswith('notices-') and f.endswith('.png')]
+        return len(notices)
 
     def is_update_available(self):
         try:

@@ -24,7 +24,7 @@ const DOM_dict = {};
 const DOM_KEYS = [
   "currentslide", "nextslide", "service_options", "service_options_btn", 
   "display_options", "display_options_btn", "music_options", "music_options_btn",
-  "playedkey", "pres_controls", "verseorder", "header", "keyandcapo",
+  "playedkey", "pres_controls", "verseorder", "header", "keyandcapo", "video_controls"
 ];
 
 function view_music_options(val) {
@@ -294,6 +294,12 @@ function update_music() {
     DOM_dict["pres_controls"].style.display = "none";
   }
 
+  if (slide_type == "video") {
+    DOM_dict["video_controls"].style.display = "inline-block";
+  } else {
+    DOM_dict["video_controls"].style.display = "none";
+  }
+
   let current_text = "";
   let next_text = "";
   if (slide_type == "song") {
@@ -417,6 +423,18 @@ function start_presentation() {
 function stop_presentation() {
   if (slide_type == "presentation") {
     websocket.send(JSON.stringify({ action: "command.stop-presentation", params: {} }));
+  }
+}
+
+function play_video() {
+  if (slide_type == "video") {
+    websocket.send(JSON.stringify({ action: "command.play-video", params: {} }));
+  }
+}
+
+function stop_video() {
+  if (slide_type == "video") {
+    websocket.send(JSON.stringify({ action: "command.stop-video", params: {} }));
   }
 }
 
@@ -563,6 +581,8 @@ function start_websocket() {
       case "response.prev-presentation-slide":
       case "response.start-presentation":
       case "response.stop-presentation":
+      case "response.play-video":
+      case "response.stop-video":
       case "response.goto-slide":
       case "response.goto-item":
       case "response.transpose-by":

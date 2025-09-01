@@ -36,7 +36,8 @@ const DOM_KEYS = [
   "s_width", "s_width_out", "s_font_size", "s_font_size_out", "s_lines", "s_lines_out",
   "pl_width", "pl_width_out", "pl_font_size", "pl_font_size_out", "pl_lines", "pl_lines_out",
   "s_margin", "s_margin_out", "ch_size", "ch_size_out", "cd_size", "cd_size_out",
-  "cd_top", "cd_top_out", "cd_text", "d_copyright", "cp_size", "cp_size_out",
+  "cd_top", "cd_top_out", "cd_text", "nt_slide", "nt_slide_out", "nt_cycle",
+  "nt_cycle_out", "nt_end", "nt_end_out", "d_copyright", "cp_size", "cp_size_out",
   "cp_width", "cp_width_out", "d_verseorder", "vo_size", "vo_size_out",
   "vo_width", "vo_width_out", "at_scale", "at_scale_out", "song_bg_icon", "bible_bg_icon",
   "tc_red", "tc_red_out", "tc_green", "tc_green_out", "tc_blue", "tc_blue_out", "tc_preview",
@@ -48,7 +49,8 @@ const DOM_KEYS = [
   "recycle_bin", "popup_confirm_empty_bin",
   "regular_update_instructions", "python_update_instructions", "python_version_needed",
   "import_presentation_btn", "import_video_btn", "import_loop_btn", "import_background_btn",
-  "import_service_btn", "export_service_btn", "service_name"
+  "import_service_btn", "export_service_btn", "service_name",
+  "import_notices_btn", "start_notices_btn", "notices_filename"
 ];
 
 style_dict["s_width"] = "div-width-vw";
@@ -59,6 +61,9 @@ style_dict["font_color"] = "font-color";
 style_dict["ch_size"] = "countdown-h-size-vh";
 style_dict["cd_size"] = "countdown-size-vh";
 style_dict["cd_top"] = "countdown-top-vh";
+style_dict["nt_slide"] = "notices-slide-time";
+style_dict["nt_cycle"] = "notices-cycle-gap";
+style_dict["nt_end"] = "notices-end-gap";
 style_dict["cp_size"] = "copy-size-vh";
 style_dict["cp_width"] = "copy-width-vw";
 style_dict["vo_size"] = "order-size-vh";
@@ -354,7 +359,11 @@ function stop_audio() {
   websocket.send(JSON.stringify({ action: "command.stop-audio", params: {} }));
 }
 
-function start_countdown() {
+function import_notices() {
+  websocket.send(JSON.stringify({ action: "command.import-notices", params: {} }));
+}
+
+function start_countdown(show_notices) {
   const now = new Date();
   const target_time = DOM_dict["cd_time"].value;
   const target = new Date(
@@ -373,6 +382,7 @@ function start_countdown() {
         params: {
           hr: target_time.split(":")[0],
           min: target_time.split(":")[1],
+          notices: show_notices,
         },
       })
     );
@@ -860,6 +870,12 @@ function update_style_sliders(style) {
   DOM_dict["cd_top"].value = style[style_dict["cd_top"]];
   DOM_dict["cd_top_out"].value = style[style_dict["cd_top"]];
   DOM_dict["cd_text"].value = style["countdown-h-text"];
+  DOM_dict["nt_slide"].value = style[style_dict["nt_slide"]];
+  DOM_dict["nt_slide_out"].value = style[style_dict["nt_slide"]];
+  DOM_dict["nt_cycle"].value = style[style_dict["nt_cycle"]];
+  DOM_dict["nt_cycle_out"].value = style[style_dict["nt_cycle"]];
+  DOM_dict["nt_end"].value = style[style_dict["nt_end"]];
+  DOM_dict["nt_end_out"].value = style[style_dict["nt_end"]];
   DOM_dict["d_copyright"].checked = style["display-copyright"];
   DOM_dict["cp_size"].value = style[style_dict["cp_size"]];
   DOM_dict["cp_size_out"].value = style[style_dict["cp_size"]];
@@ -1179,6 +1195,11 @@ function update_app_init(json_data) {
     DOM_dict["service_name"].innerHTML = "(" + json_data.params.filename.split(".")[0] + ")";
   } else {
     DOM_dict["service_name"].innerHTML = "";
+  }
+
+  // Update notices info
+  if (json_data.params["notices-file"]) {
+    DOM_dict["notices_filename"].value = json_data.params["notices-file"];
   }
 
   // Populate service plan list
@@ -1926,6 +1947,21 @@ function start_websocket() {
         break;
       case "response.import-service":
         json_toast_response(json_data, "Service imported", "Problem importing service");
+        break;
+      case "response.importing-notices":
+        DOM_dict["import_notices_btn"].disabled = true;
+        DOM_dict["import_notices_btn"].innerText = "Importing notices...";
+        DOM_dict["notices_filename"].value = "";
+        DOM_dict["start_notices_btn"].disabled = true;
+        break;
+      case "response.import-notices":
+        DOM_dict["import_notices_btn"].disabled = false;
+        DOM_dict["import_notices_btn"].innerText = "Import notices";
+        DOM_dict["start_notices_btn"].disabled = false;
+        json_toast_response(json_data, "Notices imported", "Problem importing notices");
+        break;
+      case "update.notices-loaded":
+        DOM_dict["notices_filename"].value = json_data.params.filename;
         break;
       case "response.set-loop":
         json_toast_response(json_data, "Video loop set", "Problem setting video loop");

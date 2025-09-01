@@ -20,6 +20,8 @@
 !/audio/.gitkeep
 /logs/*
 !/logs/.gitkeep
+/notices/*
+!/notices/.gitkeep
 /data/*.sqlite
 !/data/songs.sqlite
 !/data/ADB.sqlite

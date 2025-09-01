@@ -112,3 +112,9 @@ class MissingDataFilesError(Exception):
     def __init__(self, files):
         self.msg = "The following essential data files were not found: {files}".format(files=files)
         super(MissingDataFilesError, self).__init__(self.msg)
+
+class InkscapeVersionError(Exception):
+    """Indicate that the wrong version of Inkscape is installed"""
+    def __init__(self, version):
+        self.msg = "The wrong version of Inkscape is installed ({version}), must be 1.0+".format(version=version)
+        super(InkscapeVersionError, self).__init__(self.msg)

@@ -698,9 +698,15 @@ p.ml_bibleverse {
   margin-top: 1em;
 }
 
+#notices_control {
+  display: flex;
+  gap: 10px;
+  margin-top: 0.5em;
+}
+
 #cd_time {
   font-size: 13px;
-  width: 5em;
+  width: 6.5em;
 }
 
 .mi_textinput {
@@ -1323,4 +1329,22 @@ p.ml_bibleverse {
   background: white;
   padding-left: 1em;
   padding-right: 1em;
+}
+
+button {
+  font-family: "Roboto", sans-serif;
+}
+
+button:disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+button:disabled:active {
+  background-color: #f6f6f6;
+}
+
+#notices_filename {
+  flex-grow: 1;
+  font-size: 12.8px;
 }

@@ -12,6 +12,9 @@
     "countdown-top-vh": "23",
     "countdown-h-size-vh": "25",
     "countdown-h-text": "Welcome!",
+    "notices-slide-time": "5",
+    "notices-cycle-gap": "10",
+    "notices-end-gap": "60",
     "font-file": "./html/fonts/Inter-SemiBold.otf",
     "font-color": "ffffff",
     "outline-style": "drop-shadow",
@@ -29,5 +32,6 @@
     "bible-background-h": 1,
     "default-version": "KJV",
     "app-text-scale": "1.2"
-  }
+  },
+  "loaded-notices": ""
 }
