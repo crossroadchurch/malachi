@@ -9,12 +9,14 @@ let current_slides = [];
 let slide_index = -1;
 let item_index = -1;
 const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
-// DOM pointers
+
 const DOM_dict = {};
-// prettier-ignore
-const DOM_KEYS = [
-  "currentitem", "previtem", "nextitem", "currentslide", "nextslide"
-];
+function DOM_get(key) {
+  if (!(key in DOM_dict)) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  return DOM_dict[key];
+}
 
 function update_music() {
   let current_text = "";
@@ -29,7 +31,7 @@ function update_music() {
       }
       current_text += "</p>";
     }
-    DOM_dict["currentslide"].innerHTML = current_text;
+    DOM_get("currentslide").innerHTML = current_text;
 
     let next_slide_lines = [];
     if (slide_index < current_slides.length - 1) {
@@ -42,14 +44,14 @@ function update_music() {
       }
       next_text += "</p>";
     }
-    DOM_dict["nextslide"].innerHTML = next_text;
+    DOM_get("nextslide").innerHTML = next_text;
   } else {
-    DOM_dict["currentslide"].innerHTML = current_title;
-    DOM_dict["nextslide"].innerHTML = "";
+    DOM_get("currentslide").innerHTML = current_title;
+    DOM_get("nextslide").innerHTML = "";
   }
-  DOM_dict["currentitem"].innerHTML = current_title;
-  DOM_dict["nextitem"].innerHTML = next_title;
-  DOM_dict["previtem"].innerHTML = prev_title;
+  DOM_get("currentitem").innerHTML = current_title;
+  DOM_get("nextitem").innerHTML = next_title;
+  DOM_get("previtem").innerHTML = prev_title;
 }
 
 function update_basic_init(json_data) {
@@ -181,11 +183,6 @@ let ready = (callback) => {
 };
 
 ready(() => {
-  // Setup DOM pointers
-  for (const key of DOM_KEYS) {
-    DOM_dict[key] = document.getElementById(key);
-  }
-  // Other setup tasks
   start_websocket();
 });
 

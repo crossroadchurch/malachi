@@ -129,11 +129,20 @@
           <h3>Service plan <span id="service_name"></span></h3>
           <div id="service_list" class="ml_list"></div>
           <div id="countdown_control">
-            <div class="cmd_button small_button" onclick="start_countdown()">
+            <div class="cmd_button small_button" onclick="start_countdown(false)">
               Start countdown to:
             </div>
             <input type="time" id="cd_time" name="cd_time" class="mi_textinput" />
             <div class="cmd_button small_button" onclick="clear_countdown()">Cancel countdown</div>
+          </div>
+          <div id="notices_control">
+            <button id="import_notices_btn" class="cmd_button small_button" onclick="import_notices()">
+              Import notices
+            </button>
+            <button id="start_notices_btn" class="cmd_button small_button" onclick="start_countdown(true)">
+              Start countdown with notices:
+            </button>
+            <input id="notices_filename" type="text" class="mi_textinput" disabled></input>
           </div>
         </div>
 
@@ -384,6 +393,19 @@
               <span>Default Bible version:</span>
             </div>
             <div class="mi_range">
+              <label for="b_lines">Max Bible lines per slide:</label>
+              <input
+                id="b_lines"
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                oninput="style_slider_input(this)"
+                onchange="style_slider_change(this)"
+              />
+              <output id="b_lines_out"></output>
+            </div>
+            <div class="mi_range">
               <label for="pl_width">Parallel column width (% of screen):</label>
               <input
                 id="pl_width"
@@ -424,7 +446,7 @@
             </div>
           </div>
           <div id="sh_countdowns" class="ml_row style_header">
-            <div class="sl_text">Countdowns</div>
+            <div class="sl_text">Countdowns and notices</div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('countdowns')"></a>
           </div>
           <div id="sg_countdowns" class="style_group">
@@ -470,6 +492,45 @@
                 onchange="style_slider_change(this)"
               />
               <output id="cd_top_out"></output>
+            </div>
+            <div class="mi_range">
+              <label for="nt_slide">Notices slide time (seconds):</label>
+              <input
+                id="nt_slide"
+                type="range"
+                min="1"
+                max="60"
+                step="1"
+                oninput="style_slider_input(this)"
+                onchange="style_slider_change(this)"
+              />
+              <output id="nt_slide_out"></output>
+            </div>
+            <div class="mi_range">
+              <label for="nt_cycle">Gap between notices cycles (seconds):</label>
+              <input
+                id="nt_cycle"
+                type="range"
+                min="1"
+                max="60"
+                step="1"
+                oninput="style_slider_input(this)"
+                onchange="style_slider_change(this)"
+              />
+              <output id="nt_cycle_out"></output>
+            </div>
+            <div class="mi_range">
+              <label for="nt_end">Clear space at end of countdown (seconds):</label>
+              <input
+                id="nt_end"
+                type="range"
+                min="1"
+                max="300"
+                step="1"
+                oninput="style_slider_input(this)"
+                onchange="style_slider_change(this)"
+              />
+              <output id="nt_end_out"></output>
             </div>
           </div>
           <div id="sh_copyright" class="ml_row style_header">

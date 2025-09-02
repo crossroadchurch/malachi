@@ -20,16 +20,14 @@ let video_displayed = false;
 let video_muted = false;
 let play_videos = true;
 const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
-// DOM Pointers
+
 const DOM_dict = {};
-// prettier-ignore
-const DOM_KEYS = [
-  "video_item", "video_item_src", "loop_video", "loop_video_src",
-  "countdown_p", "countdown_h", "countdown_area", "bg_image", "notices_area",
-  "slide_area", "verseorder_area", "copyright_area",
-  "pl_columns", "pl_left", "pl_right",
-  "audio_item", "audio_item_src"
-];
+function DOM_get(key) {
+  if (!(key in DOM_dict)) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  return DOM_dict[key];
+}
 
 function display_current_slide(slide_index) {
   const current_slide = current_item.slides[slide_index];
@@ -84,44 +82,44 @@ function display_current_slide(slide_index) {
     // Background load video, wait for trigger to display and start playback
     resize_video_item();
     if (play_videos) {
-      DOM_dict["video_item_src"].setAttribute("src", current_item.url);
-      DOM_dict["video_item"].load();
+      DOM_get("video_item_src").setAttribute("src", current_item.url);
+      DOM_get("video_item").load();
     } else {
-      DOM_dict["video_item"].setAttribute("src", current_item.url + "_still.jpg");
+      DOM_get("video_item").setAttribute("src", current_item.url + "_still.jpg");
     }
   } else {
     slide_text = "<p>" + current_slide + "</p>";
     verseorder = "<p></p>";
   }
-  DOM_dict["slide_area"].innerHTML = slide_text;
-  DOM_dict["pl_left"].innerHTML = pl_left_text;
-  DOM_dict["pl_right"].innerHTML = pl_right_text;
-  DOM_dict["verseorder_area"].innerHTML = verseorder;
+  DOM_get("slide_area").innerHTML = slide_text;
+  DOM_get("pl_left").innerHTML = pl_left_text;
+  DOM_get("pl_right").innerHTML = pl_right_text;
+  DOM_get("verseorder_area").innerHTML = verseorder;
   if (current_item.copyright) {
-    DOM_dict["copyright_area"].innerHTML = "<p>" + current_item.copyright + "</p>";
+    DOM_get("copyright_area").innerHTML = "<p>" + current_item.copyright + "</p>";
   } else {
-    DOM_dict["copyright_area"].innerHTML = "";
+    DOM_get("copyright_area").innerHTML = "";
   }
   update_optional_areas();
 }
 
 function clear_current_slide() {
   stop_running_video();
-  DOM_dict["slide_area"].innerHTML = "";
-  DOM_dict["pl_left"].innerHTML = "";
-  DOM_dict["pl_right"].innerHTML = "";
+  DOM_get("slide_area").innerHTML = "";
+  DOM_get("pl_left").innerHTML = "";
+  DOM_get("pl_right").innerHTML = "";
 }
 
 function update_optional_areas() {
   if (display_copyright && screen_state) {
-    DOM_dict["copyright_area"].style.display = "block";
+    DOM_get("copyright_area").style.display = "block";
   } else {
-    DOM_dict["copyright_area"].style.display = "none";
+    DOM_get("copyright_area").style.display = "none";
   }
   if (display_verseorder && screen_state) {
-    DOM_dict["verseorder_area"].style.display = "block";
+    DOM_get("verseorder_area").style.display = "block";
   } else {
-    DOM_dict["verseorder_area"].style.display = "none";
+    DOM_get("verseorder_area").style.display = "none";
   }
 }
 
@@ -139,17 +137,17 @@ function load_notices(num_slides) {
       "' />";
   }
   notices_count = num_slides;
-  DOM_dict["notices_area"].innerHTML = notice_html;
+  DOM_get("notices_area").innerHTML = notice_html;
 }
 
 function stop_running_video() {
   video_displayed = false;
   if (play_videos) {
-    DOM_dict["loop_video"].play();
-    DOM_dict["video_item"].pause();
+    DOM_get("loop_video").play();
+    DOM_get("video_item").pause();
   }
-  DOM_dict["loop_video"].style.display = "block";
-  DOM_dict["video_item"].style.display = "none";
+  DOM_get("loop_video").style.display = "block";
+  DOM_get("video_item").style.display = "none";
 }
 
 function resize_video_item() {
@@ -157,16 +155,16 @@ function resize_video_item() {
   const screen_ar = window.innerWidth / window.innerHeight;
   if (video_ar <= screen_ar) {
     const left_pos = window.innerWidth * 0.5 * (1 - video_ar / screen_ar);
-    DOM_dict["video_item"].style.height = "100%";
-    DOM_dict["video_item"].style.width = "auto";
-    DOM_dict["video_item"].style.top = 0;
-    DOM_dict["video_item"].style.left = left_pos + "px";
+    DOM_get("video_item").style.height = "100%";
+    DOM_get("video_item").style.width = "auto";
+    DOM_get("video_item").style.top = 0;
+    DOM_get("video_item").style.left = left_pos + "px";
   } else {
     const top_pos = window.innerHeight * 0.5 * (1 - screen_ar / video_ar);
-    DOM_dict["video_item"].style.height = "auto";
-    DOM_dict["video_item"].style.width = "100%";
-    DOM_dict["video_item"].style.top = top_pos + "px";
-    DOM_dict["video_item"].style.left = 0;
+    DOM_get("video_item").style.height = "auto";
+    DOM_get("video_item").style.width = "100%";
+    DOM_get("video_item").style.top = top_pos + "px";
+    DOM_get("video_item").style.left = 0;
   }
 }
 
@@ -175,16 +173,16 @@ function resize_loop() {
     const screen_ar = window.innerWidth / window.innerHeight;
     if (screen_ar <= loop_ar) {
       const left_pos = window.innerWidth * -0.5 * (loop_ar / screen_ar - 1);
-      DOM_dict["loop_video"].style.height = "100%";
-      DOM_dict["loop_video"].style.width = "auto";
-      DOM_dict["loop_video"].style.top = 0;
-      DOM_dict["loop_video"].style.left = left_pos + "px";
+      DOM_get("loop_video").style.height = "100%";
+      DOM_get("loop_video").style.width = "auto";
+      DOM_get("loop_video").style.top = 0;
+      DOM_get("loop_video").style.left = left_pos + "px";
     } else {
       const top_pos = window.innerHeight * -0.5 * (screen_ar / loop_ar - 1);
-      DOM_dict["loop_video"].style.height = "auto";
-      DOM_dict["loop_video"].style.width = "100%";
-      DOM_dict["loop_video"].style.top = top_pos + "px";
-      DOM_dict["loop_video"].style.left = 0;
+      DOM_get("loop_video").style.height = "auto";
+      DOM_get("loop_video").style.width = "100%";
+      DOM_get("loop_video").style.top = top_pos + "px";
+      DOM_get("loop_video").style.left = 0;
     }
   }
 }
@@ -192,43 +190,43 @@ function resize_loop() {
 function update_from_style(style) {
   const div_width = style["div-width-vw"];
   const col_width = style["pl-width-vw"];
-  DOM_dict["slide_area"].style.width = div_width + "vw";
-  DOM_dict["pl_left"].style.width = col_width + "vw";
-  DOM_dict["pl_right"].style.width = col_width + "vw";
-  DOM_dict["slide_area"].style.marginLeft = (100 - div_width) / 2 + "vw";
-  DOM_dict["pl_left"].style.marginLeft = (50 - col_width) / 2 + "vw";
-  DOM_dict["pl_right"].style.marginLeft = 50 + (50 - col_width) / 2 + "vw";
-  DOM_dict["slide_area"].style.marginTop = style["margin-top-vh"] + "vh";
-  DOM_dict["pl_columns"].style.marginTop = style["margin-top-vh"] + "vh";
-  DOM_dict["slide_area"].style.fontSize = style["font-size-vh"] + "vh";
-  DOM_dict["pl_columns"].style.fontSize = style["pl-font-size-vh"] + "vh";
-  DOM_dict["slide_area"].style.color = "#" + style["font-color"];
+  DOM_get("slide_area").style.width = div_width + "vw";
+  DOM_get("pl_left").style.width = col_width + "vw";
+  DOM_get("pl_right").style.width = col_width + "vw";
+  DOM_get("slide_area").style.marginLeft = (100 - div_width) / 2 + "vw";
+  DOM_get("pl_left").style.marginLeft = (50 - col_width) / 2 + "vw";
+  DOM_get("pl_right").style.marginLeft = 50 + (50 - col_width) / 2 + "vw";
+  DOM_get("slide_area").style.marginTop = style["margin-top-vh"] + "vh";
+  DOM_get("pl_columns").style.marginTop = style["margin-top-vh"] + "vh";
+  DOM_get("slide_area").style.fontSize = style["font-size-vh"] + "vh";
+  DOM_get("pl_columns").style.fontSize = style["pl-font-size-vh"] + "vh";
+  DOM_get("slide_area").style.color = "#" + style["font-color"];
   if (style["outline-style"] == "drop-shadow") {
-    DOM_dict["slide_area"].classList.remove("outline");
-    DOM_dict["slide_area"].classList.add("drop_shadow");
-    DOM_dict["pl_columns"].classList.remove("outline");
-    DOM_dict["pl_columns"].classList.add("drop_shadow");
+    DOM_get("slide_area").classList.remove("outline");
+    DOM_get("slide_area").classList.add("drop_shadow");
+    DOM_get("pl_columns").classList.remove("outline");
+    DOM_get("pl_columns").classList.add("drop_shadow");
   } else if (style["outline-style"] == "text-outline") {
-    DOM_dict["slide_area"].classList.add("outline");
-    DOM_dict["slide_area"].classList.remove("drop_shadow");
-    DOM_dict["pl_columns"].classList.add("outline");
-    DOM_dict["pl_columns"].classList.remove("drop_shadow");
+    DOM_get("slide_area").classList.add("outline");
+    DOM_get("slide_area").classList.remove("drop_shadow");
+    DOM_get("pl_columns").classList.add("outline");
+    DOM_get("pl_columns").classList.remove("drop_shadow");
   } else {
-    DOM_dict["slide_area"].classList.remove("outline");
-    DOM_dict["slide_area"].classList.remove("drop_shadow");
-    DOM_dict["pl_columns"].classList.add("outline");
-    DOM_dict["pl_columns"].classList.remove("drop_shadow");
+    DOM_get("slide_area").classList.remove("outline");
+    DOM_get("slide_area").classList.remove("drop_shadow");
+    DOM_get("pl_columns").classList.add("outline");
+    DOM_get("pl_columns").classList.remove("drop_shadow");
   }
-  DOM_dict["countdown_p"].style.fontSize = style["countdown-size-vh"] + "vh";
-  DOM_dict["countdown_h"].style.fontSize = style["countdown-h-size-vh"] + "vh";
-  DOM_dict["countdown_h"].firstChild.textContent = style["countdown-h-text"];
-  DOM_dict["countdown_area"].style.marginTop = style["countdown-top-vh"] + "vh";
+  DOM_get("countdown_p").style.fontSize = style["countdown-size-vh"] + "vh";
+  DOM_get("countdown_h").style.fontSize = style["countdown-h-size-vh"] + "vh";
+  DOM_get("countdown_h").firstChild.textContent = style["countdown-h-text"];
+  DOM_get("countdown_area").style.marginTop = style["countdown-top-vh"] + "vh";
   display_copyright = style["display-copyright"];
   display_verseorder = style["display-verseorder"];
-  DOM_dict["copyright_area"].style.fontSize = parseInt(style["copy-size-vh"]) / 10 + "vh";
-  DOM_dict["copyright_area"].style.width = style["copy-width-vw"] + "vw";
-  DOM_dict["verseorder_area"].style.fontSize = parseInt(style["order-size-vh"]) / 10 + "vh";
-  DOM_dict["verseorder_area"].style.width = style["order-width-vw"] + "vw";
+  DOM_get("copyright_area").style.fontSize = parseInt(style["copy-size-vh"]) / 10 + "vh";
+  DOM_get("copyright_area").style.width = style["copy-width-vw"] + "vw";
+  DOM_get("verseorder_area").style.fontSize = parseInt(style["order-size-vh"]) / 10 + "vh";
+  DOM_get("verseorder_area").style.width = style["order-width-vw"] + "vw";
   update_optional_areas();
   song_background.url = style["song-background-url"];
   song_background.width = style["song-background-w"];
@@ -259,44 +257,44 @@ function update_background() {
   }
   // Only update background if it has changed since last checked
   if (bg_url == "none") {
-    DOM_dict["bg_image"].setAttribute("src", "");
+    DOM_get("bg_image").setAttribute("src", "");
   } else {
-    DOM_dict["bg_image"].setAttribute("src", bg_url);
+    DOM_get("bg_image").setAttribute("src", bg_url);
   }
   const image_ar = bg_w / bg_h;
   const screen_ar = window.innerWidth / window.innerHeight;
   if (image_ar >= screen_ar) {
     const left_pos = window.innerWidth * 0.5 * (1 - image_ar / screen_ar);
-    DOM_dict["bg_image"].style.height = "100%";
-    DOM_dict["bg_image"].style.width = "auto";
-    DOM_dict["bg_image"].style.top = 0;
-    DOM_dict["bg_image"].style.left = left_pos + "px";
+    DOM_get("bg_image").style.height = "100%";
+    DOM_get("bg_image").style.width = "auto";
+    DOM_get("bg_image").style.top = 0;
+    DOM_get("bg_image").style.left = left_pos + "px";
   } else {
     const top_pos = window.innerHeight * 0.5 * (1 - screen_ar / image_ar);
-    DOM_dict["bg_image"].style.height = "auto";
-    DOM_dict["bg_image"].style.width = "100%";
-    DOM_dict["bg_image"].style.top = top_pos + "px";
-    DOM_dict["bg_image"].style.left = 0;
+    DOM_get("bg_image").style.height = "auto";
+    DOM_get("bg_image").style.width = "100%";
+    DOM_get("bg_image").style.top = top_pos + "px";
+    DOM_get("bg_image").style.left = 0;
   }
 }
 
 function decrease_countdown() {
   let countdown_left = Math.floor((countdown_to.getTime() - new Date().getTime()) / 1000);
   if (countdown_left >= 0) {
-    DOM_dict["countdown_p"].firstChild.textContent = format_time(countdown_left);
+    DOM_get("countdown_p").firstChild.textContent = format_time(countdown_left);
   } else {
     clearInterval(countdown_timer);
-    DOM_dict["countdown_area"].style.display = "none";
-    DOM_dict["notices_area"]
+    DOM_get("countdown_area").style.display = "none";
+    DOM_get("notices_area")
       .getAnimations({ subtree: true })
       .forEach((animation) => animation.cancel());
   }
 }
 
 function stop_countdown() {
-  DOM_dict["countdown_area"].style.display = "none";
+  DOM_get("countdown_area").style.display = "none";
   countdown_to = new Date(); // Interval, if running, will stop on next call to decrease_countdown
-  DOM_dict["notices_area"]
+  DOM_get("notices_area")
     .getAnimations({ subtree: true })
     .forEach((animation) => animation.cancel());
 }
@@ -311,8 +309,8 @@ function format_time(time_secs) {
 function update_display_init(json_data) {
   if (json_data.params["video_loop"] !== "") {
     if (play_videos) {
-      DOM_dict["loop_video_src"].setAttribute("src", json_data.params["video_loop"]);
-      DOM_dict["loop_video"].load();
+      DOM_get("loop_video_src").setAttribute("src", json_data.params["video_loop"]);
+      DOM_get("loop_video").load();
     } else {
       document
         .getElementById("loop_video")
@@ -323,14 +321,14 @@ function update_display_init(json_data) {
     loop_ar = loop_width / loop_height;
     resize_loop();
     if (play_videos) {
-      DOM_dict["loop_video"].play();
+      DOM_get("loop_video").play();
     }
   } else {
     if (play_videos) {
-      DOM_dict["loop_video_src"].setAttribute("src", "/html/black-frame.mp4");
-      DOM_dict["loop_video"].load();
+      DOM_get("loop_video_src").setAttribute("src", "/html/black-frame.mp4");
+      DOM_get("loop_video").load();
     } else {
-      DOM_dict["loop_video"].setAttribute("src", "/html/black-frame.jpg");
+      DOM_get("loop_video").setAttribute("src", "/html/black-frame.jpg");
     }
     loop_height = 0;
     loop_width = 0;
@@ -343,12 +341,12 @@ function update_display_init(json_data) {
   }
   if (json_data.params.screen_state == "on") {
     screen_state = true;
-    DOM_dict["slide_area"].style.display = "block";
-    DOM_dict["pl_columns"].style.display = "block";
+    DOM_get("slide_area").style.display = "block";
+    DOM_get("pl_columns").style.display = "block";
   } else {
     screen_state = false;
-    DOM_dict["slide_area"].style.display = "none";
-    DOM_dict["pl_columns"].style.display = "none";
+    DOM_get("slide_area").style.display = "none";
+    DOM_get("pl_columns").style.display = "none";
   }
   update_optional_areas();
   load_notices(json_data.params["notices-count"]);
@@ -376,12 +374,12 @@ function update_display_state(json_data) {
   if (json_data.params.state == "on") {
     screen_state = true;
     stop_countdown();
-    DOM_dict["slide_area"].style.display = "block";
-    DOM_dict["pl_columns"].style.display = "block";
+    DOM_get("slide_area").style.display = "block";
+    DOM_get("pl_columns").style.display = "block";
   } else {
     screen_state = false;
-    DOM_dict["slide_area"].style.display = "none";
-    DOM_dict["pl_columns"].style.display = "none";
+    DOM_get("slide_area").style.display = "none";
+    DOM_get("pl_columns").style.display = "none";
   }
   update_optional_areas();
 }
@@ -389,8 +387,8 @@ function update_display_state(json_data) {
 function update_video_loop(json_data) {
   if (json_data.params.url !== "") {
     if (play_videos) {
-      DOM_dict["loop_video_src"].setAttribute("src", json_data.params.url);
-      DOM_dict["loop_video"].load();
+      DOM_get("loop_video_src").setAttribute("src", json_data.params.url);
+      DOM_get("loop_video").load();
     } else {
       document
         .getElementById("loop_video")
@@ -401,14 +399,14 @@ function update_video_loop(json_data) {
     loop_ar = loop_width / loop_height;
     resize_loop();
     if (play_videos) {
-      DOM_dict["loop_video"].play();
+      DOM_get("loop_video").play();
     }
   } else {
     if (play_videos) {
-      DOM_dict["loop_video_src"].setAttribute("src", "/html/black-frame.mp4");
-      DOM_dict["loop_video"].load();
+      DOM_get("loop_video_src").setAttribute("src", "/html/black-frame.mp4");
+      DOM_get("loop_video").load();
     } else {
-      DOM_dict["loop_video"].setAttribute("src", "/html/black-frame.jpg");
+      DOM_get("loop_video").setAttribute("src", "/html/black-frame.jpg");
     }
     loop_height = 0;
     loop_width = 0;
@@ -417,33 +415,33 @@ function update_video_loop(json_data) {
 }
 
 function trigger_suspend_loop() {
-  DOM_dict["loop_video"].style.display = "none";
+  DOM_get("loop_video").style.display = "none";
   if (play_videos) {
-    DOM_dict["loop_video"].pause();
+    DOM_get("loop_video").pause();
   }
 }
 
 function trigger_restore_loop() {
-  DOM_dict["loop_video"].style.display = "block";
+  DOM_get("loop_video").style.display = "block";
   if (play_videos) {
-    DOM_dict["loop_video"].play();
+    DOM_get("loop_video").play();
   }
 }
 
 function trigger_play_video() {
   stop_countdown();
-  DOM_dict["video_item"].style.display = "block";
-  DOM_dict["loop_video"].style.display = "none";
+  DOM_get("video_item").style.display = "block";
+  DOM_get("loop_video").style.display = "none";
   if (play_videos) {
-    DOM_dict["loop_video"].pause();
-    DOM_dict["video_item"].play();
+    DOM_get("loop_video").pause();
+    DOM_get("video_item").play();
   }
   video_displayed = true;
 }
 
 function trigger_pause_video() {
   if (play_videos) {
-    DOM_dict["video_item"].pause();
+    DOM_get("video_item").pause();
   }
 }
 
@@ -451,36 +449,36 @@ function trigger_stop_video() {
   video_displayed = false;
   stop_running_video();
   if (play_videos) {
-    DOM_dict["video_item"].currentTime = 0.0;
+    DOM_get("video_item").currentTime = 0.0;
   }
 }
 
 function trigger_seek_video(json_data) {
   if (play_videos) {
-    DOM_dict["video_item"].currentTime = json_data.params.seconds;
+    DOM_get("video_item").currentTime = json_data.params.seconds;
   }
 }
 
 function trigger_play_audio() {
   if (!video_muted && current_item) {
     if (current_item.audio != current_audio) {
-      DOM_dict["audio_item_src"].src = "/audio/" + current_item.audio;
-      DOM_dict["audio_item"].load();
+      DOM_get("audio_item_src").src = "/audio/" + current_item.audio;
+      DOM_get("audio_item").load();
       current_audio = current_item.audio;
     }
-    DOM_dict["audio_item"].play();
+    DOM_get("audio_item").play();
   }
 }
 
 function trigger_pause_audio() {
   if (!video_muted) {
-    DOM_dict["audio_item"].pause();
+    DOM_get("audio_item").pause();
   }
 }
 
 function trigger_stop_audio() {
   if (!video_muted) {
-    DOM_dict["audio_item"].pause();
+    DOM_get("audio_item").pause();
     current_audio = "";
   }
 }
@@ -498,8 +496,8 @@ function trigger_start_countdown(json_data) {
     );
     const countdown_left = Math.floor((countdown_to.getTime() - now.getTime()) / 1000);
     if (countdown_left > 0) {
-      DOM_dict["countdown_area"].style.display = "block";
-      DOM_dict["countdown_p"].firstChild.textContent = format_time(countdown_left);
+      DOM_get("countdown_area").style.display = "block";
+      DOM_get("countdown_p").firstChild.textContent = format_time(countdown_left);
       clearInterval(countdown_timer);
       countdown_timer = setInterval(decrease_countdown, 1000);
     }
@@ -569,7 +567,7 @@ function trigger_start_notices(num_slides, slide_time, cycle_gap, end_gap, total
     all_time_keyframes[initial_slide][0] = 0;
   }
   // Initiate animation - first clear any running animation
-  DOM_dict["notices_area"]
+  DOM_get("notices_area")
     .getAnimations({ subtree: true })
     .forEach((animation) => animation.cancel());
   for (let slide = num_slides - 1; slide >= 0; slide--) {
@@ -680,15 +678,11 @@ ready(() => {
       }
     }
   }
-  // Setup DOM pointers
-  for (const key of DOM_KEYS) {
-    DOM_dict[key] = document.getElementById(key);
-  }
   // Mute video if requested
-  DOM_dict["video_item"].muted = video_muted;
+  DOM_get("video_item").muted = video_muted;
 
   start_websocket();
-  window.addEventListener("resize", (e) => {
+  window.addEventListener("resize", () => {
     if (current_item !== undefined && current_item.type == "video") {
       resize_video_item();
     }

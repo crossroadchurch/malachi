@@ -9,13 +9,14 @@ let part_counts = [];
 let slide_index = -1;
 let item_index = -1;
 const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
-// DOM pointers
+
 const DOM_dict = {};
-// prettier-ignore
-const DOM_KEYS = [
-  "playedkey", "verseorder", "currentslide", "nextslide",
-  "songarea", "video_item_src", "video_item",
-];
+function DOM_get(key) {
+  if (!(key in DOM_dict)) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  return DOM_dict[key];
+}
 
 function update_verse_order() {
   let verse_list = "<ul>";
@@ -33,13 +34,13 @@ function update_verse_order() {
   } else if (slide_type != undefined) {
     verse_list = "<ul><li>" + current_title + "</li></ul>";
   }
-  DOM_dict["verseorder"].innerHTML = verse_list;
+  DOM_get("verseorder").innerHTML = verse_list;
 }
 
 function update_music() {
   stop_running_video();
   update_verse_order();
-  DOM_dict["playedkey"].innerHTML = played_key;
+  DOM_get("playedkey").innerHTML = played_key;
 
   let current_text = "";
   let next_text = "";
@@ -66,12 +67,12 @@ function update_music() {
     }
   } else if (slide_type == "video") {
     // Background load video, wait for trigger to display and start playback
-    DOM_dict["songarea"].style.display = "none";
-    DOM_dict["video_item_src"].setAttribute("src", current_item.url);
-    DOM_dict["video_item"].load();
+    DOM_get("songarea").style.display = "none";
+    DOM_get("video_item_src").setAttribute("src", current_item.url);
+    DOM_get("video_item").load();
   }
-  DOM_dict["currentslide"].innerHTML = current_text;
-  DOM_dict["nextslide"].innerHTML = next_text;
+  DOM_get("currentslide").innerHTML = current_text;
+  DOM_get("nextslide").innerHTML = next_text;
 }
 
 function resize_video_item() {
@@ -79,23 +80,23 @@ function resize_video_item() {
   const screen_ar = window.innerWidth / window.innerHeight;
   if (video_ar <= screen_ar) {
     const left_pos = window.innerWidth * 0.5 * (1 - video_ar / screen_ar);
-    DOM_dict["video_item"].style.height = "100%";
-    DOM_dict["video_item"].style.width = "auto";
-    DOM_dict["video_item"].style.top = 0;
-    DOM_dict["video_item"].style.left = left_pos + "px";
+    DOM_get("video_item").style.height = "100%";
+    DOM_get("video_item").style.width = "auto";
+    DOM_get("video_item").style.top = 0;
+    DOM_get("video_item").style.left = left_pos + "px";
   } else {
     const top_pos = window.innerHeight * 0.5 * (1 - screen_ar / video_ar);
-    DOM_dict["video_item"].style.height = "auto";
-    DOM_dict["video_item"].style.width = "100%";
-    DOM_dict["video_item"].style.top = top_pos + "px";
-    DOM_dict["video_item"].style.left = 0;
+    DOM_get("video_item").style.height = "auto";
+    DOM_get("video_item").style.width = "100%";
+    DOM_get("video_item").style.top = top_pos + "px";
+    DOM_get("video_item").style.left = 0;
   }
 }
 
 function stop_running_video() {
-  DOM_dict["video_item"].pause();
-  DOM_dict["video_item"].style.display = "none";
-  DOM_dict["songarea"].style.display = "block";
+  DOM_get("video_item").pause();
+  DOM_get("video_item").style.display = "none";
+  DOM_get("songarea").style.display = "block";
 }
 
 function update_basic_init(json_data) {
@@ -151,23 +152,23 @@ function update_item_index_update(json_data) {
 }
 
 function trigger_play_video() {
-  DOM_dict["songarea"].style.display = "none";
-  DOM_dict["video_item"].style.display = "block";
+  DOM_get("songarea").style.display = "none";
+  DOM_get("video_item").style.display = "block";
   resize_video_item();
-  DOM_dict["video_item"].play();
+  DOM_get("video_item").play();
 }
 
 function trigger_pause_video() {
-  DOM_dict["video_item"].pause();
+  DOM_get("video_item").pause();
 }
 
 function trigger_stop_video() {
   stop_running_video();
-  DOM_dict["video_item"].currentTime = 0.0;
+  DOM_get("video_item").currentTime = 0.0;
 }
 
 function trigger_seek_video(json_data) {
-  DOM_dict["video_item"].currentTime = json_data.params.seconds;
+  DOM_get("video_item").currentTime = json_data.params.seconds;
 }
 
 function start_websocket() {
@@ -231,12 +232,7 @@ let ready = (callback) => {
 };
 
 ready(() => {
-  // Setup DOM pointers
-  for (const key of DOM_KEYS) {
-    DOM_dict[key] = document.getElementById(key);
-  }
-  // Other setup tasks
-  DOM_dict["video_item"].muted = "true";
+  DOM_get("video_item").muted = "true";
   start_websocket();
 });
 

@@ -18,37 +18,37 @@ let service_options_visible = false;
 const SECTION_AND_FILLS_REGEX = /(\[\¬\].*\[\¬\])/;
 const FILL_CHORD_REGEX = /(\[[\w\+#|\/"=''\¬ ]*\])/;
 const LINE_SEGMENT_REGEX = /(\[[\w\+#|\/"='' ]*\])/;
-// DOM pointers
+
 const DOM_dict = {};
-// prettier-ignore
-const DOM_KEYS = [
-  "currentslide", "nextslide", "service_options", "service_options_btn", 
-  "display_options", "display_options_btn", "music_options", "music_options_btn",
-  "playedkey", "pres_controls", "verseorder", "header", "keyandcapo", "video_controls"
-];
+function DOM_get(key) {
+  if (!(key in DOM_dict)) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  return DOM_dict[key];
+}
 
 function view_music_options(val) {
   music_options_visible = val;
   service_options_visible = false;
   display_options_visible = false;
   if (music_options_visible) {
-    DOM_dict["currentslide"].style.display = "none";
-    DOM_dict["nextslide"].style.display = "none";
-    DOM_dict["service_options"].style.display = "none";
-    DOM_dict["service_options_btn"].style.background = "gray";
-    DOM_dict["display_options"].style.display = "none";
-    DOM_dict["display_options_btn"].style.background = "gray";
-    DOM_dict["music_options"].style.display = "block";
-    DOM_dict["music_options_btn"].style.background = "#4CAF50";
+    DOM_get("currentslide").style.display = "none";
+    DOM_get("nextslide").style.display = "none";
+    DOM_get("service_options").style.display = "none";
+    DOM_get("service_options_btn").style.background = "gray";
+    DOM_get("display_options").style.display = "none";
+    DOM_get("display_options_btn").style.background = "gray";
+    DOM_get("music_options").style.display = "block";
+    DOM_get("music_options_btn").style.background = "#4CAF50";
   } else {
-    DOM_dict["currentslide"].style.display = "block";
-    DOM_dict["nextslide"].style.display = "block";
-    DOM_dict["service_options"].style.display = "none";
-    DOM_dict["service_options_btn"].style.background = "gray";
-    DOM_dict["display_options"].style.display = "none";
-    DOM_dict["display_options_btn"].style.background = "gray";
-    DOM_dict["music_options"].style.display = "none";
-    DOM_dict["music_options_btn"].style.background = "gray";
+    DOM_get("currentslide").style.display = "block";
+    DOM_get("nextslide").style.display = "block";
+    DOM_get("service_options").style.display = "none";
+    DOM_get("service_options_btn").style.background = "gray";
+    DOM_get("display_options").style.display = "none";
+    DOM_get("display_options_btn").style.background = "gray";
+    DOM_get("music_options").style.display = "none";
+    DOM_get("music_options_btn").style.background = "gray";
   }
 }
 
@@ -57,23 +57,23 @@ function view_display_options(val) {
   service_options_visible = false;
   music_options_visible = false;
   if (display_options_visible) {
-    DOM_dict["currentslide"].style.display = "none";
-    DOM_dict["nextslide"].style.display = "none";
-    DOM_dict["service_options"].style.display = "none";
-    DOM_dict["service_options_btn"].style.background = "gray";
-    DOM_dict["display_options"].style.display = "block";
-    DOM_dict["display_options_btn"].style.background = "#4CAF50";
-    DOM_dict["music_options"].style.display = "none";
-    DOM_dict["music_options_btn"].style.background = "gray";
+    DOM_get("currentslide").style.display = "none";
+    DOM_get("nextslide").style.display = "none";
+    DOM_get("service_options").style.display = "none";
+    DOM_get("service_options_btn").style.background = "gray";
+    DOM_get("display_options").style.display = "block";
+    DOM_get("display_options_btn").style.background = "#4CAF50";
+    DOM_get("music_options").style.display = "none";
+    DOM_get("music_options_btn").style.background = "gray";
   } else {
-    DOM_dict["currentslide"].style.display = "block";
-    DOM_dict["nextslide"].style.display = "block";
-    DOM_dict["service_options"].style.display = "none";
-    DOM_dict["service_options_btn"].style.background = "gray";
-    DOM_dict["display_options"].style.display = "none";
-    DOM_dict["display_options_btn"].style.background = "gray";
-    DOM_dict["music_options"].style.display = "none";
-    DOM_dict["music_options_btn"].style.background = "gray";
+    DOM_get("currentslide").style.display = "block";
+    DOM_get("nextslide").style.display = "block";
+    DOM_get("service_options").style.display = "none";
+    DOM_get("service_options_btn").style.background = "gray";
+    DOM_get("display_options").style.display = "none";
+    DOM_get("display_options_btn").style.background = "gray";
+    DOM_get("music_options").style.display = "none";
+    DOM_get("music_options_btn").style.background = "gray";
   }
 }
 
@@ -82,23 +82,23 @@ function view_service_options(val) {
   display_options_visible = false;
   music_options_visible = false;
   if (service_options_visible) {
-    DOM_dict["currentslide"].style.display = "none";
-    DOM_dict["nextslide"].style.display = "none";
-    DOM_dict["service_options"].style.display = "block";
-    DOM_dict["service_options_btn"].style.background = "#4CAF50";
-    DOM_dict["display_options"].style.display = "none";
-    DOM_dict["display_options_btn"].style.background = "gray";
-    DOM_dict["music_options"].style.display = "none";
-    DOM_dict["music_options_btn"].style.background = "gray";
+    DOM_get("currentslide").style.display = "none";
+    DOM_get("nextslide").style.display = "none";
+    DOM_get("service_options").style.display = "block";
+    DOM_get("service_options_btn").style.background = "#4CAF50";
+    DOM_get("display_options").style.display = "none";
+    DOM_get("display_options_btn").style.background = "gray";
+    DOM_get("music_options").style.display = "none";
+    DOM_get("music_options_btn").style.background = "gray";
   } else {
-    DOM_dict["currentslide"].style.display = "block";
-    DOM_dict["nextslide"].style.display = "block";
-    DOM_dict["service_options"].style.display = "none";
-    DOM_dict["service_options_btn"].style.background = "gray";
-    DOM_dict["display_options"].style.display = "none";
-    DOM_dict["display_options_btn"].style.background = "gray";
-    DOM_dict["music_options"].style.display = "none";
-    DOM_dict["music_options_btn"].style.background = "gray";
+    DOM_get("currentslide").style.display = "block";
+    DOM_get("nextslide").style.display = "block";
+    DOM_get("service_options").style.display = "none";
+    DOM_get("service_options_btn").style.background = "gray";
+    DOM_get("display_options").style.display = "none";
+    DOM_get("display_options_btn").style.background = "gray";
+    DOM_get("music_options").style.display = "none";
+    DOM_get("music_options_btn").style.background = "gray";
   }
 }
 
@@ -221,12 +221,12 @@ function process_chord_widths(slide_id, prefix) {
 }
 
 function update_played_key() {
-  DOM_dict["playedkey"].innerHTML = played_key;
+  DOM_get("playedkey").innerHTML = played_key;
   if (played_key === "") {
-    DOM_dict["music_options_btn"].style.display = "none";
+    DOM_get("music_options_btn").style.display = "none";
     view_music_options(false);
   } else {
-    DOM_dict["music_options_btn"].style.display = "inline-block";
+    DOM_get("music_options_btn").style.display = "inline-block";
     document.querySelectorAll("#key_buttons button").forEach((elt) => {
       elt.style.background = "gray";
     });
@@ -267,11 +267,11 @@ function update_verse_order() {
   } else if (slide_type != "none") {
     verse_list = "<span class='non-song-title'>" + service_items[item_index] + "</span>";
   }
-  DOM_dict["verseorder"].innerHTML = verse_list;
+  DOM_get("verseorder").innerHTML = verse_list;
 
   /* Update widths of verse buttons to make sure they can all be seen */
-  const header_width = Math.floor(DOM_dict["header"].offsetWidth);
-  const keyandcapo_width = Math.ceil(DOM_dict["keyandcapo"].offsetWidth);
+  const header_width = Math.floor(DOM_get("header").offsetWidth);
+  const keyandcapo_width = Math.ceil(DOM_get("keyandcapo").offsetWidth);
   const button_margin = parseInt(
     getComputedStyle(document.querySelector(".verse-button")).marginRight
   );
@@ -289,15 +289,15 @@ function update_music() {
   update_verse_order();
 
   if (slide_type == "presentation") {
-    DOM_dict["pres_controls"].style.display = "inline-block";
+    DOM_get("pres_controls").style.display = "inline-block";
   } else {
-    DOM_dict["pres_controls"].style.display = "none";
+    DOM_get("pres_controls").style.display = "none";
   }
 
   if (slide_type == "video") {
-    DOM_dict["video_controls"].style.display = "inline-block";
+    DOM_get("video_controls").style.display = "inline-block";
   } else {
-    DOM_dict["video_controls"].style.display = "none";
+    DOM_get("video_controls").style.display = "none";
   }
 
   let current_text = "";
@@ -324,8 +324,8 @@ function update_music() {
     current_text += "</div>";
   }
 
-  DOM_dict["currentslide"].innerHTML = current_text;
-  DOM_dict["nextslide"].innerHTML = next_text;
+  DOM_get("currentslide").innerHTML = current_text;
+  DOM_get("nextslide").innerHTML = next_text;
 
   if (slide_type == "song") {
     process_chord_widths("currentslide", "");
@@ -349,7 +349,7 @@ function update_menu() {
     }
   }
   if (temp_menu != menustring) {
-    DOM_dict["service_options"].innerHTML = temp_menu;
+    DOM_get("service_options").innerHTML = temp_menu;
     menustring = temp_menu;
   }
 }
@@ -615,9 +615,6 @@ let ready = (callback) => {
 };
 
 ready(() => {
-  for (const key of DOM_KEYS) {
-    DOM_dict[key] = document.getElementById(key);
-  }
   start_websocket();
 });
 

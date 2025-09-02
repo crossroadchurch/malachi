@@ -54,8 +54,8 @@ class MalachiServer():
 
     SONGS_DATABASE = "./data/songs.sqlite"
     GLOBAL_SETTINGS_FILE = "./data/global_settings.json"
-    GITHUB_URL = 'https://github.com/crossroadchurch/malachi/commits/master'    
-    PYTHON_VERSION_URL = 'https://raw.githubusercontent.com/crossroadchurch/malachi/master/src/python-required.txt'
+    SHA_URL = 'http://www.crossroad.org.uk/malachi/sha.txt'    
+    PYTHON_VERSION_URL = 'http://www.crossroad.org.uk/malachi/python-required.txt'
     UPDATER_FILE = 'UpdateMalachi.py'
     ROOT_PATH = Path(__file__).parent.parent.absolute()
 
@@ -955,7 +955,7 @@ class MalachiServer():
             # Import each page
             for page in range(pdf_pages):
                 output = subprocess.check_output(["inkscape", 
-                                                  inkscape_option+str(page), 
+                                                  inkscape_option+str(page+1), 
                                                   "--pdf-poppler", 
                                                   pdf_path, 
                                                   "-o", 
@@ -1661,9 +1661,9 @@ class MalachiServer():
 
     def is_update_available(self):
         try:
-            repo_page = requests.get(MalachiServer.GITHUB_URL)
-            if repo_page.status_code == 200:
-                latest_sha = re.findall('malachi/commit/[0-9a-f]*', repo_page.text)[0][15:]
+            sha_page = requests.get(MalachiServer.SHA_URL)
+            if sha_page.status_code == 200:
+                latest_sha = sha_page.text
                 old_sha = 0
                 if os.path.isfile('sha.txt'):
                     with open('sha.txt', 'r') as old_sha_file:

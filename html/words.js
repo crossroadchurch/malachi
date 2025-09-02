@@ -11,12 +11,14 @@ let saved_text_mode = window.localStorage.getItem("text_mode");
 const DAY_MODE = "day";
 const NIGHT_MODE = "night";
 const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
-// DOM pointers
+
 const DOM_dict = {};
-// prettier-ignore
-const DOM_KEYS = [
-  "currentslide", "songarea", "text_up_btn", "text_down_btn", "day_night_btn"
-];
+function DOM_get(key) {
+  if (!(key in DOM_dict)) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  return DOM_dict[key];
+}
 
 function update_words() {
   let current_text = "";
@@ -33,7 +35,7 @@ function update_words() {
   } else if (slide_type == "bible") {
     current_text = "<p>" + current_slides[slide_index] + "</p>";
   }
-  DOM_dict["currentslide"].innerHTML = current_text;
+  DOM_get("currentslide").innerHTML = current_text;
 }
 
 function update_display_init(json_data) {
@@ -45,10 +47,10 @@ function update_display_init(json_data) {
   }).showToast();
   if (json_data.params.screen_state == "on") {
     screen_state = true;
-    DOM_dict["songarea"].style.display = "block";
+    DOM_get("songarea").style.display = "block";
   } else {
     screen_state = false;
-    DOM_dict["songarea"].style.display = "none";
+    DOM_get("songarea").style.display = "none";
   }
   update_service_overview_update(json_data);
 }
@@ -56,10 +58,10 @@ function update_display_init(json_data) {
 function update_display_state(json_data) {
   if (json_data.params.state == "on") {
     screen_state = true;
-    DOM_dict["songarea"].style.display = "block";
+    DOM_get("songarea").style.display = "block";
   } else {
     screen_state = false;
-    DOM_dict["songarea"].style.display = "none";
+    DOM_get("songarea").style.display = "none";
   }
 }
 
@@ -97,30 +99,30 @@ function update_item_index_update(json_data) {
 function increase_text_size() {
   saved_text_size += 5;
   window.localStorage.setItem("text_size", saved_text_size);
-  DOM_dict["songarea"].style.fontSize = saved_text_size + "px";
+  DOM_get("songarea").style.fontSize = saved_text_size + "px";
 }
 
 function decrease_text_size() {
   if (saved_text_size > 20) {
     saved_text_size -= 5;
     window.localStorage.setItem("text_size", saved_text_size);
-    DOM_dict["songarea"].style.fontSize = saved_text_size + "px";
+    DOM_get("songarea").style.fontSize = saved_text_size + "px";
   }
 }
 
 function update_day_night_mode(day_night_mode) {
   if (day_night_mode == NIGHT_MODE) {
     document.querySelector("body").style.backgroundColor = "#14161d";
-    DOM_dict["currentslide"].style.color = "white";
-    DOM_dict["text_up_btn"].classList.replace("light_button", "dark_button");
-    DOM_dict["text_down_btn"].classList.replace("light_button", "dark_button");
-    DOM_dict["day_night_btn"].classList.replace("light_button", "dark_button");
+    DOM_get("currentslide").style.color = "white";
+    DOM_get("text_up_btn").classList.replace("light_button", "dark_button");
+    DOM_get("text_down_btn").classList.replace("light_button", "dark_button");
+    DOM_get("day_night_btn").classList.replace("light_button", "dark_button");
   } else {
     document.querySelector("body").style.backgroundColor = "white";
-    DOM_dict["currentslide"].style.color = "#14161d";
-    DOM_dict["text_up_btn"].classList.replace("dark_button", "light_button");
-    DOM_dict["text_down_btn"].classList.replace("dark_button", "light_button");
-    DOM_dict["day_night_btn"].classList.replace("dark_button", "light_button");
+    DOM_get("currentslide").style.color = "#14161d";
+    DOM_get("text_up_btn").classList.replace("dark_button", "light_button");
+    DOM_get("text_down_btn").classList.replace("dark_button", "light_button");
+    DOM_get("day_night_btn").classList.replace("dark_button", "light_button");
   }
 }
 
@@ -190,11 +192,6 @@ let ready = (callback) => {
 };
 
 ready(() => {
-  // Setup DOM pointers
-  for (const key of DOM_KEYS) {
-    DOM_dict[key] = document.getElementById(key);
-  }
-  // Other setup tasks
   if (saved_text_size == null || isNaN(saved_text_size)) {
     saved_text_size = 60;
     window.localStorage.setItem("text_size", saved_text_size);
@@ -203,7 +200,7 @@ ready(() => {
     saved_text_mode = NIGHT_MODE;
     window.localStorage.setItem("text_mode", saved_text_mode);
   }
-  DOM_dict["songarea"].style.fontSize = saved_text_size + "px";
+  DOM_get("songarea").style.fontSize = saved_text_size + "px";
   update_day_night_mode(saved_text_mode);
   start_websocket();
 });

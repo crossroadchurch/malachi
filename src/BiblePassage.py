@@ -231,14 +231,14 @@ class BiblePassage():
         """
         # Test for existance of necessary formatting keys within params
         missing_params = []
-        for param in ["aspect-ratio", "font-size-vh", "div-width-vw", "max-lines", "font-file"]:
+        for param in ["aspect-ratio", "font-size-vh", "div-width-vw", "max-bible-lines", "font-file"]:
             if param not in style:
                 missing_params.append(param)
         if missing_params:
             raise MissingStyleParameterError(', '.join(missing_params))
         lines = BiblePassage.paginate_to_lines(self, 
             style["aspect-ratio"], style["font-size-vh"], style["div-width-vw"], style["font-file"])
-        capacity = int(style["max-lines"])
+        capacity = int(style["max-bible-lines"])
         self.slides = []
         self.parallel_slides = []
         self.parallel_version = ""

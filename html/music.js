@@ -1,3 +1,4 @@
+let websocket;
 let capo = 0;
 let verse_order = "";
 let played_key = "";
@@ -15,13 +16,16 @@ const BASS_ONLY = "3";
 const SECTION_AND_FILLS_REGEX = /(\[\¬\].*\[\¬\])/;
 const FILL_CHORD_REGEX = /(\[[\w\+\¬#|\/"='' ]*\])/;
 const LINE_SEGMENT_REGEX = /(\[[\w\+#|\/"='' ]*\])/;
-let websocket;
-// DOM pointers
-const DOM_dict = {};
-// prettier-ignore
-const DOM_KEYS = ["playedkey", "capoarea", "verseorder", "currentslide", "nextslide", "caposelect", "chordselect"];
 // prettier-ignore
 const VALID_KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"];
+
+const DOM_dict = {};
+function DOM_get(key) {
+  if (!(key in DOM_dict)) {
+    DOM_dict[key] = document.getElementById(key);
+  }
+  return DOM_dict[key];
+}
 
 function parse_chord(chord) {
   let p_bass = "";
@@ -221,7 +225,7 @@ function process_chord_widths(slide_id, prefix) {
 function update_verse_order() {
   let verse_list = "<ul>";
   if (slide_type == "song") {
-    DOM_dict["capoarea"].style.display = "inline";
+    DOM_get("capoarea").style.display = "inline";
     let part_counts_sum = 0;
     for (const [idx, verse] of verse_order.split(" ").entries()) {
       if (slide_index >= part_counts_sum && slide_index < part_counts_sum + part_counts[idx]) {
@@ -234,15 +238,15 @@ function update_verse_order() {
     verse_list += "</ul>";
   } else if (slide_type != "none") {
     verse_list = "<ul><li>" + current_title + "</li></ul>";
-    DOM_dict["capoarea"].style.display = "none";
+    DOM_get("capoarea").style.display = "none";
   } else {
-    DOM_dict["capoarea"].style.display = "none";
+    DOM_get("capoarea").style.display = "none";
   }
-  DOM_dict["verseorder"].innerHTML = verse_list;
+  DOM_get("verseorder").innerHTML = verse_list;
 }
 
 function update_music() {
-  DOM_dict["playedkey"].innerHTML = played_key;
+  DOM_get("playedkey").innerHTML = played_key;
   update_verse_order();
 
   let current_text = "";
@@ -268,8 +272,8 @@ function update_music() {
     current_text += current_slides[0].replace(/\n/g, "</p><p class='nonsong-line'>");
     current_text += "</div>";
   }
-  DOM_dict["currentslide"].innerHTML = current_text;
-  DOM_dict["nextslide"].innerHTML = next_text;
+  DOM_get("currentslide").innerHTML = current_text;
+  DOM_get("nextslide").innerHTML = next_text;
 
   if (slide_type == "song") {
     process_chord_widths("currentslide", "");
@@ -278,7 +282,7 @@ function update_music() {
 }
 
 function update_capo() {
-  capo = parseInt(DOM_dict["caposelect"].value);
+  capo = parseInt(DOM_get("caposelect").value);
   if (capo != 0) {
     window.localStorage.setItem(cur_song_id.toString(), capo.toString());
   } else {
@@ -288,7 +292,7 @@ function update_capo() {
 }
 
 function update_chord_style() {
-  chord_pref = DOM_dict["chordselect"].value;
+  chord_pref = DOM_get("chordselect").value;
   window.localStorage.setItem("chord_pref", chord_pref);
   update_music();
 }
@@ -303,7 +307,7 @@ function capo_check_update_music() {
     }
     if (saved_capo != capo) {
       capo = saved_capo;
-      DOM_dict["caposelect"].value = capo;
+      DOM_get("caposelect").value = capo;
       websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
     } else {
       update_music();
@@ -407,15 +411,11 @@ let ready = (callback) => {
 };
 
 ready(() => {
-  // Setup DOM pointers
-  for (const key of DOM_KEYS) {
-    DOM_dict[key] = document.getElementById(key);
-  }
   if (chord_pref == null) {
     chord_pref = 0;
     window.localStorage.setItem("chord_pref", chord_pref);
   }
-  DOM_dict["chordselect"].value = chord_pref;
+  DOM_get("chordselect").value = chord_pref;
   start_websocket();
 });
 

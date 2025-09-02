@@ -13,7 +13,6 @@ import io
 import json
 import logging
 import os
-import re
 import requests
 import shutil
 import signal
@@ -22,6 +21,7 @@ import sys
 import zipfile
 from datetime import datetime
 
+SHA_PAGE = 'http://www.crossroad.org.uk/malachi/sha.txt'
 UPDATER_DIR = './updater_files'
 UPDATE_BASE = UPDATER_DIR + '/malachi-master'
 GLOBAL_SETTINGS_FILE = 'global_settings.json'
@@ -40,7 +40,6 @@ OS_MALACHI_CALLS = {
 }
 DEPRECATED_FILES = ['Update Malachi.bat', 'update_malachi_linux', 'update_malachi_pi']
 PERMISSION_FILES = ['./install_malachi_linux', './install_malachi_pi', './run_malachi_linux', './run_malachi_pi']
-
 # Copy of src/StreamToLogger.py, added here to avoid problems when patching /src
 class StreamToLogger(object):
    """
@@ -142,16 +141,16 @@ def patch_settings():
         out_settings.write(json.dumps(new_json_data, indent=2))
 
 def store_sha():
-    repo_page = requests.get('https://github.com/crossroadchurch/malachi/commits/master')
-    if repo_page.status_code == 200:
-        latest_sha = re.findall('malachi/commit/[0-9a-f]*', repo_page.text)[0][15:]
+    sha_page = requests.get(SHA_PAGE)
+    if sha_page.status_code == 200:
+        latest_sha = sha_page.text
         with open('./sha.txt', 'w') as sha_file:
             sha_file.write(latest_sha)
 
 def update_needed():
-    repo_page = requests.get('https://github.com/crossroadchurch/malachi/commits/master')
-    if repo_page.status_code == 200:
-        latest_sha = re.findall('malachi/commit/[0-9a-f]*', repo_page.text)[0][15:]
+    sha_page = requests.get(SHA_PAGE)
+    if sha_page.status_code == 200:
+        latest_sha = sha_page.text
         old_sha = 0
         if os.path.isfile('sha.txt'):
             with open('sha.txt', 'r') as old_sha_file:
