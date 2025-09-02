@@ -359,7 +359,7 @@ function display_on() {
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
-      params: { state: "on" },
+      params: { state: true },
     })
   );
 }
@@ -369,7 +369,7 @@ function display_off() {
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
-      params: { state: "off" },
+      params: { state: false },
     })
   );
 }
@@ -520,7 +520,7 @@ function update_service_overview_update(json_data) {
   } else {
     load_current_item({ type: "none", slides: [] });
   }
-  if (json_data.params.screen_state == "on") {
+  if (json_data.params.screen_state) {
     document.querySelector("body").style.borderTop = "6px solid #4CAF50";
   } else {
     document.querySelector("body").style.borderTop = "6px solid red";
@@ -543,7 +543,7 @@ function update_item_index_update(json_data) {
 }
 
 function update_display_state(json_data) {
-  if (json_data.params.state == "on") {
+  if (json_data.params.state) {
     document.querySelector("body").style.borderTop = "6px solid #4CAF50";
   } else {
     document.querySelector("body").style.borderTop = "6px solid red";

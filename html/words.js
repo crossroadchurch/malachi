@@ -5,7 +5,6 @@ let service_items = [];
 let current_slides = [];
 let slide_index = -1;
 let item_index = -1;
-let screen_state = false;
 let saved_text_size = parseInt(window.localStorage.getItem("text_size"));
 let saved_text_mode = window.localStorage.getItem("text_mode");
 const DAY_MODE = "day";
@@ -45,22 +44,18 @@ function update_display_init(json_data) {
     position: "left",
     style: { background: "#4caf50" },
   }).showToast();
-  if (json_data.params.screen_state == "on") {
-    screen_state = true;
+  if (json_data.params.screen_state) {
     DOM_get("songarea").style.display = "block";
   } else {
-    screen_state = false;
     DOM_get("songarea").style.display = "none";
   }
   update_service_overview_update(json_data);
 }
 
 function update_display_state(json_data) {
-  if (json_data.params.state == "on") {
-    screen_state = true;
+  if (json_data.params.state) {
     DOM_get("songarea").style.display = "block";
   } else {
-    screen_state = false;
     DOM_get("songarea").style.display = "none";
   }
 }

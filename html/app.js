@@ -6,7 +6,7 @@ let saved_current_item = null;
 let service_sort_start;
 let editing_song_id = -1;
 let action_after_save;
-let screen_state;
+let screen_state = false;
 let icon_dict = {};
 let drag_dict = {};
 let style_dict = {};
@@ -60,7 +60,7 @@ drag_dict["icons8-presentation-48.png"] = "drag_presentation_icon";
 drag_dict["icons8-tv-show-48.png"] = "drag_video_icon";
 
 function change_screen_state_flip() {
-  const str_state = DOM_get("flip_screen_state").checked ? "on" : "off";
+  const str_state = DOM_get("flip_screen_state").checked;
   websocket.send(
     JSON.stringify({
       action: "command.set-display-state",
@@ -638,21 +638,9 @@ function clear_loop() {
 }
 
 function toggle_display_state() {
-  if (screen_state === "on") {
-    websocket.send(
-      JSON.stringify({
-        action: "command.set-display-state",
-        params: { state: "off" },
-      })
-    );
-  } else {
-    websocket.send(
-      JSON.stringify({
-        action: "command.set-display-state",
-        params: { state: "on" },
-      })
-    );
-  }
+  websocket.send(
+    JSON.stringify({ action: "command.set-display-state", params: { state: !screen_state } })
+  );
 }
 
 function display_current_item(current_item, slide_index) {
@@ -1140,7 +1128,7 @@ function update_app_init(json_data) {
     style: { background: "#4caf50" },
   }).showToast();
   screen_state = json_data.params.screen_state;
-  DOM_get("flip_screen_state").checked = screen_state === "on";
+  DOM_get("flip_screen_state").checked = screen_state;
 
   // Display updater tab if update available
   if (json_data.params["update-available"]) {
@@ -1275,7 +1263,7 @@ function update_service_overview_update(json_data) {
 
 function update_display_state(json_data) {
   screen_state = json_data.params.state;
-  DOM_get("flip_screen_state").checked = screen_state === "on";
+  DOM_get("flip_screen_state").checked = screen_state;
   document.activeElement?.blur();
 }
 

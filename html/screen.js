@@ -339,12 +339,11 @@ function update_display_init(json_data) {
   if (json_data.params.item_index != -1) {
     display_current_slide(json_data.params.slide_index);
   }
-  if (json_data.params.screen_state == "on") {
-    screen_state = true;
+  screen_state = json_data.params.screen_state;
+  if (screen_state) {
     DOM_get("slide_area").style.display = "block";
     DOM_get("pl_columns").style.display = "block";
   } else {
-    screen_state = false;
     DOM_get("slide_area").style.display = "none";
     DOM_get("pl_columns").style.display = "none";
   }
@@ -371,13 +370,12 @@ function update_slide_index_update(json_data) {
 }
 
 function update_display_state(json_data) {
-  if (json_data.params.state == "on") {
-    screen_state = true;
+  screen_state = json_data.params.state;
+  if (screen_state) {
     stop_countdown();
     DOM_get("slide_area").style.display = "block";
     DOM_get("pl_columns").style.display = "block";
   } else {
-    screen_state = false;
     DOM_get("slide_area").style.display = "none";
     DOM_get("pl_columns").style.display = "none";
   }

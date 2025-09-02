@@ -14,7 +14,7 @@ of appropriate state changes
 
 import json
 from json.decoder import JSONDecodeError
-from distutils import file_util
+from distutils import file_util # pyright: ignore[reportMissingModuleSource]
 import os
 from pathlib import Path
 import glob
@@ -80,7 +80,7 @@ class MalachiServer():
             self.APP_SOCKETS = set()
             self.MEDIA_SOCKETS = set()
             self.CAPOS = dict()
-            self.screen_state = "off"
+            self.screen_state = False
             self.s = Service()
             self.load_settings()
             self.notices_count = self.count_notices()
@@ -982,7 +982,7 @@ class MalachiServer():
         Set the current display state and send update to appropriate clients.
 
         Arguments:
-        params["state"] -- the new display state, can be "on" or "off".
+        params["state"] -- the new display state, boolean
         """
         self.screen_state = params["state"]
         await self.broadcast(self.DISPLAY_STATE_SOCKETS, "update.display-state", {
@@ -994,13 +994,9 @@ class MalachiServer():
         """
         Toggle the current display state and send update to appropriate clients.
         """
-        if self.screen_state == "on":
-            new_state = "off"
-        else:
-            new_state = "on"
-        self.screen_state = new_state
+        self.screen_state = not self.screen_state
         await self.broadcast(self.DISPLAY_STATE_SOCKETS, "update.display-state", {
-            "state": new_state
+            "state": self.screen_state
         })
         await self.server_response(websocket, "response.toggle-display-state", "ok", "")
         
@@ -1288,7 +1284,7 @@ class MalachiServer():
         mins = int(params["min"])
         if (0 <= mins < 60) and (0 <= hrs < 24):
             # Toggle screen off
-            self.screen_state = "off"
+            self.screen_state = False
             await self.broadcast(self.DISPLAY_STATE_SOCKETS, "update.display-state", {
                 "state": self.screen_state
             })
