@@ -700,8 +700,24 @@ p.ml_bibleverse {
 
 #notices_control {
   display: flex;
-  gap: 10px;
   margin-top: 0.5em;
+}
+
+#import_notices_btn,
+#start_notices_btn {
+  margin-right: 10px;
+}
+
+#notices_filename {
+  border-radius: 5px 0px 0px 5px;
+}
+
+#clear_notices_btn {
+  height: 2.75em;
+  border-radius: 0px 5px 5px 0px;
+  border-width: 1px 1px 1px 0;
+  border-style: solid;
+  border-color: #ddd;
 }
 
 #cd_time {

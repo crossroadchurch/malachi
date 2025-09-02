@@ -338,6 +338,11 @@ function import_notices() {
   websocket.send(JSON.stringify({ action: "command.import-notices", params: {} }));
 }
 
+function clear_notices() {
+  clear_countdown();
+  websocket.send(JSON.stringify({ action: "command.clear-notices", params: {} }));
+}
+
 function start_countdown(show_notices) {
   const now = new Date();
   const target_time = DOM_get("cd_time").value;
@@ -1918,11 +1923,13 @@ function start_websocket() {
         DOM_get("import_notices_btn").innerText = "Importing notices...";
         DOM_get("notices_filename").value = "";
         DOM_get("start_notices_btn").disabled = true;
+        DOM_get("clear_notices_btn").disabled = true;
         break;
       case "response.import-notices":
         DOM_get("import_notices_btn").disabled = false;
         DOM_get("import_notices_btn").innerText = "Import notices";
         DOM_get("start_notices_btn").disabled = false;
+        DOM_get("clear_notices_btn").disabled = false;
         json_toast_response(json_data, "Notices imported", "Problem importing notices");
         break;
       case "update.notices-loaded":
@@ -1999,6 +2006,7 @@ function start_websocket() {
       case "response.stop-audio":
       case "response.edit-style-param":
       case "response.edit-style-params":
+      case "response.clear-notices":
       case "response.start-countdown":
       case "trigger.start-countdown":
       case "response.clear-countdown":

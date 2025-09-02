@@ -115,6 +115,7 @@ class MalachiServer():
             "command.import-service": [self.import_service, []],
             "command.export-service": [self.export_service, []],
             "command.import-notices": [self.import_notices, []],
+            "command.clear-notices": [self.clear_notices, []],
             "command.remove-item": [self.remove_item, ["index"]],
             "command.move-item": [self.move_item, ["from-index", "to-index"]],
             "command.set-display-state": [self.set_display_state, ["state"]],
@@ -976,6 +977,21 @@ class MalachiServer():
             status, details = "unsupported-version", "Inkscape needs to be version 1.0 or greater"
         finally:
             await self.server_response(websocket, "response.import-notices", status, details)
+
+    async def clear_notices(self, websocket, params):
+        status, details = "ok", ""
+        for notice_file in os.listdir("./notices"):
+            if notice_file.endswith(".png"):
+                os.remove(os.path.join("./notices", notice_file))
+        self.notices_count = 0
+        self.loaded_notices = ""
+        self.save_settings()
+        # Inform screen and app of new notices
+        await self.broadcast(self.STYLE_STATE_SOCKETS, "update.notices-loaded", {
+            "slide-count": self.notices_count,
+            "filename": self.loaded_notices
+        })
+        await self.server_response(websocket, "response.clear-notices", status, details)
 
     async def set_display_state(self, websocket, params):
         """
