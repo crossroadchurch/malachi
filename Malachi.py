@@ -22,6 +22,11 @@ from src.StreamToLogger import StreamToLogger
 from src._version import __version__
 # pylint: enable=C0413
 
+class NoPingFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        return not msg.startswith('> PING') and not msg.startswith('< PONG') and not msg.startswith('% sending keepalive ping') and not msg.startswith('% received keepalive pong')
+
 def main():
     # Setup logging of terminal output
     logging.basicConfig(
@@ -31,6 +36,8 @@ def main():
         filemode='a'
         )
     log = logging.getLogger('malachi')
+    websockets_log = logging.getLogger('websockets.server')
+    websockets_log.addFilter(NoPingFilter())
     logging.raiseExceptions = False;
     sys.stdout = StreamToLogger(log,logging.INFO)
     sys.stderr = StreamToLogger(log,logging.ERROR)
