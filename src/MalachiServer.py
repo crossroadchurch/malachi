@@ -937,7 +937,8 @@ class MalachiServer():
             else:
                 # Copy pdf to notices directory
                 pdf_path = Path(MalachiServer.ROOT_PATH, "notices", file_path.name)
-                shutil.copyfile(file_path, pdf_path)
+                if not pdf_path.exists():
+                    shutil.copyfile(file_path, pdf_path)
             # Get number of pages
             reader = PdfReader(pdf_path)
             pdf_pages = len(reader.pages)
@@ -959,6 +960,8 @@ class MalachiServer():
                                                   inkscape_option+str(page+1), 
                                                   "--pdf-poppler", 
                                                   pdf_path, 
+                                                  "-b",
+                                                  "white",
                                                   "-o", 
                                                   Path(MalachiServer.ROOT_PATH, "notices", "notices-{p}.png".format(p=page)),
                                                   scale_option], text=True)
