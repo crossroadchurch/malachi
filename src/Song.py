@@ -581,7 +581,7 @@ class Song():
             WHERE s.id = {s_id}
         '''.format(s_id=song_id))
         result = cursor.fetchone()
-        if result == []:
+        if result == None:
             raise InvalidSongIdError(song_id)
         cursor.execute('''
             UPDATE songs
@@ -599,7 +599,7 @@ class Song():
             WHERE s.id = {s_id}
         '''.format(s_id=song_id))
         result = cursor.fetchone()
-        if result == []:
+        if result == None:
             raise InvalidSongIdError(song_id)
         cursor.execute('''
             UPDATE songs
@@ -665,7 +665,7 @@ class Song():
         '''.format(s_id=song_id))
         result = cursor.fetchone()
         song_db.close()
-        if result == []:
+        if result == None:
             raise InvalidSongIdError(song_id)
         saved_song_key = str(result[1])
         # Field validation

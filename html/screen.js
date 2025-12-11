@@ -580,6 +580,11 @@ function trigger_start_notices(num_slides, slide_time, cycle_gap, end_gap, total
   }
 }
 
+function send_message(action, params) {
+  params["lang"] = "en";
+  websocket.send(JSON.stringify({ action: action, params: params }));
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/display");

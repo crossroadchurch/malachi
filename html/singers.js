@@ -171,6 +171,11 @@ function trigger_seek_video(json_data) {
   DOM_get("video_item").currentTime = json_data.params.seconds;
 }
 
+function send_message(action, params) {
+  params["lang"] = "en";
+  websocket.send(JSON.stringify({ action: action, params: params }));
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/monitor");

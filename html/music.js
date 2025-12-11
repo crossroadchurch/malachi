@@ -288,7 +288,7 @@ function update_capo() {
   } else {
     window.localStorage.removeItem(cur_song_id.toString());
   }
-  websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
+  send_message("client.set-capo", { capo: capo });
 }
 
 function update_chord_style() {
@@ -308,7 +308,7 @@ function capo_check_update_music() {
     if (saved_capo != capo) {
       capo = saved_capo;
       DOM_get("caposelect").value = capo;
-      websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
+      send_message("client.set-capo", { capo: capo });
     } else {
       update_music();
     }
@@ -364,6 +364,11 @@ function update_item_index_update(json_data) {
   slide_index = json_data.params.slide_index;
   load_current_item(json_data.params.current_item);
   capo_check_update_music();
+}
+
+function send_message(action, params) {
+  params["lang"] = "en";
+  websocket.send(JSON.stringify({ action: action, params: params }));
 }
 
 function start_websocket() {

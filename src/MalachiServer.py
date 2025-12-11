@@ -37,6 +37,7 @@ from Presentation import Presentation
 from Video import Video
 from Background import Background
 from Tracker import Tracker
+from MalachiI18N import translate as t8
 from MalachiExceptions import InvalidVersionError, InvalidVerseIdError
 from MalachiExceptions import MalformedReferenceError, MatchingVerseIdError, UnknownReferenceError
 from MalachiExceptions import InvalidSongIdError, InvalidSongFieldError
@@ -258,7 +259,8 @@ class MalachiServer():
 
     async def app_init(self, websocket):
         """Send initialisation message to new app client"""
-        service_data = json.loads(self.s.to_JSON_full())
+        # service_data = json.loads(self.s.to_JSON_full())
+        service_data = json.loads(self.s.to_JSON_titles_and_current(self.CAPOS[websocket]))
         service_data['style'] = self.screen_style
         service_data['screen_state'] = self.screen_state
         service_data['video_loop'] = self.video_loop
@@ -287,6 +289,8 @@ class MalachiServer():
             await self.server_response(websocket, "error.json", "missing-params",
                                        json_data["action"] + ": " + p_check)    
             return
+        if "lang" not in json_data["params"]:
+            json_data["params"]["lang"] = "en"
         # Execute the command
         await command_item[0](websocket, json_data["params"])
 
@@ -395,7 +399,7 @@ class MalachiServer():
         try:
             details = Song.create_song(params["title"], params["fields"])
         except InvalidSongFieldError as e:
-            status, details = "invalid-field", e.msg
+            status, details = "invalid-field", t8("song_invalid_field", params["lang"]).format(data=e.data)
         finally:
             await self.server_response(websocket, "response.create-song", status, details)
 
@@ -421,12 +425,12 @@ class MalachiServer():
                         self.s.items[i].add_fills()
             # Update all clients
             await self.clients_item_index_update()
-        except InvalidSongIdError as e:
-            status, details = "invalid-id", e.msg
+        except InvalidSongIdError:
+            status, details = "invalid-id", t8("song_action_invalid_id", params["lang"]).format(id=params["song-id"])
         except InvalidSongFieldError as e:
-            status, details = "invalid-field", e.msg
+            status, details = "invalid-field", t8("song_invalid_field", params["lang"]).format(data=e.data)
         except MissingStyleParameterError as e:
-            status, details = "invalid-style", e.msg
+            status, details = "invalid-style", t8("missing_style", params["lang"]).format(data=e.data)
         finally:
             await self.server_response(websocket, "response.edit-song", status, details)
 
@@ -438,8 +442,8 @@ class MalachiServer():
             # Remove instances of song from current service
             if self.s.remove_song(int(params["song-id"])):
                 await self.clients_service_items_update()
-        except InvalidSongIdError as e:
-            status, details = "invalid-id", e.msg
+        except InvalidSongIdError:
+            status, details = "invalid-id", t8("song_action_invalid_id", params["lang"]).format(id=params["song-id"])
         finally:
             await self.server_response(websocket, "response.delete-song", status, details)
 
@@ -448,8 +452,8 @@ class MalachiServer():
         status, details = "ok", ""
         try:
             Song.restore_song(int(params["song-id"]))
-        except InvalidSongIdError as e:
-            status, details = "invalid-id", e.msg
+        except InvalidSongIdError:
+            status, details = "invalid-id", t8("song_action_invalid_id", params["lang"]).format(id=params["song-id"])
         finally:
             await self.server_response(websocket, "response.restore-song", status, details)
 
@@ -559,7 +563,7 @@ class MalachiServer():
                 self.track_usage()
             await self.clients_service_items_update()
         else:
-            status, details = "invalid-index", str(index)
+            status, details = "invalid-index", t8("remove_item_invalid_index", params["lang"]).format(idx=str(index))
         await self.server_response(websocket, "response.remove-item", status, details)
 
     async def move_item(self, websocket, params):
@@ -615,9 +619,9 @@ class MalachiServer():
                 self.bible_versions)
             self.s.add_item(b)
         except InvalidVersionError as e:
-            status, details = "invalid-version", e.msg
+            status, details = "invalid-version", t8("bible_invalid_version", params["lang"]).format(v=e.data)
         except InvalidVerseIdError as e:
-            status, details = "invalid-verse", e.msg
+            status, details = "invalid-verse", t8("bible_invalid_verse", params["lang"]).format(id=e.data[0], v=e.data[1])
         finally:
             await self.server_response(websocket, "response.add-bible-item", status, details)
             await self.clients_service_items_update()
@@ -635,13 +639,13 @@ class MalachiServer():
                 self.s.items[self.s.item_index].parallel_paginate_from_style(
                     self.screen_style, params["version"], self.bible_versions)
             else:
-                status, details = "invalid-item", "Current item not a Bible passage"
+                status, details = "invalid-item", t8("bible_invalid_item", params["lang"])
         except InvalidVersionError as e:
-            status, details = "invalid-version", e.msg
+            status, details = "invalid-version", t8("bible_invalid_version", params["lang"]).format(v=e.data)
         except InvalidVerseIdError as e:
-            status, details = "invalid-verse", e.msg
+            status, details = "invalid-verse", t8("bible_invalid_verse", params["lang"]).format(id=e.data[0], v=e.data[1])
         except MatchingVerseIdError as e:
-            status, details = "invalid-matching-verse", e.msg
+            status, details = "invalid-matching-verse", t8("bible_no_matching_verse", params["lang"]).format(id=e.data[0], ov=e.data[1], nv=e.data[2])
         finally:
             await self.server_response(websocket, "response.change-bible-pl-version", status, details)
             await self.clients_service_items_update()
@@ -655,7 +659,7 @@ class MalachiServer():
             if self.s.get_current_item_type() == "BiblePassage":
                 self.s.items[self.s.item_index].paginate_from_style(self.screen_style)
             else:
-                status, details = "invalid-item", "Current item not a Bible passage"
+                status, details = "invalid-item", t8("bible_invalid_item", params["lang"])
         finally:
             await self.server_response(websocket, "response.remove-bible-pl-version", status, details)
             await self.clients_service_items_update()
@@ -705,15 +709,15 @@ class MalachiServer():
                 self.s.items.insert(self.s.item_index, new_passage)
                 await self.clients_service_items_update()
             else:
-                status, details = "invalid-item", "Current item not a Bible passage"
+                status, details = "invalid-item", t8("bible_invalid_item", params["lang"])
         except InvalidVersionError as e:
-            status, details = "invalid-version", e.msg
+            status, details = "invalid-version", t8("bible_invalid_version", params["lang"]).format(v=e.data)
         except InvalidVerseIdError as e:
-            status, details = "invalid-verse", e.msg
+            status, details = "invalid-verse", t8("bible_invalid_verse", params["lang"]).format(id=e.data[0], v=e.data[1])
         except MissingStyleParameterError as e:
-            status, details = "invalid-style", e.msg
+            status, details = "invalid-style", t8("missing_style", params["lang"]).format(data=e.data)
         except MatchingVerseIdError as e:
-            status, details = "no-matching-verse", e.msg
+            status, details = "no-matching-verse", t8("bible_no_matching_verse", params["lang"]).format(id=e.data[0], ov=e.data[1], nv=e.data[2])
         finally:
             await self.server_response(websocket, "response.change-bible-version", status, details)
 
@@ -728,8 +732,8 @@ class MalachiServer():
         try:
             s = Song(params["song-id"], self.screen_style)
             self.s.add_item(s)
-        except InvalidSongIdError as e:
-            status, details = "invalid-song", e.msg
+        except InvalidSongIdError:
+            status, details = "invalid-song", t8("song_action_invalid_id", params["lang"]).format(id=params["song-id"])
         finally:
             await self.server_response(websocket, "response.add-song-item", status, details)
             await self.clients_service_items_update()
@@ -745,10 +749,10 @@ class MalachiServer():
         try:
             v = Video(params["url"])
             self.s.add_item(v)
-        except InvalidVideoUrlError as e:
-            status, details = "invalid-video", e.msg
-        except InvalidVideoError as e:
-            status, details = "invalid-video", e.msg
+        except InvalidVideoUrlError:
+            status, details = "invalid-video", t8("add_video_invalid_url", params["lang"]).format(url=params["url"])
+        except InvalidVideoError:
+            status, details = "invalid-video", t8("add_video_video_error", params["lang"]).format(url=params["url"])
         finally:
             await self.server_response(websocket, "response.add-video", status, details)
             await self.clients_service_items_update()
@@ -764,34 +768,35 @@ class MalachiServer():
         try:
             p = Presentation(params["url"])
             self.s.add_item(p)
-        except InvalidPresentationUrlError as e:
-            status, details = "invalid-presentation", e.msg
+        except InvalidPresentationUrlError:
+            status, details = "invalid-presentation", t8("add_pres_invalid_url", params["lang"]).format(url=params["url"])
         finally:
             await self.server_response(websocket, "response.add-presentation", status, details)
             await self.clients_service_items_update()
 
     @staticmethod
-    def select_file_for_import(title, import_type, extensions):
+    def select_file_for_import(title_t8d, import_type_t8d, extensions):
+        # title_t8d and import_type_t8d are already translated to user's language
         initial_dir = MalachiServer.ROOT_PATH
         initial_file = None
         if sys.platform == "linux" and shutil.which("kdialog") is not None:
             # Prefer kdialog over zenity
-            kd_extensions = import_type + " (" + extensions[0] + ")"
-            cmd = ["kdialog", "--getopenfilename", str(initial_dir), "--title", title, kd_extensions]
+            kd_extensions = import_type_t8d + " (" + extensions[0] + ")"
+            cmd = ["kdialog", "--getopenfilename", str(initial_dir), "--title", title_t8d, kd_extensions]
             result = subprocess.run(cmd, capture_output=True, text=True)
             file_string = result.stdout.strip()
         elif sys.platform == "linux":
             if shutil.which("zenity") is not None:
                 initial_file=extensions[0].split()[0]
             file_string = filedialpy.openFile(initial_dir=str(initial_dir), initial_file=initial_file,
-                                              title=title, filter=extensions)
+                                              title=title_t8d, filter=extensions)
         else:
-            file_string = filedialpy.openFile(title=title, filter=extensions)
+            file_string = filedialpy.openFile(title=title_t8d, filter=extensions)
         os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file open dialog
         return file_string
 
-    async def import_file(self, websocket, title, extensions, folder):
-        file_string = MalachiServer.select_file_for_import(title, folder.capitalize(), extensions)
+    async def import_file(self, websocket, title_str, extensions, folder, type_str, lang):
+        file_string = MalachiServer.select_file_for_import(t8(title_str, lang), t8(type_str, lang), extensions)
         if file_string:
             file_path = Path(file_string)
             test_path = Path(MalachiServer.ROOT_PATH, folder, file_path.name)
@@ -804,15 +809,16 @@ class MalachiServer():
                 return (True, "ok", "")
             return (False, 
                     "file-exists", 
-                    "A file named {fn} already exists in the {fd} folder".format(fn=file_path.name,fd=folder))
+                    t8("import_file_exists_error", lang).format(fn=file_path.name,fd=folder))
         return (False, "none-selected", "Import cancelled")
 
     async def import_presentation(self, websocket, params):
         """
         Import a Presentation to the presentations folder.
         """
-        refresh, status, details = await self.import_file(websocket, "Select a presentation", 
-                                                         ["*.ppt *.pptx *.odp *.ppsx"], 'presentations')
+        refresh, status, details = await self.import_file(websocket, "select_pres_dialog_title", 
+                                                         ["*.ppt *.pptx *.odp *.ppsx"], 'presentations', 
+                                                         "import_pres_type", params["lang"])
         if refresh:
             fnames = Presentation.get_all_presentations()
             await self.send_message(websocket, "result.all-presentations", {"urls": fnames})
@@ -820,8 +826,9 @@ class MalachiServer():
             await self.server_response(websocket, "response.import-presentation", status, details)
 
     async def import_video(self, websocket, params):
-        refresh, status, details = await self.import_file(websocket, "Select a video",
-                                                          ["*.mpg *.mp4 *.mov"], 'videos')
+        refresh, status, details = await self.import_file(websocket, "select_video_dialog_title",
+                                                          ["*.mpg *.mp4 *.mov"], 'videos', 
+                                                          "import_video_type", params["lang"])
         if refresh:
             urls = Video.get_all_videos()
             await self.send_message(websocket, "result.all-videos", {"urls": urls})
@@ -829,8 +836,9 @@ class MalachiServer():
             await self.server_response(websocket, "response.import-video", status, details)
 
     async def import_loop(self, websocket, params):
-        refresh, status, details = await self.import_file(websocket, "Select a loop video",
-                                                          ["*.mpg *.mp4 *.mov"], 'loops')
+        refresh, status, details = await self.import_file(websocket, "select_loop_dialog_title",
+                                                          ["*.mpg *.mp4 *.mov"], 'loops', 
+                                                          "import_loop_type", params["lang"])
         if refresh:
             Video.generate_video_thumbnails()
             urls = ['./loops/' + f for f in os.listdir('./loops')
@@ -842,8 +850,9 @@ class MalachiServer():
             await self.server_response(websocket, "response.import-loop", status, details)
 
     async def import_background(self, websocket, params):
-        refresh, status, details = await self.import_file(websocket, "Select a background",
-                                                          ["*.jpg *.png *.JPG *.PNG"], 'backgrounds')
+        refresh, status, details = await self.import_file(websocket, "select_bg_dialog_title",
+                                                          ["*.jpg *.png *.JPG *.PNG"], 'backgrounds', 
+                                                          "import_bg_type", params["lang"])
         if refresh:
             bgs = [Background(url) for url in Background.get_all_backgrounds()]
             bg_json = [{"url": './backgrounds/' + bg.title, 
@@ -853,8 +862,9 @@ class MalachiServer():
             await self.server_response(websocket, "response.import-background", status, details)
 
     async def import_audio(self, websocket, params):
-        refresh, status, details = await self.import_file(websocket, "Select an audio track", 
-                                                          ["*.mp3"], 'audio')
+        refresh, status, details = await self.import_file(websocket, "select_audio_dialog_title", 
+                                                          ["*.mp3"], 'audio', 
+                                                          "import_audio_type", params["lang"])
         if refresh:
             urls = glob.glob('*.mp3', root_dir='./audio')
             urls.sort(key=os.path.basename)
@@ -864,24 +874,26 @@ class MalachiServer():
     
     async def import_service(self, websocket, params):
         status, details = "none-selected", ""
-        file_string = MalachiServer.select_file_for_import("Select a service file", "Services", ["*.zip"])
+        file_string = MalachiServer.select_file_for_import(t8("select_service_dialog_title", params["lang"]),
+                                                           t8("import_service_type", params["lang"]),
+                                                           ["*.zip"])
         if file_string:
             status = "ok"
             await self.send_message(websocket, "response.importing-service", {})
             try:
                 Service.import_service(file_string, self.screen_style, self.bible_versions)
             except InvalidServiceUrlError as e:
-                status, details = "invalid-url", e.msg
+                status, details = "invalid-url", t8("invalid_service_url", params["lang"]).format(url=e.data)
             except MalformedServiceFileError as e:
-                status, details = "malformed-json", e.msg
+                status, details = "malformed-json", t8("malformed_service", params["lang"]).format(url=e.data[0], details=e.data[1])
             except MissingStyleParameterError as e:
-                status, details = "invalid-style", e.msg
+                status, details = "invalid-style", t8("missing_style", params["lang"]).format(data=e.data)
             except InvalidVersionError as e:
-                status, details = "invalid-version", e.msg
+                status, details = "invalid-version", t8("bible_invalid_version", params["lang"]).format(v=e.data)
             except MalformedReferenceError as e:
-                status, details = "malformed-reference", e.msg
+                status, details = "malformed-reference", t8("malformed_reference", params["lang"]).format(f=e.data)
             except UnknownReferenceError as e:
-                status, details = "unknown-reference", e.msg
+                status, details = "unknown-reference", t8("unknown_reference", params["lang"]).format(ref=e.data)
             finally:
                 urls = Service.get_all_services()
                 await self.send_message(websocket, "result.all-services", {"filenames":urls})
@@ -890,20 +902,21 @@ class MalachiServer():
     async def export_service(self, websocket, params):
         initial_dir = MalachiServer.ROOT_PATH
         initial_file = None
+        title = t8("export_service_dialog_title", params["lang"])
         extensions = ["*.zip"]
         if sys.platform == "linux" and shutil.which("kdialog") is not None:
             # Prefer kdialog over zenity
-            extensions = "Zip files (*.zip)"
-            cmd = ["kdialog", "--getsavefilename", str(initial_dir), "--title", "Export service", extensions]
+            extensions = t8("export_zip_type", params["lang"]) + " (*.zip)"
+            cmd = ["kdialog", "--getsavefilename", str(initial_dir), "--title", title, extensions]
             result = subprocess.run(cmd, capture_output=True, text=True)
             file_string = result.stdout.strip()
         elif sys.platform == "linux":
             if shutil.which("zenity") is not None:
                 initial_file="*.zip"
             file_string = filedialpy.saveFile(initial_dir=initial_dir, initial_file=initial_file,
-                                              title="Export service", filter=extensions)
+                                              title=title, filter=extensions)
         else:
-            file_string = filedialpy.saveFile(title="Export service", filter=extensions)
+            file_string = filedialpy.saveFile(title=title, filter=extensions)
         os.chdir(MalachiServer.ROOT_PATH) # Must reset working directory after using file save dialog
         if file_string:
             self.s.export_as(file_string)
@@ -913,7 +926,9 @@ class MalachiServer():
         status, details = "ok", ""
         # Get notices file to import
         file_string = MalachiServer.select_file_for_import(
-            "Select a notices file", "Notices", ["*.pdf *.ppt *.pptx *.odp *.ppsx"])
+            t8("select_notices_dialog_title", params["lang"]),
+            t8("import_notices_type", params["lang"]),
+            ["*.pdf *.ppt *.pptx *.odp *.ppsx"])
         if not file_string:
             return # Import was cancelled by user
         try:
@@ -975,9 +990,9 @@ class MalachiServer():
                 "filename": self.loaded_notices
             })
         except FileNotFoundError as _:
-            status, details = "missing-program", "Inkscape was not detected"
+            status, details = "missing-program", t8("inkscape_not_found_error", params["lang"])
         except InkscapeVersionError as _:
-            status, details = "unsupported-version", "Inkscape needs to be version 1.0 or greater"
+            status, details = "unsupported-version", t8("inkscape_version_error", params["lang"])
         finally:
             await self.server_response(websocket, "response.import-notices", status, details)
 
@@ -1054,22 +1069,19 @@ class MalachiServer():
                 self.s.load_service(params["filename"], self.screen_style, self.bible_versions)
             except InvalidServiceUrlError as e:
                 self.s = Service()
-                status, details = "invalid-url", e.msg
+                status, details = "invalid-url", t8("invalid_service_url", params["lang"]).format(url=e.data)
             except MalformedServiceFileError as e:
                 self.s = Service()
-                status, details = "malformed-json", e.msg
+                status, details = "malformed-json", t8("malformed_service", params["lang"]).format(url=e.data[0], details=e.data[1])
             except MissingStyleParameterError as e:
                 self.s = Service()
-                status, details = "invalid-style", e.msg
+                status, details = "invalid-style", t8("missing_style", params["lang"]).format(data=e.data)
             except InvalidVersionError as e:
                 self.s = Service()
-                status, details = "invalid-version", e.msg
-            except MalformedReferenceError as e:
+                status, details = "invalid-version", t8("bible_invalid_version", params["lang"]).format(v=e.data)
+            except InvalidVerseIdError as e:
                 self.s = Service()
-                status, details = "malformed-reference", e.msg
-            except UnknownReferenceError as e:
-                self.s = Service()
-                status, details = "unknown-reference", e.msg
+                status, details = "invalid-verse", t8("bible_invalid_verse", params["lang"]).format(id=e.data[0], v=e.data[1])
             finally:
                 await self.server_response(websocket, "response.load-service", status, details)
                 await self.clients_service_items_update()
@@ -1081,8 +1093,8 @@ class MalachiServer():
         status, details = "ok", ""
         try:
             self.s.save()
-        except UnspecifiedServiceUrl as e:
-            status, details = "unspecified-service", e.msg
+        except UnspecifiedServiceUrl:
+            status, details = "unspecified-service", t8("unspecified_service_url", params["lang"])
         finally:
             await self.clients_service_items_update()
             await self.server_response(websocket, "response.save-service", status, details)
@@ -1128,8 +1140,7 @@ class MalachiServer():
                 "style": self.screen_style
             })
         else:
-            status, details = "invalid-param", "Invalid style parameter: " + \
-                params["param"]
+            status, details = "invalid-param", t8("invalid_style_parameter", params["lang"]).format(p=params["param"])
         await self.server_response(websocket, "response.edit-style-param", status, details)
 
     async def edit_style_params(self, websocket, params):
@@ -1161,8 +1172,7 @@ class MalachiServer():
                 "style": self.screen_style
             })
         else:
-            status, details = "invalid-params", "Invalid style parameters: " + \
-                ', '.join(invalid_params)
+            status, details = "invalid-params", t8("invalid_style_parameters", params["lang"]).format(p=', '.join(invalid_params))
         await self.server_response(websocket, "response.edit-style-params", status, details)
 
     async def set_loop(self, websocket, params):
@@ -1179,7 +1189,7 @@ class MalachiServer():
             self.video_loop = url
             vid = cv2.VideoCapture(url)
             if vid.get(cv2.CAP_PROP_FPS) == 0:
-                status, details = "invalid-loop", "Specified url {url} is not a valid video".format(url=url)
+                status, details = "invalid-loop", t8("set_loop_invalid_loop", params["lang"]).format(url=url)
             else: 
                 self.loop_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
                 self.loop_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -1189,7 +1199,7 @@ class MalachiServer():
                     "loop-height": self.loop_height
                 })
         else:
-            status, details = "invalid-url", "Specified url doesn't exist or is not a video"
+            status, details = "invalid-url", t8("set_loop_invalid_url", params["lang"])
         await self.server_response(websocket, "response.set-loop", status, details)
 
     async def clear_loop(self, websocket, params):
@@ -1216,7 +1226,7 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Video":
             await self.broadcast(self.MEDIA_SOCKETS, "trigger.play-video", {})
         else:
-            status, details = "invalid-item", "Current service item is not a video"
+            status, details = "invalid-item", t8("current_item_not_video", params["lang"])
         await self.server_response(websocket, "response.play-video", status, details)
 
     async def pause_video(self, websocket, params):
@@ -1225,7 +1235,7 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Video":
             await self.broadcast(self.MEDIA_SOCKETS, "trigger.pause-video", {})
         else:
-            status, details = "invalid-item", "Current service item is not a video"
+            status, details = "invalid-item", t8("current_item_not_video", params["lang"])
         await self.server_response(websocket, "response.pause-video", status, details)
 
     async def stop_video(self, websocket, params):
@@ -1234,7 +1244,7 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Video":
             await self.broadcast(self.MEDIA_SOCKETS, "trigger.stop-video", {})
         else:
-            status, details = "invalid-item", "Current service item is not a video"
+            status, details = "invalid-item", t8("current_item_not_video", params["lang"])
         await self.server_response(websocket, "response.stop-video", status, details)
 
     async def seek_video(self, websocket, params):
@@ -1252,10 +1262,9 @@ class MalachiServer():
                     "seconds": int(params["seconds"])
                 })
             else:
-                status, details = "invalid-time", "Invalid seek time: " + \
-                    str(params["seconds"])
+                status, details = "invalid-time", t8("invalid_seek_time", params["lang"]).format(t=sec)
         else:
-            status, details = "invalid-item", "Current service item is not a video"
+            status, details = "invalid-item", t8("current_item_not_video", params["lang"])
         await self.server_response(websocket, "response.seek-video", status, details)
 
     async def play_audio(self, websocket, params):
@@ -1332,7 +1341,7 @@ class MalachiServer():
         if self.s.get_current_item_type() == "Presentation":
             # Check that soffice is accessible
             if shutil.which('soffice') is None:
-                status, details = "no-soffice", "Couldn't access LibreOffice, please check Malachi installation instructions for more details"
+                status, details = "no-soffice", t8("start_pres_no_soffice", params["lang"])
             else:
                 # Suspend any running loop
                 await self.broadcast(self.MEDIA_SOCKETS, "trigger.suspend-loop", {})
@@ -1340,7 +1349,7 @@ class MalachiServer():
                 url = self.s.items[self.s.item_index].get_url()
                 subprocess.Popen(['soffice', '--show', url])
         else:
-            status, details = "invalid-item", "Current service item is not a presentation"
+            status, details = "invalid-item", t8("start_pres_invalid_item", params["lang"])
         await self.server_response(websocket, "response.start-presentation", status, details)
 
     async def stop_presentation(self, websocket, params):
@@ -1420,7 +1429,7 @@ class MalachiServer():
             # Update all clients
             await self.clients_item_index_update()
         else:
-            status, details = "invalid-item", "Current service item is not a song"
+            status, details = "invalid-item", t8("current_item_not_song", params["lang"])
         await self.server_response(websocket, "response.transpose-by", status, details)
 
     # Server response function
@@ -1516,12 +1525,12 @@ class MalachiServer():
         try:
             verses = json.loads(BiblePassage.ref_search(params["version"],
                                                         params["search-ref"], self.bible_versions))
-        except InvalidVersionError as search_e:
-            status, details = "invalid-version", search_e.msg
-        except MalformedReferenceError as search_e:
-            status, details = "invalid-reference", search_e.msg
-        except UnknownReferenceError as search_e:
-            status, details = "unknown-reference", search_e.msg
+        except InvalidVersionError as e:
+            status, details = "invalid-version", t8("bible_invalid_version", params["lang"]).format(v=e.data)
+        except MalformedReferenceError as e:
+            status, details = "invalid-reference", t8("malformed_reference", params["lang"]).format(f=e.data)
+        except UnknownReferenceError as e:
+            status, details = "unknown-reference", t8("unknown_reference", params["lang"]).format(ref=e.data)
         finally:
             await self.send_message(websocket, "result.bible-verses", {
                 "status": status,
@@ -1683,10 +1692,7 @@ class MalachiServer():
                 if os.path.isfile('sha.txt'):
                     with open('sha.txt', 'r') as old_sha_file:
                         old_sha = old_sha_file.read()
-                if old_sha != latest_sha:
-                    return True
-                else:
-                    return False
+                return old_sha != latest_sha
         except ConnectionError as _:
             return False # No internet connection, so can't update
     

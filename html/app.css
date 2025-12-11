@@ -669,13 +669,13 @@ p.ml_bibleverse {
 }
 
 #import_presentation_btn,
-#import_background_btn {
+#import_background_btn,
+#import_loop_btn {
   justify-content: center;
-  width: 14em;
+  width: 15em;
 }
 
-#import_video_btn,
-#import_loop_btn {
+#import_video_btn {
   justify-content: center;
   width: 11em;
 }
@@ -897,8 +897,7 @@ p.ml_bibleverse {
   top: -1em;
 }
 
-#countdown_h_text_input,
-#t_color_picker {
+#countdown_h_text_input {
   display: flex;
   height: 2.75em;
   align-items: center;
@@ -906,52 +905,21 @@ p.ml_bibleverse {
   gap: 1em;
 }
 
-#t_color_picker {
-  margin-bottom: 0.5em;
-}
-
-#countdown_h_text_input label,
-#t_color_picker label {
+#countdown_h_text_input label {
   margin: 0;
 }
 
-#countdown_h_text_input input,
-#t_color_picker input {
+#countdown_h_text_input input {
   flex-grow: 1;
   height: 2em;
 }
 
-#rgb_container {
-  display: flex;
-  flex-direction: row;
-  padding-bottom: 1em;
+#tc_picker_div {
+  margin-bottom: 1em;
 }
 
-#rgb_sliders {
-  width: 75%;
-  display: flex;
-  flex-direction: column;
-}
-
-#rgb_preview_panel {
-  width: 25%;
-  display: flex;
-  flex-direction: column;
-}
-
-#tc_preview {
-  flex-grow: 1;
-  border-width: 1px;
-  border-style: solid;
-  border-radius: 5px;
-  border-color: #ccc;
-  margin: 5px 0px;
-}
-
-#tc_save {
-  justify-content: center;
-  width: 100%;
-  text-align: center;
+#tc_all {
+  margin-left: 1em;
 }
 
 .mi_toggle_div {
@@ -992,11 +960,6 @@ p.ml_bibleverse {
   color: #333;
 }
 
-.mi_toggle input[name="flip_screen_state"]::after {
-  content: "Screen OFF";
-  left: 3em;
-}
-
 .mi_toggle input:checked::after {
   content: "On";
   left: 1em;
@@ -1004,8 +967,13 @@ p.ml_bibleverse {
   text-shadow: 0 1px 0 rgb(0, 85, 153);
 }
 
-.mi_toggle input[name="flip_screen_state"]:checked::after {
-  content: "Screen ON";
+#flip_screen_state::after {
+  /* content: "Screen OFF"; */
+  left: 3em;
+}
+
+#flip_screen_state:checked::after {
+  /* content: "Screen ON"; */
   left: 1.75em;
 }
 
@@ -1071,7 +1039,7 @@ p.ml_bibleverse {
   flex-grow: 1;
 }
 
-#bible_search_options {
+#bible_select_options {
   display: flex;
   gap: 0.5em;
   margin-bottom: 0.5em;
@@ -1084,11 +1052,13 @@ p.ml_bibleverse {
 }
 
 #o_style_div,
+#app_lang_div,
 #d_version_radios {
   justify-content: left;
 }
 
 #o_style_div span,
+#app_lang_div span,
 #d_version_radios span {
   padding-right: 1em;
 }

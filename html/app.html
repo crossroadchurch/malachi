@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <title>Malachi App</title>
-    <link rel="stylesheet" href="/html/libs/toastify.css" />
     <link rel="stylesheet" href="/html/app.css" />
+    <link rel="stylesheet" href="/html/libs/toastify.css" />
     <link rel="icon" type="image/png" href="/html/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/html/favicon.svg" />
     <link rel="shortcut icon" href="/html/favicon.ico" />
@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="Malachi App" />
     <link rel="manifest" href="/html/site.webmanifest" />
     <script type="text/javascript" src="/html/libs/toastify.min.js"></script>
+    <script type="text/javascript" src="/html/app_i18n.js"></script>
     <script type="text/javascript" src="/html/app.js"></script>
   </head>
   <body>
@@ -26,14 +27,12 @@
             <output id="flip_screen_state_out"></output>
           </div>
           <img id="current_item_icon" src="/html/icons/icons8-musical-notes-48.png" /><span
-            id="current_item_name"
-            >No current item</span
-          >
+            id="current_item_name"></span>
         </div>
         <div id="current_item">
           <div id="audio_controls">
             <div class="playback_buttons">
-              <div class="button_inline_text">Song recording:</div>
+              <div id="audio_controls_text" class="button_inline_text"></div>
               <div class="cmd_button icon_button play_icon" onclick="play_audio()"></div>
               <div class="cmd_button icon_button pause_icon" onclick="pause_audio()"></div>
               <div class="cmd_button icon_button stop_icon" onclick="stop_audio()"></div>
@@ -44,9 +43,7 @@
               <div class="cmd_button icon_button play_icon" onclick="play_video()"></div>
               <div class="cmd_button icon_button pause_icon" onclick="pause_video()"></div>
               <div class="cmd_button icon_button stop_icon" onclick="stop_video()"></div>
-              <div class="cmd_button restore_button" onclick="restore_loop()">
-                Restore loop
-              </div>
+              <div class="i18n_restore cmd_button restore_button" onclick="restore_loop()"></div>
             </div>
             <div id="time_seek_area">
               <progress id="time_seek" min="0" max="100"></progress>
@@ -55,9 +52,7 @@
           <div id="presentation_controls">
             <div class="playback_buttons">
               <div class="cmd_button icon_button play_icon" onclick="start_presentation()"></div>
-              <div class="cmd_button restore_button" onclick="restore_loop()">
-                Restore loop
-              </div>
+              <div class="i18n_restore cmd_button restore_button" onclick="restore_loop()"></div>
             </div>
           </div>
           <div id="bible_controls">
@@ -77,15 +72,15 @@
             onclick="load_element('service')"
           >
             <img class="element_icon" src="/html/icons/icons8-numbered-list-48.png" />
-            <span class="element_label">Service</span>
+            <span id="service_elt_text" class="element_label"></span>
           </div>
           <div id="song_elt_button" class="element_button" onclick="load_element('song')">
             <img class="element_icon" src="/html/icons/icons8-musical-notes-48.png" />
-            <span class="element_label">Songs</span>
+            <span id="song_elt_text" class="element_label"></span>
           </div>
           <div id="bible_elt_button" class="element_button" onclick="load_element('bible')">
             <img class="element_icon" src="/html/icons/icons8-literature-48.png" />
-            <span class="element_label">Bible</span>
+            <span id="bible_elt_text" class="element_label"></span>
           </div>
           <div
             id="presentation_elt_button"
@@ -93,11 +88,11 @@
             onclick="load_element('presentation')"
           >
             <img class="element_icon" src="/html/icons/icons8-presentation-48.png" />
-            <span class="element_label">Presentations</span>
+            <span id="presentation_elt_text" class="element_label"></span>
           </div>
           <div id="video_elt_button" class="element_button" onclick="load_element('video')">
             <img class="element_icon" src="/html/icons/icons8-tv-show-48.png" />
-            <span class="element_label">Videos</span>
+            <span id="video_elt_text" class="element_label"></span>
           </div>
           <div
             id="backgrounds_elt_button"
@@ -105,11 +100,11 @@
             onclick="load_element('backgrounds')"
           >
             <img class="element_icon" src="/html/icons/icons8-image-48.png" />
-            <span class="element_label">Backgrounds</span>
+            <span id="backgrounds_elt_text" class="element_label"></span>
           </div>
           <div id="styles_elt_button" class="element_button" onclick="load_element('styles')">
             <img class="element_icon" src="/html/icons/icons8-services-48.png" />
-            <span class="element_label">Settings</span>
+            <span id="styles_elt_text" class="element_label"></span>
           </div>
           <div id="updater_elt_button" class="element_button" onclick="load_element('updater')">
             <img class="element_icon" src="/html/icons/icons8-alert-48.png" />
@@ -125,27 +120,24 @@
 
         <div id="service_element" class="element_panel">
           <div id="service_menu">
-            <div class="cmd_button menu_button" onclick="new_service(false)">New</div>
-            <div class="cmd_button menu_button" onclick="load_service_preload()">Load</div>
-            <div class="cmd_button menu_button" onclick="save_service('none')">Save</div>
-            <div class="cmd_button menu_button" onclick="open_save_service_popup()">Save as</div>
-            <div id="export_service_btn" class="cmd_button menu_button" onclick="export_service()">Export</div>
+            <div id="new_service_btn" class="cmd_button menu_button" onclick="new_service(false)"></div>
+            <div id="load_service_btn" class="cmd_button menu_button" onclick="load_service_preload()"></div>
+            <div id="save_service_btn" class="cmd_button menu_button" onclick="save_service('none')"></div>
+            <div id="save_as_service_btn" class="cmd_button menu_button" onclick="open_save_service_popup()"></div>
+            <div id="export_service_btn" class="cmd_button menu_button" onclick="export_service()"></div>
           </div>
-          <h3>Service plan <span id="service_name"></span></h3>
+          <h3><span id="service_h3_text"></span> <span id="service_name"></span></h3>
           <div id="service_list" class="ml_list"></div>
           <div id="countdown_control">
-            <div class="cmd_button small_button" onclick="start_countdown(false)">
-              Start countdown to:
+            <div id="start_countdown_btn" class="cmd_button small_button" onclick="start_countdown(false)">
             </div>
             <input type="time" id="cd_time" name="cd_time" class="mi_textinput" />
-            <div class="cmd_button small_button" onclick="clear_countdown()">Cancel countdown</div>
+            <div id="cancel_countdown_btn" class="cmd_button small_button" onclick="clear_countdown()"></div>
           </div>
           <div id="notices_control">
             <button id="import_notices_btn" class="cmd_button small_button" onclick="import_notices()">
-              Import notices
             </button>
             <button id="start_notices_btn" class="cmd_button small_button" onclick="start_countdown(true)">
-              Start countdown with notices:
             </button>
             <input id="notices_filename" type="text" class="mi_textinput" disabled></input>
             <button id="clear_notices_btn" class="ml_icon ml_icon_minus" onclick="clear_notices();"></button>
@@ -154,10 +146,10 @@
 
         <div id="song_element" class="element_panel">
           <div class="refresh_header">
-            <h3>Songs</h3>
+            <h3 id="songs_h3_text"></h3>
             <div id="create_song_btn" class="cmd_button" onclick="create_song()">
               <img src="/html/icons/icons8-plus-24.png" />
-              <span>Create song</span>
+              <span id="create_song_text"></span>
             </div>
           </div>
           <div class="search_div">
@@ -166,11 +158,10 @@
               id="song_search"
               value=""
               class="mi_textinput"
-              placeholder="Lyric or title search"
             />
             <div class="cmd_button small_button" onclick="song_search()">
               <img src="/html/icons/icons8-search-24.png" />
-              <span>Search</span>
+              <span id="song_search_btn"></span>
             </div>
           </div>
           <div id="song_list" class="ml_list"></div>
@@ -178,36 +169,23 @@
 
         <div id="bible_element" class="element_panel">
           <div class="refresh_header">
-            <h3>Bible</h3>
+            <h3 id="bible_h3_text"></h3>
             <div id="b_version_radios" class="radio_toggle_group"></div>
           </div>
           <div class="search_div">
             <input type="search" id="bible_search" value="" class="mi_textinput" />
             <div class="cmd_button small_button" onclick="bible_search()">
               <img src="/html/icons/icons8-search-24.png" />
-              <span>Search</span>
+              <span id="bible_search_btn"></span>
             </div>
           </div>
 
-          <div id="bible_search_options">
-            <span>Search by:</span>
-            <div class="radio_toggle_group">
-              <input
-                type="radio"
-                name="b_search_type"
-                id="b_search_type_ref"
-                value="on"
-                checked="checked"
-              />
-              <label for="b_search_type_ref">Ref</label>
-              <input type="radio" name="b_search_type" id="b_search_type_text" value="off" />
-              <label for="b_search_type_text">Text</label>
-            </div>
-            <div class="cmd_button small_button" onclick="select_all_verses()">Select all</div>
-            <div class="cmd_button small_button" onclick="select_none_verses()">Select none</div>
+          <div id="bible_select_options">
+            <div id="bible_select_all_btn" class="cmd_button small_button" onclick="select_all_verses()"></div>
+            <div id="bible_select_none_btn" class="cmd_button small_button" onclick="select_none_verses()"></div>
             <div class="cmd_button small_button" onclick="add_verses()">
               <img src="/html/icons/icons8-plus-24.png" />
-              <span>Add to service</span>
+              <span id="bible_add_to_btn"></span>
             </div>
           </div>
           <div id="passage_list" class="ml_list"></div>
@@ -215,10 +193,10 @@
 
         <div id="presentation_element" class="element_panel">
           <div class="refresh_header">
-            <h3>Presentations</h3>
+            <h3 id="pres_h3_text"></h3>
             <div id="import_presentation_btn" class="cmd_button" onclick="import_presentation()">
               <img src="/html/icons/icons8-add-file-24.png" />
-              <span>Import presentation</span>
+              <span id="pres_import_btn"></span>
             </div>
           </div>
           <div id="presentation_list" class="ml_list"></div>
@@ -226,10 +204,10 @@
 
         <div id="video_element" class="element_panel">
           <div class="refresh_header">
-            <h3>Videos</h3>
+            <h3 id="videos_h3_text"></h3>
             <div id="import_video_btn" class="cmd_button" onclick="import_video()">
               <img src="/html/icons/icons8-add-file-24.png" />
-              <span>Import video</span>
+              <span id="videos_import_btn"></span>
             </div>
           </div>
           <div id="video_list" class="ml_list"></div>
@@ -237,32 +215,32 @@
 
         <div id="backgrounds_element" class="element_panel">
           <div class="refresh_header">
-            <h3>Loops</h3>
+            <h3 id="loops_h3_text"></h3>
             <div id="import_loop_btn" class="cmd_button" onclick="import_loop()">
               <img src="/html/icons/icons8-add-file-24.png" />
-              <span>Import loop</span>
+              <span id="loops_import_btn"></span>
             </div>
           </div>
           <div id="loop_list" class="ml_list"></div>
-          <div class="cmd_button full_button" onclick="clear_loop()">Clear loop</div>
+          <div id="clear_loop_btn" class="cmd_button full_button" onclick="clear_loop()"></div>
           <div class="refresh_header">
-            <h3>Backgrounds</h3>
+            <h3 id="bgs_h3_text"></h3>
             <div id="import_background_btn" class="cmd_button" onclick="import_background()">
               <img src="/html/icons/icons8-add-file-24.png" />
-              <span>Import background</span>
+              <span id="bgs_import_btn"></span>
             </div>
           </div>
           <div class="song_bible_area">
             <div class="ml_list song_bible_button">
               <div class="ml_row">
-                <div class="ml_text">Songs</div>
+                <div id="bgs_for_songs_text" class="ml_text"></div>
                 <img id="song_bg_icon" src="" />
                 <a class="ml_button ml_icon ml_icon_minus" onclick="remove_song_background();"></a>
               </div>
             </div>
             <div class="ml_list song_bible_button">
               <div class="ml_row">
-                <div class="ml_text">Bible</div>
+                <div id="bgs_for_bible_text" class="ml_text"></div>
                 <img id="bible_bg_icon" src="" />
                 <a class="ml_button ml_icon ml_icon_minus" onclick="remove_bible_background();"></a>
               </div>
@@ -272,14 +250,14 @@
         </div>
 
         <div id="styles_element" class="element_panel">
-          <h3>Settings</h3>
+          <h3 id="settings_h3_text"></h3>
           <div id="sh_mainarea" class="ml_row style_header">
-            <div class="sl_text">Main area</div>
+            <div id="main_area_text" class="sl_text"></div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('mainarea')"></a>
           </div>
           <div id="sg_mainarea" class="style_group">
             <div class="mi_range">
-              <label for="s_width">Song area width (% of screen):</label>
+              <label id="s_width_text" for="s_width"></label>
               <input
                 id="s_width"
                 type="range"
@@ -292,7 +270,7 @@
               <output id="s_width_out"></output>
             </div>
             <div class="mi_range">
-              <label for="s_font_size">Font size (% of screen height):</label>
+              <label id="s_font_size_text" for="s_font_size"></label>
               <input
                 id="s_font_size"
                 type="range"
@@ -305,7 +283,7 @@
               <output id="s_font_size_out"></output>
             </div>
             <div class="mi_range">
-              <label for="s_lines">Max lines per slide:</label>
+              <label id="s_lines_text" for="s_lines"></label>
               <input
                 id="s_lines"
                 type="range"
@@ -318,7 +296,7 @@
               <output id="s_lines_out"></output>
             </div>
             <div class="mi_range">
-              <label for="s_margin">Top margin (% of screen height):</label>
+              <label id="s_margin_text" for="s_margin"></label>
               <input
                 id="s_margin"
                 type="range"
@@ -330,76 +308,30 @@
               />
               <output id="s_margin_out"></output>
             </div>
-            <span>Song and Bible text colour:</span>
-            <div id="rgb_container">
-              <div id="rgb_sliders">
-                <div class="mi_range mi_range_compact">
-                  <span style="color: red"><strong>R</strong></span>
-                  <input
-                    id="tc_red"
-                    type="range"
-                    min="0"
-                    max="255"
-                    step="1"
-                    oninput="style_slider_input(this)"
-                    onchange="color_slider_change(this)"
-                  />
-                  <output id="tc_red_out"></output>
-                </div>
-                <div class="mi_range mi_range_compact">
-                  <span style="color: green"><strong>G</strong></span>
-                  <input
-                    id="tc_green"
-                    type="range"
-                    min="0"
-                    max="255"
-                    step="1"
-                    oninput="style_slider_input(this)"
-                    onchange="color_slider_change(this)"
-                  />
-                  <output id="tc_green_out"></output>
-                </div>
-                <div class="mi_range mi_range_compact">
-                  <span style="color: blue"><strong>B</strong></span>
-                  <input
-                    id="tc_blue"
-                    type="range"
-                    min="0"
-                    max="255"
-                    step="1"
-                    oninput="style_slider_input(this)"
-                    onchange="color_slider_change(this)"
-                  />
-                  <output id="tc_blue_out"></output>
-                </div>
-              </div>
-              <div id="rgb_preview_panel">
-                <div id="tc_preview"></div>
-                <div id="tc_save" class="cmd_button small_button" onclick="save_color_sliders()">
-                  Save colour
-                </div>
-              </div>
+            <div id="tc_picker_div">
+              <span id="s_color_text"></span>
+              <input id="tc_all" type="color" onchange="color_picker_change()" />
             </div>
             <div id="o_style_div" class="radio_toggle_group">
-              <span>Text outline:</span>
+              <span id="o_style_text"></span>
               <input type="radio" name="o_style" id="o_style_1" data-ol="drop-shadow" />
-              <label for="o_style_1">Drop shadow</label>
+              <label id="o_drop_text" for="o_style_1"></label>
               <input type="radio" name="o_style" id="o_style_2" data-ol="text-outline" />
-              <label for="o_style_2">Outlined</label>
+              <label id="o_outline_text" for="o_style_2"></label>
               <input type="radio" name="o_style" id="o_style_3" data-ol="none" />
-              <label for="o_style_3">None</label>
+              <label id="o_none_text" for="o_style_3"></label>
             </div>
           </div>
           <div id="sh_bible" class="ml_row style_header">
-            <div class="sl_text">Bible passages</div>
+            <div id="sh_bible_text" class="sl_text"></div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('bible')"></a>
           </div>
           <div id="sg_bible" class="style_group">
             <div id="d_version_radios" class="radio_toggle_group">
-              <span>Default Bible version:</span>
+              <span id="d_version_text"></span>
             </div>
             <div class="mi_range">
-              <label for="b_lines">Max Bible lines per slide:</label>
+              <label id="b_lines_text" for="b_lines"></label>
               <input
                 id="b_lines"
                 type="range"
@@ -412,7 +344,7 @@
               <output id="b_lines_out"></output>
             </div>
             <div class="mi_range">
-              <label for="pl_width">Parallel column width (% of screen):</label>
+              <label id="pl_width_text" for="pl_width"></label>
               <input
                 id="pl_width"
                 type="range"
@@ -425,7 +357,7 @@
               <output id="pl_width_out"></output>
             </div>
             <div class="mi_range">
-              <label for="pl_font_size">Parallel font size (% of screen height):</label>
+              <label id="pl_font_size_text" for="pl_font_size"></label>
               <input
                 id="pl_font_size"
                 type="range"
@@ -438,7 +370,7 @@
               <output id="pl_font_size_out"></output>
             </div>
             <div class="mi_range">
-              <label for="pl_lines">Parallel max lines per slide:</label>
+              <label id="pl_lines_text" for="pl_lines"></label>
               <input
                 id="pl_lines"
                 type="range"
@@ -452,12 +384,12 @@
             </div>
           </div>
           <div id="sh_countdowns" class="ml_row style_header">
-            <div class="sl_text">Countdowns and notices</div>
+            <div id="sh_countdowns_text" class="sl_text"></div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('countdowns')"></a>
           </div>
           <div id="sg_countdowns" class="style_group">
             <div class="mi_range">
-              <label for="ch_size">Header font size (% of screen height):</label>
+              <label id="ch_size_text" for="ch_size"></label>
               <input
                 id="ch_size"
                 type="range"
@@ -470,11 +402,11 @@
               <output id="ch_size_out"></output>
             </div>
             <div id="countdown_h_text_input">
-              <label for="cd_text">Header text:</label>
+              <label id="cd_text_text" for="cd_text"></label>
               <input type="text" id="cd_text" class="mi_textinput" />
             </div>
             <div class="mi_range">
-              <label for="cd_size">Countdown font size (% of screen height):</label>
+              <label id="cd_size_text" for="cd_size"></label>
               <input
                 id="cd_size"
                 type="range"
@@ -487,7 +419,7 @@
               <output id="cd_size_out"></output>
             </div>
             <div class="mi_range">
-              <label for="cd_top">Countdown top margin (% of screen height):</label>
+              <label id="cd_top_text" for="cd_top"></label>
               <input
                 id="cd_top"
                 type="range"
@@ -500,7 +432,7 @@
               <output id="cd_top_out"></output>
             </div>
             <div class="mi_range">
-              <label for="nt_slide">Notices slide time (seconds):</label>
+              <label id="nt_slide_text" for="nt_slide"></label>
               <input
                 id="nt_slide"
                 type="range"
@@ -513,7 +445,7 @@
               <output id="nt_slide_out"></output>
             </div>
             <div class="mi_range">
-              <label for="nt_cycle">Gap between notices cycles (seconds):</label>
+              <label id="nt_cycle_text" for="nt_cycle"></label>
               <input
                 id="nt_cycle"
                 type="range"
@@ -526,7 +458,7 @@
               <output id="nt_cycle_out"></output>
             </div>
             <div class="mi_range">
-              <label for="nt_end">Clear space at end of countdown (seconds):</label>
+              <label id="nt_end_text" for="nt_end"></label>
               <input
                 id="nt_end"
                 type="range"
@@ -540,19 +472,19 @@
             </div>
           </div>
           <div id="sh_copyright" class="ml_row style_header">
-            <div class="sl_text">Copyright area</div>
+            <div id="sh_copyright_text" class="sl_text"></div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('copyright')"></a>
           </div>
           <div id="sg_copyright" class="style_group">
             <div class="mi_toggle_div">
-              <span>Display copyright:</span>
+              <span id="d_copyright_text"></span>
               <div class="mi_toggle">
                 <input type="checkbox" id="d_copyright" />
                 <output id="d_copyright_out"></output>
               </div>
             </div>
             <div class="mi_range">
-              <label for="cp_size">Copyright font size (0.1% of screen height):</label>
+              <label id="cp_size_text" for="cp_size"></label>
               <input
                 id="cp_size"
                 type="range"
@@ -565,7 +497,7 @@
               <output id="cp_size_out"></output>
             </div>
             <div class="mi_range">
-              <label for="cp_width">Copyright area width (% of screen width):</label>
+              <label id="cp_width_text" for="cp_width"></label>
               <input
                 id="cp_width"
                 type="range"
@@ -579,19 +511,19 @@
             </div>
           </div>
           <div id="sh_verseorder" class="ml_row style_header">
-            <div class="sl_text">Verse order area</div>
+            <div id="sh_verseorder_text" class="sl_text"></div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('verseorder')"></a>
           </div>
           <div id="sg_verseorder" class="style_group">
             <div class="mi_toggle_div">
-              <span>Display verse order:</span>
+              <span id="d_verseorder_text"></span>
               <div class="mi_toggle">
                 <input type="checkbox" id="d_verseorder" />
                 <output id="d_verseorder_out"></output>
               </div>
             </div>
             <div class="mi_range">
-              <label for="vo_size">Verse order font size (0.1% of screen height):</label>
+              <label id="vo_size_text" for="vo_size"></label>
               <input
                 id="vo_size"
                 type="range"
@@ -604,7 +536,7 @@
               <output id="vo_size_out"></output>
             </div>
             <div class="mi_range">
-              <label for="vo_width">Verse order area width (% of screen width):</label>
+              <label id="vo_width_text" for="vo_width"></label>
               <input
                 id="vo_width"
                 type="range"
@@ -618,12 +550,19 @@
             </div>
           </div>
           <div id="sh_appsettings" class="ml_row style_header">
-            <div class="sl_text">App settings</div>
+            <div id="sh_appsettings_text" class="sl_text"></div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('appsettings')"></a>
           </div>
           <div id="sg_appsettings" class="style_group">
+            <div id="app_lang_div" class="radio_toggle_group">
+              <span id="app_lang_text"></span>
+              <input type="radio" name="a_lang" id="a_lang_1" data-al="en" />
+              <label id="a_english_text" for="a_lang_1"></label>
+              <input type="radio" name="a_lang" id="a_lang_2" data-al="es" />
+              <label id="a_spanish_text" for="a_lang_2"></label>
+            </div>
             <div class="mi_range">
-              <label for="at_scale">Song and Bible text size (scale by):</label>
+              <label id="at_scale_text" for="at_scale"></label>
               <input
                 id="at_scale"
                 type="range"
@@ -637,65 +576,49 @@
             </div>
           </div>
           <div id="sh_recyclebin" class="ml_row style_header">
-            <div class="sl_text">Song Recycle Bin</div>
+            <div id="sh_recyclebin_text" class="sl_text"></div>
             <a class="sl_button ml_icon ml_icon_dots" onclick="expand_section('recyclebin')"></a>
           </div>
           <div id="sg_recyclebin" class="style_group">
             <div id="recycle_bin" class="ml_list"></div>
             <button onclick="confirm_empty_recycle_bin()" class="cmd_button full_button">
               <img src="/html/icons/icons8-remove-24.png" />
-              Empty Song Recycle Bin
+              <span id="recycle_bin_btn"></span>
             </button>
           </div>
-          <h4>About Malachi</h4>
+          <h4 id="about_h4_text"></h4>
           <p>
-            Malachi is open-source software, released under a
-            <a href="https://www.gnu.org/licenses/gpl-3.0-standalone.html" target="_blank"
-              >GPL3 license</a
-            >.
+            <span id="about_malachi_text"></span>
+            <a id="about_gpl_text" href="https://www.gnu.org/licenses/gpl-3.0-standalone.html" target="_blank"></a>
           </p>
           <p>
-            Some icons in Malachi are provided by
+            <span id="about_icons8_text"></span>
             <a href="https://icons8.com" target="_blank">Icons8</a>.
           </p>
         </div>
 
         <div id="updater_element" class="element_panel">
-          <h3>Update Malachi</h3>
+          <h3 id="updater_h3_text"></h3>
           <div id="regular_update_instructions">
-            <p>A new version of Malachi has been released - here's how to install it:</p>
+            <p id="regular_intro_text"></p>
             <ol class="update_instructions">
-              <li>Save the service if you want to load it later.</li>
-              <li>
-                Click the
-                <strong>Update Malachi</strong>
-                button below.
-              </li>
-              <li>
-                Wait for the green
-                <em>Connected to Malachi server</em>
-                message to be displayed in the bottom left of the app.
-              </li>
-              <li>
-                Press <strong>Ctrl + Shift + R</strong> to refresh the app. Any other devices
-                connected to Malachi will automatically reconnect to the server after a few seconds.
-              </li>
+              <li id="regular_step_1"></li>
+              <li id="regular_step_2"></li>
+              <li id="regular_step_3"></li>
+              <li id="regular_step_4"></li>
             </ol>
             <button id="updater_btn" onclick="update_malachi()" class="cmd_button full_button">
               <img src="/html/icons/icons8-windows-update-24.png" />
-              Update Malachi
+              <span id="updater_btn_text"></span>
             </button>
           </div>
           <div id="python_update_instructions">
-            <p>
-              The newest version of Malachi runs on a different version of Python. Here's how to
-              update both Python and Malachi:
-              <ol class="update_instructions">
-                <li>Save the service if you want to load it later.</li>
-                <li>Take a note of this Python version number: <strong id="python_version_needed">3.x.x</strong></li>
-                <li>Follow the <a href="https://github.com/crossroadchurch/malachi/wiki/Manually-updating-Python-and-Malachi">manual update instructions</a> on the Malachi wiki.</li>
-              </ol>
-            </p>
+            <p id="python_intro_text"></p>
+            <ol class="update_instructions">
+              <li id="python_step_1"></li>
+              <li><span id="python_step_2"></span><strong id="python_version_needed">3.x.x</strong></li>
+              <li><span id="python_step_3a"></span><a id="python_step_3b" href="https://github.com/crossroadchurch/malachi/wiki/Manually-updating-Python-and-Malachi"></a><span id="python_step_3c"></span></li>
+            </ol>
           </div>
         </div>
       </div>
@@ -708,26 +631,17 @@
         <div class="popup_h_spacer"></div>
         <div style="display: flex; flex-direction: column">
           <div class="popup_header">
-            <span>Save service?</span>
+            <span id="popup_new_header_text"></span>
           </div>
           <div class="popup_panel">
-            <p>
-              The current service has been modified.<br />Save these changes before starting a new
-              service?
-            </p>
+            <p id="popup_new_body_text"></p>
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="save_service('new')">
-                Save
-              </div>
-              <div class="cmd_button menu_button dialog_button" onclick="new_service(true)">
-                Discard
-              </div>
+              <div class="i18n_save cmd_button menu_button dialog_button" onclick="save_service('new')"></div>
+              <div class="i18n_discard cmd_button menu_button dialog_button" onclick="new_service(true)"></div>
               <div
-                class="cmd_button menu_button dialog_button"
+                class="i18n_cancel cmd_button menu_button dialog_button"
                 onclick="close_popup('popup_new_service')"
-              >
-                Cancel
-              </div>
+              ></div>
             </div>
           </div>
         </div>
@@ -743,26 +657,17 @@
         <div class="popup_h_spacer"></div>
         <div style="display: flex; flex-direction: column">
           <div class="popup_header">
-            <span>Save service?</span>
+            <span id="popup_save_load_header_text"></span>
           </div>
           <div class="popup_panel">
-            <p>
-              The current service has been modified.<br />Save these changes before loading a new
-              service?
-            </p>
+            <p id="popup_save_load_body_text"></p>
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="save_service('load')">
-                Save
-              </div>
-              <div class="cmd_button menu_button dialog_button" onclick="load_service(true)">
-                Discard
-              </div>
+              <div class="i18n_save cmd_button menu_button dialog_button" onclick="save_service('load')"></div>
+              <div class="i18n_discard cmd_button menu_button dialog_button" onclick="load_service(true)"></div>
               <div
-                class="cmd_button menu_button dialog_button"
+                class="i18n_cancel cmd_button menu_button dialog_button"
                 onclick="close_popup('popup_save_before_load_service')"
-              >
-                Cancel
-              </div>
+              ></div>
             </div>
           </div>
         </div>
@@ -778,25 +683,20 @@
         <div class="popup_h_spacer"></div>
         <div style="display: flex; flex-direction: column">
           <div class="popup_header">
-            <span>Save service as...</span>
+            <span id="popup_save_as_header_text"></span>
           </div>
           <div class="popup_panel">
-            <p>Give the service a name:</p>
+            <p id="popup_save_as_body_text"></p>
             <input
               id="f_name"
               name="f_name"
               type="text"
               value=""
               class="mi_textinput"
-              placeholder="Service name"
             />
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="save_service_as()">
-                Save
-              </div>
-              <div class="cmd_button menu_button dialog_button" onclick="close_save_as_popup()">
-                Cancel
-              </div>
+              <div class="i18n_save cmd_button menu_button dialog_button" onclick="save_service_as()"></div>
+              <div class="i18n_cancel cmd_button menu_button dialog_button" onclick="close_save_as_popup()"></div>
             </div>
           </div>
         </div>
@@ -812,29 +712,25 @@
         <div class="popup_h_spacer"></div>
         <div style="display: flex; flex-direction: column">
           <div class="popup_header">
-            <span>Load service</span>
+            <span id="popup_load_header_text"></span>
           </div>
           <div class="popup_panel">
-            <p>Choose service to load:</p>
+            <p id="popup_load_body_text"></p>
             <div
               id="load_files_radio"
               class="ml_list"
               style="max-height: 250px; overflow-y: auto; width: 100%"
             ></div>
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="load_service(false)">
-                Load
-              </div>
+              <div class="i18n_load cmd_button menu_button dialog_button" onclick="load_service(false)"></div>
               <div id="import_service_btn" class="cmd_button menu_button dialog_button" onclick="import_service()">
                 <img src="/html/icons/icons8-add-file-24.png" />
-                <span>Import</span>
+                <span class="i18n_import"></span>
               </div>
               <div
-                class="cmd_button menu_button dialog_button"
+                class="i18n_cancel cmd_button menu_button dialog_button"
                 onclick="close_popup('popup_load_service')"
-              >
-                Cancel
-              </div>
+              ></div>
             </div>
           </div>
         </div>
@@ -850,29 +746,25 @@
         <div class="popup_h_spacer"></div>
         <div style="display: flex; flex-direction: column">
           <div class="popup_header">
-            <span>Attach audio to song</span>
+            <span id="popup_attach_header_text"></span>
           </div>
           <div class="popup_panel">
-            <p>Choose audio to attach:</p>
+            <p id="popup_attach_body_text"></p>
             <div
               id="attach_audio_radio"
               class="ml_list"
               style="max-height: 250px; overflow-y: auto; width: 100%"
             ></div>
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="attach_audio()">
-                Attach
-              </div>
+              <div class="i18n_attach cmd_button menu_button dialog_button" onclick="attach_audio()"></div>
               <div id="import_audio_btn" class="cmd_button menu_button dialog_button" onclick="import_audio()">
                 <img src="/html/icons/icons8-add-file-24.png" />
-                <span>Import</span>
+                <span class="i18n_import"></span>
               </div>
               <div
-                class="cmd_button menu_button dialog_button"
+                class="i18n_cancel cmd_button menu_button dialog_button"
                 onclick="close_attach_audio_popup()"
-              >
-                Cancel
-              </div>
+              ></div>
             </div>
           </div>
         </div>
@@ -888,21 +780,16 @@
         <div class="popup_h_spacer"></div>
         <div style="display: flex; flex-direction: column">
           <div class="popup_header">
-            <span>Delete song?</span>
+            <span id="popup_delete_header_text"></span>
           </div>
           <div class="popup_panel">
-            <p>
-              Are you sure that you want to delete the current song?<br />Deleted songs can be
-              restored from the Song Recycle Bin in the Settings tab.
-            </p>
+            <p id="popup_delete_body_text"></p>
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="delete_song()">Delete</div>
+              <div class="i18n_delete cmd_button menu_button dialog_button" onclick="delete_song()"></div>
               <div
-                class="cmd_button menu_button dialog_button"
+                class="i18n_cancel cmd_button menu_button dialog_button"
                 onclick="close_popup('popup_confirm_delete_song')"
-              >
-                Cancel
-              </div>
+              ></div>
             </div>
           </div>
         </div>
@@ -918,23 +805,16 @@
         <div class="popup_h_spacer"></div>
         <div style="display: flex; flex-direction: column">
           <div class="popup_header">
-            <span>Empty Song Recycle Bin?</span>
+            <span id="popup_recycle_header_text"></span>
           </div>
           <div class="popup_panel">
-            <p>
-              Are you sure that you want to empty the Song Recycle Bin?<br />
-              All Songs in the Recycle Bin will be deleted permanently.
-            </p>
+            <p id="popup_recycle_body_text"></p>
             <div class="popup_buttons">
-              <div class="cmd_button menu_button dialog_button" onclick="empty_recycle_bin()">
-                Empty Bin
-              </div>
+              <div class="i18n_empty cmd_button menu_button dialog_button" onclick="empty_recycle_bin()"></div>
               <div
-                class="cmd_button menu_button dialog_button"
+                class="i18n_cancel cmd_button menu_button dialog_button"
                 onclick="close_popup('popup_confirm_empty_bin')"
-              >
-                Cancel
-              </div>
+              ></div>
             </div>
           </div>
         </div>
@@ -947,38 +827,37 @@
     <div id="popup_edit_song" class="popup_wrapper">
       <div class="popup_v_spacer"></div>
       <div class="popup_header">
-        <span id="popup_edit_mode">Edit song</span>
+        <span id="popup_edit_mode"></span>
       </div>
       <div class="popup_h_content">
         <!-- Left column -->
         <div class="popup_panel">
-          <span id="e_title_span">Song name:</span>
+          <span id="e_title_span"></span>
           <input type="text" id="e_title" class="mi_textinput" />
           <div class="popup_row">
             <div class="popup_column">
-              <span>Author:</span>
+              <span id="e_author_label"></span>
               <input type="text" id="e_author" class="mi_textinput" />
             </div>
           </div>
-          <span>Copyright:</span>
+          <span id="e_copyright_label"></span>
           <input type="text" id="e_copyright" class="mi_textinput" />
           <div class="popup_row">
             <div class="popup_column">
-              <span>Song book:</span>
+              <span id="e_book_label"></span>
               <input type="text" id="e_book" class="mi_textinput" />
             </div>
             <div class="popup_column">
-              <span>Song number:</span>
+              <span id="e_number_label"></span>
               <input type="text" id="e_number" class="mi_textinput" />
             </div>
             <div class="popup_column">
-              <span>Audio:</span>
+              <span id="e_audio_label"></span>
               <div style="display: flex">
                 <input
                   type="text"
                   id="e_audio"
                   class="mi_textinput mi_textinput_join_right"
-                  placeholder="No audio attached"
                   readonly
                 />
                 <div
@@ -999,17 +878,14 @@
             </div>
           </div>
           <div style="width: 100%">
-            <span
-              data-tooltip="You can insert a fill into the order in the same way as a verse,
-just make sure to start it with a : (e.g. C1 :1 V2)."
-              ><img src="/html/icons/icons8-help-48.png" class="help_icon" />
+            <span id="e_order_hint"><img src="/html/icons/icons8-help-48.png" class="help_icon" />
             </span>
-            Verse order:
+            <span id="e_order_label"></span>
           </div>
           <input type="text" id="e_order" class="mi_textinput" />
           <div style="width: 100%; display: flex; flex-direction: row; gap: 1em">
             <div class="popup_column">
-              <span>Key:</span>
+              <span id="e_key_label"></span>
               <div id="e_key_div" class="radio_toggle_group">
                 <input type="radio" name="e_key" id="e_key_1" data-ek="C" />
                 <label for="e_key_1">C</label>
@@ -1038,7 +914,7 @@ just make sure to start it with a : (e.g. C1 :1 V2)."
               </div>
             </div>
             <div class="popup_column_no_grow">
-              <span>Transpose to:</span>
+              <span id="e_transpose_label"></span>
               <div style="display: flex">
                 <div class="cmd_button small_button btn_join_right" onclick="transpose_by(-1)">
                   <img src="/html/icons/icons8-back-to-24.png" />
@@ -1057,19 +933,21 @@ just make sure to start it with a : (e.g. C1 :1 V2)."
               class="cmd_button restore_button"
               onclick="confirm_delete_song()"
             >
-              <img src="/html/icons/icons8-remove-24.png" />Delete song
+              <img src="/html/icons/icons8-remove-24.png" />
+              <span class="i18n_delete"></span>
             </div>
             <div style="flex-grow: 1"></div>
             <div class="popup_buttons">
               <div class="cmd_button menu_button dialog_button" onclick="save_song()">
-                <img src="/html/icons/icons8-save-24.png" />Save
+                <img src="/html/icons/icons8-save-24.png" />
+                <span class="i18n_save"></span>
               </div>
               <div
                 class="cmd_button menu_button dialog_button"
                 onclick="close_popup('popup_edit_song')"
               >
                 <img src="/html/icons/icons8-close-window-24.png" />
-                Cancel
+                <span class="i18n_cancel"></span>
               </div>
             </div>
           </div>
@@ -1077,14 +955,9 @@ just make sure to start it with a : (e.g. C1 :1 V2)."
         <!-- Right column -->
         <div class="popup_panel">
           <div>
-            <span
-              data-tooltip="Use tags in angle brackets (e.g. &lt;V1&gt;) to indicate the start of sections.
-Insert a mandatory line break by placing [br] on a line by itself.
-Place chords on the line before their lyrics and finish chord lines with @.
-Use # to pad out lyrics so that they line up with their chords."
-              ><img src="/html/icons/icons8-help-48.png" class="help_icon" />
+            <span id="e_lyrics_hint"><img src="/html/icons/icons8-help-48.png" class="help_icon" />
             </span>
-            Lyrics and chords:
+            <span id="e_lyrics_label"></span>
           </div>
           <textarea
             cols="48"
@@ -1094,12 +967,9 @@ Use # to pad out lyrics so that they line up with their chords."
             class="mi_textarea"
           ></textarea>
           <div style="width: 100%">
-            <span
-              data-tooltip="Place one fill (intro, outro etc) per line.
-Only use chords, there is no need to end the line with an @."
-              ><img src="/html/icons/icons8-help-48.png" class="help_icon" />
+            <span id="e_fills_hint"><img src="/html/icons/icons8-help-48.png" class="help_icon" />
             </span>
-            Fills:
+            <span id="e_fills_label"></span>
           </div>
           <div id="fill_editor">
             <div id="line_numbers"></div>

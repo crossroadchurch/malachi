@@ -2,6 +2,7 @@ let websocket;
 const MAX_LIST_ITEMS = 50;
 const MAX_VERSE_ITEMS = 2500;
 const SELECTED_COLOR = "gold";
+let app_language = window.localStorage.getItem("app_language");
 let saved_current_item = null;
 let service_sort_start;
 let editing_song_id = -1;
@@ -13,11 +14,18 @@ let style_dict = {};
 let aspect_ratio;
 let video_timer = 0;
 let video_interval;
-let valid_keys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 let e_transpose = 0;
 let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 let saved_style = null;
+const VALID_KEYS = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
+// prettier-ignore
+const STYLE_SLIDER_IDS = [
+  "s_width", "s_font_size", "s_lines", "b_lines", "s_margin", 
+  "pl_width", "pl_font_size", "pl_lines",
+  "ch_size", "cd_size", "cd_top", "nt_slide", "nt_cycle", "nt_end",
+  "cp_size", "cp_width", "vo_size", "vo_width", "at_scale",
+];
 
 const DOM_dict = {};
 function DOM_get(key) {
@@ -61,12 +69,7 @@ drag_dict["icons8-tv-show-48.png"] = "drag_video_icon";
 
 function change_screen_state_flip() {
   const str_state = DOM_get("flip_screen_state").checked;
-  websocket.send(
-    JSON.stringify({
-      action: "command.set-display-state",
-      params: { state: str_state },
-    })
-  );
+  send_message("command.set-display-state", { state: str_state });
 }
 
 function add_verses() {
@@ -83,31 +86,21 @@ function add_verses() {
         prev_id = v_id;
       } else {
         // Entering new range, so close old one and add that to the service
-        websocket.send(
-          JSON.stringify({
-            action: "command.add-bible-item",
-            params: {
-              version: version,
-              "start-verse": range_start,
-              "end-verse": prev_id,
-            },
-          })
-        );
+        send_message("command.add-bible-item", {
+          version: version,
+          "start-verse": range_start,
+          "end-verse": prev_id,
+        });
         range_start = v_id;
         prev_id = v_id;
       }
     }
     // Add final range to the service
-    websocket.send(
-      JSON.stringify({
-        action: "command.add-bible-item",
-        params: {
-          version: version,
-          "start-verse": range_start,
-          "end-verse": v_id,
-        },
-      })
-    );
+    send_message("command.add-bible-item", {
+      version: version,
+      "start-verse": range_start,
+      "end-verse": v_id,
+    });
   }
 }
 
@@ -128,7 +121,7 @@ function select_none_verses() {
 }
 
 function load_service_preload() {
-  websocket.send(JSON.stringify({ action: "request.all-services", params: {} }));
+  send_message("request.all-services", {});
 }
 
 function load_service(force) {
@@ -136,12 +129,7 @@ function load_service(force) {
   DOM_get("popup_load_service").style.display = "none";
   const sel_text =
     document.querySelector("#load_files_radio .selected .ml_text").innerText + ".json";
-  websocket.send(
-    JSON.stringify({
-      action: "command.load-service",
-      params: { filename: sel_text, force: force },
-    })
-  );
+  send_message("command.load-service", { filename: sel_text, force: force });
 }
 
 function open_save_service_popup() {
@@ -156,12 +144,7 @@ function save_service_as() {
   if (clean_name.endsWith(".json") == false) {
     clean_name += ".json";
   }
-  websocket.send(
-    JSON.stringify({
-      action: "command.save-service-as",
-      params: { filename: clean_name },
-    })
-  );
+  send_message("command.save-service-as", { filename: clean_name });
   // Reset input for next time
   DOM_get("f_name").value = "";
 }
@@ -170,45 +153,35 @@ function save_service(action_after) {
   DOM_get("popup_new_service").style.display = "none";
   DOM_get("popup_save_before_load_service").style.display = "none";
   action_after_save = action_after;
-  websocket.send(JSON.stringify({ action: "command.save-service", params: {} }));
+  send_message("command.save-service", {});
 }
 
 function delete_item(idx) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.remove-item",
-      params: { index: idx },
-    })
-  );
+  send_message("command.remove-item", { index: idx });
 }
 
 function next_item() {
-  websocket.send(JSON.stringify({ action: "command.next-item", params: {} }));
+  send_message("command.next-item", {});
 }
 
 function previous_item() {
-  websocket.send(JSON.stringify({ action: "command.previous-item", params: {} }));
+  send_message("command.previous-item", {});
 }
 
 function goto_item(idx) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.goto-item",
-      params: { index: idx },
-    })
-  );
+  send_message("command.goto-item", { index: idx });
 }
 
 function next_slide() {
-  websocket.send(JSON.stringify({ action: "command.next-slide", params: {} }));
+  send_message("command.next-slide", {});
 }
 
 function previous_slide() {
-  websocket.send(JSON.stringify({ action: "command.previous-slide", params: {} }));
+  send_message("command.previous-slide", {});
 }
 
 function goto_slide(idx) {
-  websocket.send(JSON.stringify({ action: "command.goto-slide", params: { index: idx } }));
+  send_message("command.goto-slide", { index: idx });
 }
 
 function song_search() {
@@ -217,14 +190,7 @@ function song_search() {
     .value.replace(/[^0-9a-z ]/gi, "")
     .trim();
   if (song_val !== "") {
-    websocket.send(
-      JSON.stringify({
-        action: "query.song-by-text",
-        params: {
-          "search-text": song_val,
-        },
-      })
-    );
+    send_message("query.song-by-text", { "search-text": song_val });
   } else {
     DOM_get("song_list").innerHTML = "";
   }
@@ -235,74 +201,49 @@ function bible_search() {
   const search_version = document
     .querySelector("input[name=b_version]:checked")
     .getAttribute("data-bv");
-  if (document.querySelector("input[name=b_search_type]:checked").id == "b_search_type_ref") {
+  if (search_text[0] != '"') {
     if (search_text !== "") {
-      websocket.send(
-        JSON.stringify({
-          action: "query.bible-by-ref",
-          params: {
-            version: search_version,
-            "search-ref": search_text,
-          },
-        })
-      );
+      send_message("query.bible-by-ref", { version: search_version, "search-ref": search_text });
     } else {
       DOM_get("passage_list").innerHTML = "";
     }
   } else {
-    if (search_text.length > 2) {
-      websocket.send(
-        JSON.stringify({
-          action: "query.bible-by-text",
-          params: {
-            version: search_version,
-            "search-text": search_text,
-          },
-        })
-      );
+    const trimmed_text = search_text.replaceAll('"', "");
+    if (trimmed_text.length > 2) {
+      send_message("query.bible-by-text", { version: search_version, "search-text": trimmed_text });
     } else {
-      toast_error("Please enter at least three characters to search by text");
+      toast_error(t8("toast_more_chars_needed"));
     }
   }
 }
 
 function new_service(force) {
   DOM_get("popup_new_service").style.display = "none";
-  websocket.send(JSON.stringify({ action: "command.new-service", params: { force: force } }));
+  send_message("command.new-service", { force: force });
 }
 
 function add_song(s_id) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.add-song-item",
-      params: { "song-id": s_id },
-    })
-  );
+  send_message("command.add-song-item", { "song-id": s_id });
 }
 
 function edit_song(s_id) {
-  websocket.send(
-    JSON.stringify({
-      action: "request.full-song",
-      params: { "song-id": s_id },
-    })
-  );
+  send_message("request.full-song", { "song-id": s_id });
 }
 
 function refresh_presentations() {
-  websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
+  send_message("request.all-presentations", {});
 }
 
 function refresh_videos() {
-  websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
+  send_message("request.all-videos", {});
 }
 
 function refresh_loops() {
-  websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
+  send_message("request.all-loops", {});
 }
 
 function refresh_backgrounds() {
-  websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
+  send_message("request.all-backgrounds", {});
 }
 
 function video_tick() {
@@ -311,76 +252,71 @@ function video_tick() {
 }
 
 function play_video() {
-  websocket.send(JSON.stringify({ action: "command.play-video", params: {} }));
+  send_message("command.play-video", {});
 }
 
 function pause_video() {
-  websocket.send(JSON.stringify({ action: "command.pause-video", params: {} }));
+  send_message("command.pause-video", {});
 }
 
 function stop_video() {
-  websocket.send(JSON.stringify({ action: "command.stop-video", params: {} }));
+  send_message("command.stop-video", {});
 }
 
 function play_audio() {
-  websocket.send(JSON.stringify({ action: "command.play-audio", params: {} }));
+  send_message("command.play-audio", {});
 }
 
 function pause_audio() {
-  websocket.send(JSON.stringify({ action: "command.pause-audio", params: {} }));
+  send_message("command.pause-audio", {});
 }
 
 function stop_audio() {
-  websocket.send(JSON.stringify({ action: "command.stop-audio", params: {} }));
+  send_message("command.stop-audio", {});
 }
 
 function import_notices() {
-  websocket.send(JSON.stringify({ action: "command.import-notices", params: {} }));
+  send_message("command.import-notices", {});
 }
 
 function clear_notices() {
   clear_countdown();
-  websocket.send(JSON.stringify({ action: "command.clear-notices", params: {} }));
+  send_message("command.clear-notices", {});
 }
 
 function start_countdown(show_notices) {
   const now = new Date();
-  const target_time = DOM_get("cd_time").value;
-  const target = new Date(
+  const target = DOM_get("cd_time").value.split(":");
+  const target_date = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate(),
-    target_time.split(":")[0],
-    target_time.split(":")[1],
+    target[0],
+    target[1],
     0
   );
-  const cd_length = Math.floor((target.getTime() - now.getTime()) / 1000);
+  const cd_length = Math.floor((target_date.getTime() - now.getTime()) / 1000);
   if (cd_length > 0) {
-    websocket.send(
-      JSON.stringify({
-        action: "command.start-countdown",
-        params: {
-          hr: target_time.split(":")[0],
-          min: target_time.split(":")[1],
-          notices: show_notices,
-        },
-      })
-    );
+    send_message("command.start-countdown", {
+      hr: target[0],
+      min: target[1],
+      notices: show_notices,
+    });
   } else {
-    toast_error("Invalid countdown\nThat time is in the past!");
+    toast_error(t8("toast_countdown_error"));
   }
 }
 
 function clear_countdown() {
-  websocket.send(JSON.stringify({ action: "command.clear-countdown", params: {} }));
+  send_message("command.clear-countdown", {});
 }
 
 function start_presentation() {
-  websocket.send(JSON.stringify({ action: "command.start-presentation", params: {} }));
+  send_message("command.start-presentation", {});
 }
 
 function restore_loop() {
-  websocket.send(JSON.stringify({ action: "command.restore-loop", params: {} }));
+  send_message("command.restore-loop", {});
 }
 
 function create_song() {
@@ -390,6 +326,8 @@ function create_song() {
   DOM_get("e_book").value = "";
   DOM_get("e_number").value = "";
   DOM_get("e_audio").value = "";
+  DOM_get("add_audio_btn").style.display = "flex";
+  DOM_get("remove_audio_btn").style.display = "none";
   DOM_get("e_copyright").value = "";
   DOM_get("e_lyrics").value = "<V1>\n";
   DOM_get("e_fills").value = "";
@@ -401,7 +339,7 @@ function create_song() {
   e_transpose = 0;
   DOM_get("e_transpose_out").value = "C";
   // Switch into create song mode
-  DOM_get("popup_edit_mode").innerHTML = "Create song";
+  DOM_get("popup_edit_mode").innerHTML = t8("create_song_mode");
   DOM_get("delete_song_btn").style.display = "none";
   // Display popup
   DOM_get("popup_edit_song").style.display = "flex";
@@ -429,8 +367,7 @@ function save_song() {
       if (line[0] == "<") {
         // New part, do we need to close out previous one?
         if (current_lines.length != 0) {
-          part_obj = { part: current_part, lines: current_lines };
-          parts.push(part_obj);
+          parts.push({ part: current_part, lines: current_lines });
         }
         // Start new part
         line_words = line.split(/[> ]/);
@@ -453,13 +390,11 @@ function save_song() {
     }
     // Add final part to parts
     if (current_lines.length != 0) {
-      part_obj = { part: current_part, lines: current_lines };
-      parts.push(part_obj);
+      parts.push({ part: current_part, lines: current_lines });
     }
     // Make sure saved song has at least one part
     if (parts.length == 0) {
-      part_obj = { part: "v1", lines: [] };
-      parts.push(part_obj);
+      parts.push({ part: "v1", lines: [] });
     }
     // fills = [fill_1, fill_2, ...] can be empty array
     let fill_array = DOM_get("e_fills").value.trim().split("\n");
@@ -485,95 +420,42 @@ function save_song() {
         .getAttribute("data-ek");
     }
 
-    if (DOM_get("popup_edit_mode").innerText == "Edit song") {
+    if (DOM_get("popup_edit_mode").innerText == t8("edit_song_mode")) {
       fields["title"] = DOM_get("e_title").value;
-      websocket.send(
-        JSON.stringify({
-          action: "command.edit-song",
-          params: {
-            "song-id": editing_song_id,
-            fields: fields,
-          },
-        })
-      );
+      send_message("command.edit-song", { "song-id": editing_song_id, fields: fields });
     } else {
-      websocket.send(
-        JSON.stringify({
-          action: "command.create-song",
-          params: {
-            title: DOM_get("e_title").value,
-            fields: fields,
-          },
-        })
-      );
+      send_message("command.create-song", { title: DOM_get("e_title").value, fields: fields });
     }
     DOM_get("popup_edit_song").style.display = "none";
   }
 }
 
 function add_video(vid_url) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.add-video",
-      params: { url: vid_url },
-    })
-  );
+  send_message("command.add-video", { url: vid_url });
 }
 
 function add_presentation(pres_url) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.add-presentation",
-      params: {
-        url: pres_url,
-      },
-    })
-  );
+  send_message("command.add-presentation", { url: pres_url });
 }
 
 function import_audio() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.import-audio",
-      params: {},
-    })
-  );
+  send_message("command.import-audio", {});
 }
 
 function import_service() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.import-service",
-      params: {},
-    })
-  );
+  send_message("command.import-service", {});
 }
 
 function export_service() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.export-service",
-      params: {},
-    })
-  );
+  send_message("command.export-service", {});
 }
 
 function import_presentation() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.import-presentation",
-      params: {},
-    })
-  );
+  send_message("command.import-presentation", {});
 }
 
 function import_video() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.import-video",
-      params: {},
-    })
-  );
+  send_message("command.import-video", {});
 }
 
 function indicate_importing_media(fname, dom_elt, is_transparent) {
@@ -607,45 +489,30 @@ function indicate_importing_media(fname, dom_elt, is_transparent) {
 function indicate_importing_service(fname) {
   let new_node =
     "<div class='ml_row'><img src='./html/icons/icons8-spinner-transparent.gif'>" +
-    "<div class='ml_text' style='border-left:none'>Importing service...</div></div>";
+    "<div class='ml_text' style='border-left:none'>" +
+    t8("importing_service") +
+    "</div></div>";
   DOM_get("load_files_radio").children[0].insertAdjacentHTML("beforebegin", new_node);
 }
 
 function import_loop() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.import-loop",
-      params: {},
-    })
-  );
+  send_message("command.import-loop", {});
 }
 
 function import_background() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.import-background",
-      params: {},
-    })
-  );
+  send_message("command.import-background", {});
 }
 
 function set_loop(loop_url) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.set-loop",
-      params: { url: loop_url },
-    })
-  );
+  send_message("command.set-loop", { url: loop_url });
 }
 
 function clear_loop() {
-  websocket.send(JSON.stringify({ action: "command.clear-loop", params: {} }));
+  send_message("command.clear-loop", {});
 }
 
 function toggle_display_state() {
-  websocket.send(
-    JSON.stringify({ action: "command.set-display-state", params: { state: !screen_state } })
-  );
+  send_message("command.set-display-state", { state: !screen_state });
 }
 
 function display_current_item(current_item, slide_index) {
@@ -798,23 +665,11 @@ function update_text_scale(style) {
 
 function update_style_sliders(style) {
   saved_style = style;
-  DOM_get("s_width").value = style[style_dict["s_width"]];
-  DOM_get("s_width_out").value = style[style_dict["s_width"]];
-  DOM_get("s_font_size").value = style[style_dict["s_font_size"]];
-  DOM_get("s_font_size_out").value = style[style_dict["s_font_size"]];
-  DOM_get("s_lines").value = style[style_dict["s_lines"]];
-  DOM_get("s_lines_out").value = style[style_dict["s_lines"]];
-  DOM_get("b_lines").value = style[style_dict["b_lines"]];
-  DOM_get("b_lines_out").value = style[style_dict["b_lines"]];
-  DOM_get("s_margin").value = style[style_dict["s_margin"]];
-  DOM_get("s_margin_out").value = style[style_dict["s_margin"]];
-  DOM_get("tc_red").value = parseInt(style[style_dict["font_color"]].slice(0, 2), 16);
-  DOM_get("tc_red_out").value = parseInt(style[style_dict["font_color"]].slice(0, 2), 16);
-  DOM_get("tc_green").value = parseInt(style[style_dict["font_color"]].slice(2, 4), 16);
-  DOM_get("tc_green_out").value = parseInt(style[style_dict["font_color"]].slice(2, 4), 16);
-  DOM_get("tc_blue").value = parseInt(style[style_dict["font_color"]].slice(4, 6), 16);
-  DOM_get("tc_blue_out").value = parseInt(style[style_dict["font_color"]].slice(4, 6), 16);
-  update_color_preview();
+  for (style_id of STYLE_SLIDER_IDS) {
+    DOM_get(style_id).value = style[style_dict[style_id]];
+    DOM_get(style_id + "_out").value = style[style_dict[style_id]];
+  }
+  DOM_get("tc_all").value = "#" + style[style_dict["font_color"]];
   document.querySelectorAll("input[name='d_version']").forEach((elt) => {
     elt.checked = false;
   });
@@ -823,61 +678,27 @@ function update_style_sliders(style) {
     .forEach((elt) => {
       elt.checked = true;
     });
-  DOM_get("pl_width").value = style[style_dict["pl_width"]];
-  DOM_get("pl_width_out").value = style[style_dict["pl_width"]];
-  DOM_get("pl_font_size").value = style[style_dict["pl_font_size"]];
-  DOM_get("pl_font_size_out").value = style[style_dict["pl_font_size"]];
-  DOM_get("pl_lines").value = style[style_dict["pl_lines"]];
-  DOM_get("pl_lines_out").value = style[style_dict["pl_lines"]];
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {
     elt.checked = false;
   });
   document.querySelector("input[data-ol='" + style["outline-style"] + "']").checked = true;
-  DOM_get("ch_size").value = style[style_dict["ch_size"]];
-  DOM_get("ch_size_out").value = style[style_dict["ch_size"]];
-  DOM_get("cd_size").value = style[style_dict["cd_size"]];
-  DOM_get("cd_size_out").value = style[style_dict["cd_size"]];
-  DOM_get("cd_top").value = style[style_dict["cd_top"]];
-  DOM_get("cd_top_out").value = style[style_dict["cd_top"]];
   DOM_get("cd_text").value = style["countdown-h-text"];
-  DOM_get("nt_slide").value = style[style_dict["nt_slide"]];
-  DOM_get("nt_slide_out").value = style[style_dict["nt_slide"]];
-  DOM_get("nt_cycle").value = style[style_dict["nt_cycle"]];
-  DOM_get("nt_cycle_out").value = style[style_dict["nt_cycle"]];
-  DOM_get("nt_end").value = style[style_dict["nt_end"]];
-  DOM_get("nt_end_out").value = style[style_dict["nt_end"]];
   DOM_get("d_copyright").checked = style["display-copyright"];
-  DOM_get("cp_size").value = style[style_dict["cp_size"]];
-  DOM_get("cp_size_out").value = style[style_dict["cp_size"]];
-  DOM_get("cp_width").value = style[style_dict["cp_width"]];
-  DOM_get("cp_width_out").value = style[style_dict["cp_width"]];
   DOM_get("d_verseorder").checked = style["display-verseorder"];
-  DOM_get("vo_size").value = style[style_dict["vo_size"]];
-  DOM_get("vo_size_out").value = style[style_dict["vo_size"]];
-  DOM_get("vo_width").value = style[style_dict["vo_width"]];
-  DOM_get("vo_width_out").value = style[style_dict["vo_width"]];
-  DOM_get("at_scale").value = style[style_dict["at_scale"]];
-  DOM_get("at_scale_out").value = style[style_dict["at_scale"]];
   // Update background status items
-  if (style["song-background-url"] == "none") {
-    DOM_get("song_bg_icon").setAttribute("src", "");
-  } else {
-    DOM_get("song_bg_icon").setAttribute(
-      "src",
-      "./backgrounds/thumbnails/" + style["song-background-url"].substr(14)
-    );
+  let song_src = "";
+  if (style["song-background-url"] != "none") {
+    song_src = "./backgrounds/thumbnails/" + style["song-background-url"].substr(14);
   }
-  if (style["bible-background-url"] == "none") {
-    DOM_get("bible_bg_icon").setAttribute("src", "");
-  } else {
-    DOM_get("bible_bg_icon").setAttribute(
-      "src",
-      "./backgrounds/thumbnails/" + style["bible-background-url"].substr(14)
-    );
+  DOM_get("song_bg_icon").setAttribute("src", song_src);
+  let bible_src = "";
+  if (style["bible-background-url"] != "none") {
+    bible_src = "./backgrounds/thumbnails/" + style["bible-background-url"].substr(14);
   }
+  DOM_get("bible_bg_icon").setAttribute("src", bible_src);
 }
 
-function json_toast_response(json_data, success_message, error_message) {
+function toast_response(json_data, success_message, error_message) {
   if (json_data.params.status === "ok") {
     Toastify({
       text: success_message,
@@ -916,70 +737,50 @@ function transpose_by(amount) {
 function update_transpose_output() {
   if (document.querySelectorAll("input[name=e_key]:checked").length > 0) {
     const e_val = document.querySelector("input[name=e_key]:checked").getAttribute("data-ek");
-    const e_idx = valid_keys.findIndex((element) => element == e_val);
-    const t_key = valid_keys[(e_idx + e_transpose) % 12];
+    const e_idx = VALID_KEYS.findIndex((element) => element == e_val);
+    const t_key = VALID_KEYS[(e_idx + e_transpose) % 12];
     DOM_get("e_transpose_out").value = t_key;
   }
 }
 
 function set_background_songs(bg_url, bg_w, bg_h) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.edit-style-params",
-      params: {
-        style_params: [
-          { param: "song-background-url", value: bg_url },
-          { param: "song-background-w", value: bg_w },
-          { param: "song-background-h", value: bg_h },
-        ],
-      },
-    })
-  );
+  send_message("command.edit-style-params", {
+    style_params: [
+      { param: "song-background-url", value: bg_url },
+      { param: "song-background-w", value: bg_w },
+      { param: "song-background-h", value: bg_h },
+    ],
+  });
 }
 
 function set_background_bible(bg_url, bg_w, bg_h) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.edit-style-params",
-      params: {
-        style_params: [
-          { param: "bible-background-url", value: bg_url },
-          { param: "bible-background-w", value: bg_w },
-          { param: "bible-background-h", value: bg_h },
-        ],
-      },
-    })
-  );
+  send_message("command.edit-style-params", {
+    style_params: [
+      { param: "bible-background-url", value: bg_url },
+      { param: "bible-background-w", value: bg_w },
+      { param: "bible-background-h", value: bg_h },
+    ],
+  });
 }
 
 function remove_song_background() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.edit-style-params",
-      params: {
-        style_params: [
-          { param: "song-background-url", value: "none" },
-          { param: "song-background-w", value: 1 },
-          { param: "song-background-h", value: 1 },
-        ],
-      },
-    })
-  );
+  send_message("command.edit-style-params", {
+    style_params: [
+      { param: "song-background-url", value: "none" },
+      { param: "song-background-w", value: 1 },
+      { param: "song-background-h", value: 1 },
+    ],
+  });
 }
 
 function remove_bible_background() {
-  websocket.send(
-    JSON.stringify({
-      action: "command.edit-style-params",
-      params: {
-        style_params: [
-          { param: "bible-background-url", value: "none" },
-          { param: "bible-background-w", value: 1 },
-          { param: "bible-background-h", value: 1 },
-        ],
-      },
-    })
-  );
+  send_message("command.edit-style-params", {
+    style_params: [
+      { param: "bible-background-url", value: "none" },
+      { param: "bible-background-w", value: 1 },
+      { param: "bible-background-h", value: 1 },
+    ],
+  });
 }
 
 function style_slider_input(elt) {
@@ -987,44 +788,14 @@ function style_slider_input(elt) {
 }
 
 function style_slider_change(elt) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.edit-style-param",
-      params: {
-        param: style_dict[elt.id],
-        value: elt.value,
-      },
-    })
-  );
+  send_message("command.edit-style-param", { param: style_dict[elt.id], value: elt.value });
 }
 
-function update_color_preview() {
-  p_color =
-    "#" +
-    parseInt(DOM_get("tc_red").value).toString(16).padStart(2, "0") +
-    parseInt(DOM_get("tc_green").value).toString(16).padStart(2, "0") +
-    parseInt(DOM_get("tc_blue").value).toString(16).padStart(2, "0");
-  DOM_get("tc_preview").style.backgroundColor = p_color;
-}
-
-function color_slider_change(elt) {
-  update_color_preview();
-}
-
-function save_color_sliders() {
-  s_color =
-    parseInt(DOM_get("tc_red").value).toString(16).padStart(2, "0") +
-    parseInt(DOM_get("tc_green").value).toString(16).padStart(2, "0") +
-    parseInt(DOM_get("tc_blue").value).toString(16).padStart(2, "0");
-  websocket.send(
-    JSON.stringify({
-      action: "command.edit-style-param",
-      params: {
-        param: style_dict["font_color"],
-        value: s_color,
-      },
-    })
-  );
+function color_picker_change() {
+  send_message("command.edit-style-param", {
+    param: style_dict["font_color"],
+    value: DOM_get("tc_all").value.slice(1),
+  });
 }
 
 function close_popup(elt_id) {
@@ -1059,14 +830,14 @@ function load_element(short_elt) {
       DOM_get("bible_search").setSelectionRange(b_len, b_len);
       break;
     case "presentation":
-      websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
+      send_message("request.all-presentations", {});
       break;
     case "video":
-      websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
+      send_message("request.all-videos", {});
       break;
     case "backgrounds":
-      websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
-      websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
+      send_message("request.all-loops", {});
+      send_message("request.all-backgrounds", {});
       break;
   }
 }
@@ -1114,20 +885,12 @@ function drag_drop(event) {
   const base_y = DOM_get("service_list").getBoundingClientRect().top;
   const idx_unbounded = parseInt((event.clientY - base_y) / drag_data.dy);
   const end_idx = Math.max(Math.min(idx_unbounded, drag_data.max_idx), 0);
-  websocket.send(
-    JSON.stringify({
-      action: "command.move-item",
-      params: {
-        "from-index": drag_data.start_idx,
-        "to-index": end_idx,
-      },
-    })
-  );
+  send_message("command.move-item", { "from-index": drag_data.start_idx, "to-index": end_idx });
 }
 
 function update_app_init(json_data) {
   Toastify({
-    text: "Connected to Malachi server",
+    text: t8("toast_connected_server"),
     gravity: "bottom",
     position: "left",
     style: { background: "#4caf50" },
@@ -1160,6 +923,11 @@ function update_app_init(json_data) {
   update_style_sliders(json_data.params.style);
   update_text_scale(json_data.params.style);
 
+  // Update notices info
+  if (json_data.params["notices-file"]) {
+    DOM_get("notices_filename").value = json_data.params["notices-file"];
+  }
+
   // Update service name
   if (json_data.params.filename) {
     DOM_get("service_name").innerHTML = "(" + json_data.params.filename.split(".")[0] + ")";
@@ -1167,56 +935,68 @@ function update_app_init(json_data) {
     DOM_get("service_name").innerHTML = "";
   }
 
-  // Update notices info
-  if (json_data.params["notices-file"]) {
-    DOM_get("notices_filename").value = json_data.params["notices-file"];
+  // Populate service plan list
+  populate_service_plan(
+    json_data.params.items,
+    json_data.params.types,
+    json_data.params.item_index
+  );
+
+  // Populate current item title and list
+  if (json_data.params.item_index != -1) {
+    display_current_item(json_data.params.current_item, json_data.params.slide_index);
+  } else {
+    indicate_no_current_item();
   }
 
-  // Populate service plan list
+  // Populate Presentation, Video, Background and Loop lists
+  send_message("request.all-presentations", {});
+  send_message("request.all-videos", {});
+  send_message("request.all-loops", {});
+  send_message("request.all-backgrounds", {});
+
+  // Populate Bible version list
+  send_message("request.bible-versions", {});
+
+  // Populate Recycle Bin
+  send_message("request.recycle-bin", {});
+}
+
+function populate_service_plan(items, item_types, cur_index) {
   let service_list = "";
-  for (const [idx, item] of json_data.params.items.entries()) {
+  for (const [idx, item] of items.entries()) {
     service_list += "<div class='ml_row' draggable='true' data-idx='" + idx + "' ";
     service_list += "ondragstart='drag_start(event)'>";
     service_list += "<a class='ml_button ml_icon ml_icon_display' ";
     service_list += "onclick='goto_item(" + idx + ")'></a>";
     service_list += "<div class='ml_text' ondblclick='goto_item(" + idx + ")'>";
-    service_list += "<img class='ml_small_icon' src='" + icon_dict[item.type] + "' ";
-    service_list += "data-idx='" + idx + "' draggable='false' />";
-    service_list += item.title + "</div>";
-    if (item.type == "song") {
+    if (item_types[idx].substr(0, 4) == "song") {
+      service_list += "<img class='ml_small_icon' src='" + icon_dict["song"] + "' ";
+      service_list += "data-idx='" + idx + "' draggable='false' />";
+    } else {
+      service_list += "<img class='ml_small_icon' src='" + icon_dict[item_types[idx]] + "' ";
+      service_list += "data-idx='" + idx + "' draggable='false' />";
+    }
+    service_list += item + "</div>";
+    if (item_types[idx].substr(0, 4) == "song") {
       service_list += "<a class='ml_button ml_icon ml_icon_edit' ";
-      service_list += "onclick='edit_song(" + item["song-id"] + ")'></a>";
+      service_list += "onclick='edit_song(" + item_types[idx].substr(5) + ")'></a>";
     }
     service_list += "<a class='ml_button ml_icon ml_icon_minus' ";
     service_list += "onclick='delete_item(" + idx + ")'></a>";
     service_list += "</div>";
   }
   DOM_get("service_list").innerHTML = service_list;
-  indicate_current_item(json_data.params.item_index);
+  indicate_current_item(cur_index);
+}
 
-  // Populate current item title and list
-  if (json_data.params.item_index != -1) {
-    const current_item = json_data.params.items[json_data.params.item_index];
-    display_current_item(current_item, json_data.params.slide_index);
-  } else {
-    DOM_get("video_controls").style.display = "none";
-    DOM_get("presentation_controls").style.display = "none";
-    DOM_get("current_item_icon").setAttribute("src", icon_dict["song"]);
-    DOM_get("current_item_name").innerHTML = "No current item";
-    DOM_get("current_item_list").innerHTML = "";
-  }
-
-  // Populate Presentation, Video, Background and Loop lists
-  websocket.send(JSON.stringify({ action: "request.all-presentations", params: {} }));
-  websocket.send(JSON.stringify({ action: "request.all-videos", params: {} }));
-  websocket.send(JSON.stringify({ action: "request.all-loops", params: {} }));
-  websocket.send(JSON.stringify({ action: "request.all-backgrounds", params: {} }));
-
-  // Populate Bible version list
-  websocket.send(JSON.stringify({ action: "request.bible-versions", params: {} }));
-
-  // Populate Recycle Bin
-  websocket.send(JSON.stringify({ action: "request.recycle-bin", params: {} }));
+function indicate_no_current_item() {
+  DOM_get("video_controls").style.display = "none";
+  DOM_get("presentation_controls").style.display = "none";
+  DOM_get("current_item_icon").setAttribute("src", icon_dict["song"]);
+  DOM_get("current_item_name").innerHTML = t8("no_current_item");
+  DOM_get("current_item_list").innerHTML = "";
+  DOM_get("bible_controls").style.display = "none";
 }
 
 function update_service_overview_update(json_data) {
@@ -1225,44 +1005,17 @@ function update_service_overview_update(json_data) {
   } else {
     DOM_get("service_name").innerHTML = "";
   }
-  // Populate service plan list
-  let service_list = "";
-  for (const [idx, item] of json_data.params.items.entries()) {
-    service_list += "<div class='ml_row' draggable='true' data-idx='" + idx + "' ";
-    service_list += "ondragstart='drag_start(event)'>";
-    service_list += "<a class='ml_button ml_icon ml_icon_display' ";
-    service_list += "onclick='goto_item(" + idx + ")'></a>";
-    service_list += "<div class='ml_text' ondblclick='goto_item(" + idx + ")'>";
-    if (json_data.params.types[idx].substr(0, 4) == "song") {
-      service_list += "<img class='ml_small_icon' src='" + icon_dict["song"] + "' ";
-      service_list += "data-idx='" + idx + "' draggable='false' />";
-    } else {
-      service_list +=
-        "<img class='ml_small_icon' src='" + icon_dict[json_data.params.types[idx]] + "' ";
-      service_list += "data-idx='" + idx + "' draggable='false' />";
-    }
-    service_list += item + "</div>";
-    if (json_data.params.types[idx].substr(0, 4) == "song") {
-      service_list += "<a class='ml_button ml_icon ml_icon_edit' ";
-      service_list += "onclick='edit_song(" + json_data.params.types[idx].substr(5) + ")'></a>";
-    }
-    service_list += "<a class='ml_button ml_icon ml_icon_minus' ";
-    service_list += "onclick='delete_item(" + idx + ")'></a>";
-    service_list += "</div>";
-  }
-  DOM_get("service_list").innerHTML = service_list;
-  indicate_current_item(json_data.params.item_index);
+  populate_service_plan(
+    json_data.params.items,
+    json_data.params.types,
+    json_data.params.item_index
+  );
 
   // Populate current item list
   if (json_data.params.item_index != -1) {
-    const current_item = json_data.params.current_item;
-    display_current_item(current_item, json_data.params.slide_index);
+    display_current_item(json_data.params.current_item, json_data.params.slide_index);
   } else {
-    DOM_get("video_controls").style.display = "none";
-    DOM_get("presentation_controls").style.display = "none";
-    DOM_get("current_item_icon").setAttribute("src", icon_dict["song"]);
-    DOM_get("current_item_name").innerHTML = "No current item";
-    DOM_get("current_item_list").innerHTML = "";
+    indicate_no_current_item();
   }
 }
 
@@ -1381,14 +1134,14 @@ function result_song_details(json_data) {
     e_transpose = (parseInt(t_idx, 10) + 12) % 12; // +12 needed to ensure remainder is in [0, 12)
     if (full_song["song-key"]) {
       document.querySelector("input[data-ek='" + full_song["song-key"] + "']").checked = true;
-      const e_idx = valid_keys.findIndex((element) => element == full_song["song-key"]);
-      const t_key = valid_keys[(e_idx + t_idx) % 12];
+      const e_idx = VALID_KEYS.findIndex((element) => element == full_song["song-key"]);
+      const t_key = VALID_KEYS[(e_idx + t_idx) % 12];
       DOM_get("e_transpose_out").value = t_key;
     } else {
       DOM_get("e_transpose_out").value = "-";
     }
     // Ensure that we are in edit song mode, rather than create song mode
-    DOM_get("popup_edit_mode").innerHTML = "Edit song";
+    DOM_get("popup_edit_mode").innerHTML = t8("edit_song_mode");
     if (full_song["deleted"] == 1) {
       DOM_get("delete_song_btn").style.display = "none";
     } else {
@@ -1403,7 +1156,7 @@ function response_new_service(json_data) {
   if (json_data.params.status == "unsaved-service") {
     DOM_get("popup_new_service").style.display = "flex";
   } else {
-    json_toast_response(json_data, "New service started", "Problem starting new service");
+    toast_response(json_data, t8("toast_new_service_ok"), t8("toast_new_service_error"));
   }
 }
 
@@ -1411,7 +1164,7 @@ function response_load_service(json_data) {
   if (json_data.params.status == "unsaved-service") {
     DOM_get("popup_save_before_load_service").style.display = "flex";
   } else {
-    json_toast_response(json_data, "Service loaded successfully", "Problem loading service");
+    toast_response(json_data, t8("toast_load_service_ok"), t8("toast_load_service_error"));
   }
 }
 
@@ -1429,7 +1182,7 @@ function result_song_titles(json_data) {
     } else {
       song_list += "<div class='ml_row'>";
       song_list +=
-        "<div class='ml_text'>Maximum search results reached (" + MAX_LIST_ITEMS + ")</div>";
+        "<div class='ml_text'>" + t8("maximum_search_results") + " (" + MAX_LIST_ITEMS + ")</div>";
       song_list += "</div>";
       break;
     }
@@ -1459,7 +1212,7 @@ function response_save_service(json_data) {
     DOM_get("popup_save_service_as").style.display = "flex";
   } else {
     // Save has been successful
-    json_toast_response(json_data, "Service saved", "Problem saving service");
+    toast_response(json_data, t8("toast_save_service_ok"), t8("toast_save_service_error"));
     if (action_after_save == "new") {
       action_after_save = "none";
       new_service(true);
@@ -1492,7 +1245,7 @@ function result_all_services(json_data) {
     document.getElementById("files-0").classList.add("selected");
   } else {
     files_list += "<div class='ml_row'><div class='ml_text'>";
-    files_list += "<em>No saved service plans</em></div><div>";
+    files_list += "<em>" + t8("no_saved_services") + "</em></div><div>";
     DOM_get("load_files_radio").innerHTML = files_list;
   }
   DOM_get("popup_load_service").style.display = "flex";
@@ -1501,9 +1254,9 @@ function result_all_services(json_data) {
 
 function result_bible_versions(json_data) {
   let radios_html = "";
-  let radios_main_html = "<span>Primary version:</span>";
-  let radios_alt_html = "<span>Parallel version:</span>";
-  let radios_def_html = "<span>Default Bible version:</span>";
+  let radios_main_html = "<span>" + t8("primary_version") + "</span>";
+  let radios_alt_html = "<span>" + t8("parallel_version") + "</span>";
+  let radios_def_html = "<span id='d_version_text'>" + t8("default_version") + "</span>";
   for (const [idx, version] of json_data.params.versions.entries()) {
     radios_html += '<input type="radio" name="b_version" id="b_version_' + idx;
     radios_main_html += '<input type="radio" name="b_main_version" id="b_main_version_' + idx;
@@ -1540,35 +1293,16 @@ function result_bible_versions(json_data) {
       new_version = document
         .querySelector("input[name=b_main_version]:checked")
         .getAttribute("data-bv");
-      websocket.send(
-        JSON.stringify({
-          action: "command.change-bible-version",
-          params: {
-            version: new_version,
-          },
-        })
-      );
+      send_message("command.change-bible-version", { version: new_version });
     });
   });
   document.querySelectorAll('input[name="b_alt_version"]').forEach((elt) => {
     elt.addEventListener("change", (e) => {
       new_version = e.target.getAttribute("data-bv");
       if (e.target.checked) {
-        websocket.send(
-          JSON.stringify({
-            action: "command.change-bible-pl-version",
-            params: {
-              version: new_version,
-            },
-          })
-        );
+        send_message("command.change-bible-pl-version", { version: new_version });
       } else {
-        websocket.send(
-          JSON.stringify({
-            action: "command.remove-bible-pl-version",
-            params: {},
-          })
-        );
+        send_message("command.remove-bible-pl-version", {});
       }
     });
   });
@@ -1578,15 +1312,10 @@ function result_bible_versions(json_data) {
   document.querySelectorAll('input[name="d_version"]').forEach((elt) => {
     elt.addEventListener("change", (e) => {
       new_version = document.querySelector("input[name=d_version]:checked").getAttribute("data-dv");
-      websocket.send(
-        JSON.stringify({
-          action: "command.edit-style-param",
-          params: {
-            param: style_dict["d_version"],
-            value: new_version,
-          },
-        })
-      );
+      send_message("command.edit-style-param", {
+        param: style_dict["d_version"],
+        value: new_version,
+      });
     });
   });
   // Force style sliders and search version to update to reflect default Bible version
@@ -1630,7 +1359,7 @@ function trigger_seek_video(json_data) {
 function result_bible_verses(json_data) {
   let bible_list = "";
   if (json_data.params.status !== "ok") {
-    json_toast_response(json_data, "Bible search success", "Problem performing Bible search");
+    toast_response(json_data, t8("toast_bible_search_ok"), t8("toast_bible_search_error"));
   }
   for (const [idx, verse] of json_data.params.verses.entries()) {
     if (idx < MAX_VERSE_ITEMS) {
@@ -1662,7 +1391,7 @@ function remove_audio() {
 }
 
 function audio_popup_preload() {
-  websocket.send(JSON.stringify({ action: "request.all-audio", params: {} }));
+  send_message("request.all-audio", {});
 }
 
 function select_audio(idx) {
@@ -1687,7 +1416,7 @@ function show_audio_popup(json_data) {
     document.getElementById("mp3-0").classList.add("selected");
   } else {
     mp3_list += "<div class='ml_row'><div class='ml_text'>";
-    mp3_list += "<em>No audio files found</em></div><div>";
+    mp3_list += "<em>" + t8("no_audio_files_found") + "</em></div><div>";
     DOM_get("attach_audio_radio").innerHTML = mp3_list;
   }
   DOM_get("popup_edit_song").style.display = "none";
@@ -1720,13 +1449,8 @@ function update_line_numbers(fill_text) {
 
 function update_malachi() {
   DOM_get("updater_btn").disabled = true;
-  DOM_get("updater_btn").innerText = "Updating Malachi...";
-  websocket.send(
-    JSON.stringify({
-      action: "utility.update-malachi",
-      params: {},
-    })
-  );
+  DOM_get("updater_btn").innerText = t8("updating_malachi");
+  send_message("utility.update-malachi", {});
 }
 
 function confirm_delete_song() {
@@ -1736,14 +1460,7 @@ function confirm_delete_song() {
 
 function delete_song() {
   DOM_get("popup_confirm_delete_song").style.display = "none";
-  websocket.send(
-    JSON.stringify({
-      action: "command.delete-song",
-      params: {
-        "song-id": editing_song_id,
-      },
-    })
-  );
+  send_message("command.delete-song", { "song-id": editing_song_id });
 }
 
 function confirm_empty_recycle_bin() {
@@ -1752,27 +1469,20 @@ function confirm_empty_recycle_bin() {
 
 function empty_recycle_bin() {
   DOM_get("popup_confirm_empty_bin").style.display = "none";
-  websocket.send(
-    JSON.stringify({
-      action: "command.empty-recycle-bin",
-      params: {},
-    })
-  );
+  send_message("command.empty-recycle-bin", {});
 }
 
 function restore_song(s_id) {
-  websocket.send(
-    JSON.stringify({
-      action: "command.restore-song",
-      params: {
-        "song-id": s_id,
-      },
-    })
-  );
+  send_message("command.restore-song", { "song-id": s_id });
 }
 
 function refresh_recycle_bin() {
-  websocket.send(JSON.stringify({ action: "request.recycle-bin", params: {} }));
+  send_message("request.recycle-bin", {});
+}
+
+function send_message(action, params) {
+  params["lang"] = app_language;
+  websocket.send(JSON.stringify({ action: action, params: params }));
 }
 
 function start_websocket() {
@@ -1827,11 +1537,7 @@ function start_websocket() {
         response_load_service(json_data);
         break;
       case "response.export-service":
-        json_toast_response(
-          json_data,
-          "Service exported successfully",
-          "Problem exporting service"
-        );
+        toast_response(json_data, t8("toast_service_export_ok"), t8("toast_service_export_error"));
         break;
       case "result.song-titles":
         result_song_titles(json_data);
@@ -1864,129 +1570,117 @@ function start_websocket() {
         trigger_seek_video(json_data);
         break;
       case "response.add-video":
-        json_toast_response(json_data, "Video added to service", "Problem adding video");
+        toast_response(json_data, t8("toast_video_added_ok"), t8("toast_video_added_error"));
         break;
       case "response.add-song-item":
-        json_toast_response(json_data, "Song added to service", "Problem adding song");
+        toast_response(json_data, t8("toast_song_added_ok"), t8("toast_song_added_error"));
         break;
       case "response.edit-song":
-        json_toast_response(json_data, "Song edited", "Problem editing song");
+        toast_response(json_data, t8("toast_song_edited_ok"), t8("toast_song_edited_error"));
         break;
       case "response.create-song":
-        json_toast_response(json_data, "Song added", "Could not add song");
+        toast_response(json_data, t8("toast_song_created_ok"), t8("toast_song_created_error"));
         break;
       case "response.add-presentation":
-        json_toast_response(
-          json_data,
-          "Presentation added to service",
-          "Problem adding presentation"
-        );
+        toast_response(json_data, t8("toast_pres_added_ok"), t8("toast_pres_added_error"));
         break;
       case "response.importing-presentation":
         indicate_importing_media(json_data.params.url, "presentation_list", true);
         break;
       case "response.import-presentation":
-        json_toast_response(json_data, "Presentation imported", "Problem importing presentation");
+        toast_response(json_data, t8("toast_pres_import_ok"), t8("toast_pres_import_error"));
         break;
       case "response.importing-background":
         indicate_importing_media(json_data.params.url, "background_list", false);
         break;
       case "response.import-background":
-        json_toast_response(json_data, "Background imported", "Problem importing background");
+        toast_response(json_data, t8("toast_bg_import_ok"), t8("toast_bg_import_error"));
         break;
       case "response.importing-video":
         indicate_importing_media(json_data.params.url, "video_list", false);
         break;
       case "response.import-video":
-        json_toast_response(json_data, "Video imported", "Problem importing video");
+        toast_response(json_data, t8("toast_video_import_ok"), t8("toast_video_import_error"));
         break;
       case "response.importing-loop":
         indicate_importing_media(json_data.params.url, "loop_list", false);
         break;
       case "response.import-loop":
-        json_toast_response(json_data, "Loop imported", "Problem importing loop");
+        toast_response(json_data, t8("toast_loop_import_ok"), t8("toast_loop_import_error"));
         break;
       case "response.importing-audio":
         indicate_importing_media(json_data.params.url, "attach_audio_radio", true);
         break;
       case "response.import-audio":
-        json_toast_response(json_data, "Audio imported", "Problem importing audio");
+        toast_response(json_data, t8("toast_audio_import_ok"), t8("toast_audio_import_error"));
         break;
       case "response.importing-service":
         indicate_importing_service();
         break;
       case "response.import-service":
-        json_toast_response(json_data, "Service imported", "Problem importing service");
+        toast_response(json_data, t8("toast_service_import_ok"), t8("toast_service_import_error"));
         break;
       case "response.importing-notices":
         DOM_get("import_notices_btn").disabled = true;
-        DOM_get("import_notices_btn").innerText = "Importing notices...";
+        DOM_get("import_notices_btn").innerText = t8("importing_notices");
         DOM_get("notices_filename").value = "";
         DOM_get("start_notices_btn").disabled = true;
         DOM_get("clear_notices_btn").disabled = true;
         break;
       case "response.import-notices":
         DOM_get("import_notices_btn").disabled = false;
-        DOM_get("import_notices_btn").innerText = "Import notices";
+        DOM_get("import_notices_btn").innerText = t8("import_notices");
         DOM_get("start_notices_btn").disabled = false;
         DOM_get("clear_notices_btn").disabled = false;
-        json_toast_response(json_data, "Notices imported", "Problem importing notices");
+        toast_response(json_data, t8("toast_notices_import_ok"), t8("toast_notices_import_error"));
         break;
       case "update.notices-loaded":
         DOM_get("notices_filename").value = json_data.params.filename;
         break;
       case "response.set-loop":
-        json_toast_response(json_data, "Video loop set", "Problem setting video loop");
+        toast_response(json_data, t8("toast_loop_set_ok"), t8("toast_loop_set_error"));
         break;
       case "response.clear-loop":
-        json_toast_response(json_data, "Video loop cancelled", "Problem cancelling video loop");
+        toast_response(json_data, t8("toast_loop_cancel_ok"), t8("toast_loop_cancel_error"));
         break;
       case "response.add-bible-item":
-        json_toast_response(
-          json_data,
-          "Bible passage added to service",
-          "Problem adding Bible passage"
-        );
+        toast_response(json_data, t8("toast_bible_add_ok"), t8("toast_bible_add_error"));
         break;
       case "response.change-bible-version":
-        json_toast_response(json_data, "Bible version changed", "Problem changing Bible version");
+        toast_response(json_data, t8("toast_version_change_ok"), t8("toast_version_change_error"));
         break;
       case "response.change-bible-pl-version":
-        json_toast_response(
+        toast_response(
           json_data,
-          "Parallel Bible version changed",
-          "Problem changing parallel Bible version"
+          t8("toast_parallel_change_ok"),
+          t8("toast_parallel_change_error")
         );
         break;
       case "response.remove-bible-pl-version":
-        json_toast_response(
+        toast_response(
           json_data,
-          "Parallel Bible version removed",
-          "Problem removing parallel Bible version"
+          t8("toast_parallel_remove_ok"),
+          t8("toast_parallel_remove_error")
         );
         break;
       case "response.remove-item":
-        json_toast_response(json_data, "Item removed", "Problem removing item");
+        toast_response(json_data, t8("toast_item_remove_ok"), t8("toast_item_remove_error"));
         break;
       case "response.start-presentation":
-        json_toast_response(json_data, "Starting presentation...", "Problem starting presentation");
+        toast_response(json_data, t8("toast_start_pres_ok"), t8("toast_start_pres_error"));
         break;
       case "response.delete-song":
-        json_toast_response(json_data, "Song deleted", "Problem deleting song");
+        toast_response(json_data, t8("toast_delete_song_ok"), t8("toast_delete_song_error"));
         song_search();
         refresh_recycle_bin();
         break;
       case "response.restore-song":
-        json_toast_response(json_data, "Song restored", "Problem restoring song");
+        toast_response(json_data, t8("toast_restore_song_ok"), t8("toast_restore_song_error"));
         song_search();
         refresh_recycle_bin();
         break;
       case "response.empty-recycle-bin":
-        json_toast_response(
-          json_data,
-          "Song Recycle Bin emptied",
-          "Problem emptying the Song Recycle Bin"
-        );
+        toast_response(json_data, t8("toast_empty_bin_ok"), t8("toast_empty_bin_error"));
         refresh_recycle_bin();
         break;
       case "update.video-loop":
@@ -2001,6 +1695,7 @@ function start_websocket() {
       case "response.play-video":
       case "response.pause-video":
       case "response.stop-video":
+      case "response.seek-video":
       case "response.play-audio":
       case "response.pause-audio":
       case "response.stop-audio":
@@ -2017,6 +1712,7 @@ function start_websocket() {
       case "trigger.play-audio":
       case "trigger.pause-audio":
       case "trigger.stop-audio":
+      case "response.transpose-by":
         break; // No action required;
       default:
         console.error("Unsupported event", json_data);
@@ -2025,7 +1721,7 @@ function start_websocket() {
   websocket.onclose = function (event) {
     if (event.wasClean == false) {
       Toastify({
-        text: "Connection was closed/refused by server\nReconnection attempt will be made in 5 seconds",
+        text: t8("toast_connection_closed"),
         gravity: "bottom",
         position: "left",
         duration: 4000,
@@ -2045,6 +1741,16 @@ let ready = (callback) => {
 };
 
 ready(() => {
+  if (app_language == null) {
+    app_language = "en";
+    window.localStorage.setItem("app_language", app_language);
+  }
+  document.querySelectorAll("input[name='a_lang']").forEach((elt) => {
+    elt.checked = false;
+  });
+  document.querySelector("input[data-al='" + app_language + "']").checked = true;
+  apply_i18n(app_language);
+
   DOM_get("flip_screen_state").addEventListener("change", change_screen_state_flip);
 
   DOM_get("song_search").addEventListener("keypress", (e) => {
@@ -2081,52 +1787,37 @@ ready(() => {
 
   document.querySelectorAll("input[name='o_style']").forEach((elt) => {
     elt.addEventListener("change", () => {
-      websocket.send(
-        JSON.stringify({
-          action: "command.edit-style-param",
-          params: {
-            param: "outline-style",
-            value: elt.getAttribute("data-ol"),
-          },
-        })
-      );
+      send_message("command.edit-style-param", {
+        param: "outline-style",
+        value: elt.getAttribute("data-ol"),
+      });
     });
   });
 
   DOM_get("cd_text").addEventListener("blur", (e) => {
-    websocket.send(
-      JSON.stringify({
-        action: "command.edit-style-param",
-        params: {
-          param: "countdown-h-text",
-          value: e.target.value,
-        },
-      })
-    );
+    send_message("command.edit-style-param", { param: "countdown-h-text", value: e.target.value });
   });
 
   DOM_get("d_copyright").addEventListener("change", (e) => {
-    websocket.send(
-      JSON.stringify({
-        action: "command.edit-style-param",
-        params: {
-          param: "display-copyright",
-          value: e.target.checked,
-        },
-      })
-    );
+    send_message("command.edit-style-param", {
+      param: "display-copyright",
+      value: e.target.checked,
+    });
   });
 
   DOM_get("d_verseorder").addEventListener("change", (e) => {
-    websocket.send(
-      JSON.stringify({
-        action: "command.edit-style-param",
-        params: {
-          param: "display-verseorder",
-          value: e.target.checked,
-        },
-      })
-    );
+    send_message("command.edit-style-param", {
+      param: "display-verseorder",
+      value: e.target.checked,
+    });
+  });
+
+  document.querySelectorAll("input[name='a_lang']").forEach((elt) => {
+    elt.addEventListener("change", () => {
+      app_language = elt.getAttribute("data-al");
+      window.localStorage.setItem("app_language", app_language);
+      apply_i18n(app_language);
+    });
   });
 
   DOM_get("cd_time").value = String((new Date().getHours() + 1) % 24).padStart(2, "0") + ":00";

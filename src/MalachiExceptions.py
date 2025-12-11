@@ -9,7 +9,8 @@ Provide custom Exception classes for Malachi.
 class InvalidVersionError(Exception):
     """Indicate that a specified version of the Bible is not supported in Malachi"""
     def __init__(self, version):
-        self.msg = "An unrecognised Bible version was used: %s" % version
+        self.msg = "An unrecognised Bible version was used: {v}".format(v=version)
+        self.data = version
         super(InvalidVersionError, self).__init__(self.msg)
 
 class InvalidVerseIdError(Exception):
@@ -17,6 +18,7 @@ class InvalidVerseIdError(Exception):
     def __init__(self, verse_id, version):
         self.msg = "Could not find a verse with this id in this version: {id}, {vs}"\
             .format(id=verse_id, vs=version)
+        self.data=[verse_id, version]
         super(InvalidVerseIdError, self).__init__(self.msg)
 
 class MatchingVerseIdError(Exception):
@@ -24,12 +26,14 @@ class MatchingVerseIdError(Exception):
     def __init__(self, verse_id, old_version, new_version):
         self.msg = "Could not find a matching verse when changing version: {id}, {ov}, {nv}"\
             .format(id=verse_id, ov=old_version, nv=new_version)
+        self.data = [verse_id, old_version, new_version]
         super(MatchingVerseIdError, self).__init__(self.msg)
 
 class MalformedReferenceError(Exception):
     """Indicate that a Bible reference does not have the correct syntax"""
     def __init__(self, ref):
         self.msg = "An invalid format for a Bible reference was used: %s" % ref
+        self.data = ref
         super(MalformedReferenceError, self).__init__(self.msg)
 
 class UnknownReferenceError(Exception):
@@ -37,6 +41,7 @@ class UnknownReferenceError(Exception):
     def __init__(self, verse_ref):
         self.msg = "An unknown reference for this version of the Bible was used: {ref}"\
             .format(ref=verse_ref)
+        self.data = verse_ref
         super(UnknownReferenceError, self).__init__(self.msg)
 
 # Service
@@ -44,6 +49,7 @@ class InvalidServiceUrlError(Exception):
     """Indicate that a specified Service URL does not exist"""
     def __init__(self, url):
         self.msg = "Could not find a service file at the url {url}".format(url=url)
+        self.data = url
         super(InvalidServiceUrlError, self).__init__(self.msg)
 
 class MalformedServiceFileError(Exception):
@@ -51,6 +57,7 @@ class MalformedServiceFileError(Exception):
     def __init__(self, service_url, details):
         self.msg = "The service file {url} is not correctly formatted: {details}".\
             format(url=service_url, details=details)
+        self.data = [service_url, details]
         super(MalformedServiceFileError, self).__init__(self.msg)
 
 class UnspecifiedServiceUrl(Exception):
@@ -70,6 +77,7 @@ class InvalidSongFieldError(Exception):
     """Indicate that invalid data has been provided when editing a field of a Song"""
     def __init__(self, data):
         self.msg = "Invalid field data provided: {data}".format(data=data)
+        self.data = data
         super(InvalidSongFieldError, self).__init__(self.msg)
 
 # Styles
@@ -77,6 +85,7 @@ class MissingStyleParameterError(Exception):
     """Indicate that a required style parameter is missing from the current style"""
     def __init__(self, data):
         self.msg = "The current style is missing a parameter: {data}".format(data=data)
+        self.data = data
         super(MissingStyleParameterError, self).__init__(self.msg)
 
 # Videos

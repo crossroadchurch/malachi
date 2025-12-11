@@ -99,35 +99,40 @@ function update_item_index_update(json_data) {
 }
 
 function toggle_screen() {
-  websocket.send(JSON.stringify({ action: "command.toggle-display-state", params: {} }));
+  send_message("command.toggle-display-state", {});
 }
 
 function prev_item() {
-  websocket.send(JSON.stringify({ action: "command.previous-item", params: {} }));
+  send_message("command.previous-item", {});
 }
 
 function next_item() {
-  websocket.send(JSON.stringify({ action: "command.next-item", params: {} }));
+  send_message("command.next-item", {});
 }
 
 function prev_slide() {
-  websocket.send(JSON.stringify({ action: "command.previous-slide", params: {} }));
+  send_message("command.previous-slide", {});
 }
 
 function next_slide() {
-  websocket.send(JSON.stringify({ action: "command.next-slide", params: {} }));
+  send_message("command.next-slide", {});
 }
 
 function generic_stop() {
-  websocket.send(JSON.stringify({ action: "command.generic-stop", params: {} }));
+  send_message("command.generic-stop", {});
 }
 
 function generic_play() {
-  websocket.send(JSON.stringify({ action: "command.generic-play", params: {} }));
+  send_message("command.generic-play", {});
 }
 
 function restore_loop() {
-  websocket.send(JSON.stringify({ action: "command.restore-loop", params: {} }));
+  send_message("command.restore-loop", {});
+}
+
+function send_message(action, params) {
+  params["lang"] = "en";
+  websocket.send(JSON.stringify({ action: action, params: params }));
 }
 
 function start_websocket() {

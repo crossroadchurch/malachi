@@ -131,6 +131,11 @@ function toggle_text_mode() {
   update_day_night_mode(saved_text_mode);
 }
 
+function send_message(action, params) {
+  params["lang"] = "en";
+  websocket.send(JSON.stringify({ action: action, params: params }));
+}
+
 function start_websocket() {
   websocket = null;
   websocket = new WebSocket("ws://" + window.location.hostname + ":9001/display");

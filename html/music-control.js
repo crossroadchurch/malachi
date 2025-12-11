@@ -356,22 +356,12 @@ function update_menu() {
 
 function display_on() {
   view_display_options(false);
-  websocket.send(
-    JSON.stringify({
-      action: "command.set-display-state",
-      params: { state: true },
-    })
-  );
+  send_message("command.set-display-state", { state: true });
 }
 
 function display_off() {
   view_display_options(false);
-  websocket.send(
-    JSON.stringify({
-      action: "command.set-display-state",
-      params: { state: false },
-    })
-  );
+  send_message("command.set-display-state", { state: false });
 }
 
 function change_capo(new_capo) {
@@ -381,86 +371,81 @@ function change_capo(new_capo) {
   } else {
     window.localStorage.removeItem(cur_song_id.toString());
   }
-  websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
+  send_message("client.set-capo", { capo: capo });
   view_music_options(false);
 }
 
 function change_key(new_key) {
   if (played_key !== "") {
     const transpose_amount = (valid_keys.indexOf(new_key) - valid_keys.indexOf(noncapo_key)) % 12;
-    websocket.send(
-      JSON.stringify({
-        action: "command.transpose-by",
-        params: { amount: transpose_amount },
-      })
-    );
+    send_message("commmand.transpose-by", { amount: transpose_amount });
   }
   view_music_options(false);
 }
 
 function next_slide() {
   if (slide_type == "presentation") {
-    websocket.send(JSON.stringify({ action: "command.next-presentation-slide", params: {} }));
+    send_message("command.next-presentation-slide", {});
   } else {
-    websocket.send(JSON.stringify({ action: "command.next-slide", params: {} }));
+    send_message("command.next-slide", {});
   }
 }
 
 function previous_slide() {
   if (slide_type == "presentation") {
-    websocket.send(JSON.stringify({ action: "command.prev-presentation-slide", params: {} }));
+    send_message("command.prev-presentation-slide", {});
   } else {
-    websocket.send(JSON.stringify({ action: "command.previous-slide", params: {} }));
+    send_message("command.previous-slide", {});
   }
 }
 
 function start_presentation() {
   if (slide_type == "presentation") {
-    websocket.send(JSON.stringify({ action: "command.start-presentation", params: {} }));
+    send_message("command.start-presentation", {});
   }
 }
 
 function stop_presentation() {
   if (slide_type == "presentation") {
-    websocket.send(JSON.stringify({ action: "command.stop-presentation", params: {} }));
+    send_message("command.stop-presentation", {});
   }
 }
 
 function play_video() {
   if (slide_type == "video") {
-    websocket.send(JSON.stringify({ action: "command.play-video", params: {} }));
+    send_message("command.play-video", {});
   }
 }
 
 function stop_video() {
   if (slide_type == "video") {
-    websocket.send(JSON.stringify({ action: "command.stop-video", params: {} }));
+    send_message("command.stop-video", {});
   }
 }
 
 function n_s() {
-  websocket.send(JSON.stringify({ action: "command.next-slide", params: {} }));
+  send_message("command.next-slide", {});
 }
 
 function p_s() {
-  websocket.send(JSON.stringify({ action: "command.previous-slide", params: {} }));
+  send_message("command.previous-slide", {});
 }
 
 function n_i() {
-  websocket.send(JSON.stringify({ action: "command.next-item", params: {} }));
+  send_message("command.next-item", {});
 }
 
 function p_i() {
-  websocket.send(JSON.stringify({ action: "command.previous-item", params: {} }));
+  send_message("command.previous-item", {});
 }
 
 function change_verse(id) {
-  websocket.send(JSON.stringify({ action: "command.goto-slide", params: { index: id } }));
+  send_message("command.goto-slide", { index: id });
 }
 
 function change_song(id) {
   view_service_options(false);
-  websocket.send(JSON.stringify({ action: "command.goto-item", params: { index: id } }));
+  send_message("command.goto-item", { index: id });
 }
 
 function capo_check_update_music() {
@@ -473,7 +458,7 @@ function capo_check_update_music() {
     }
     if (saved_capo != capo) {
       capo = saved_capo;
-      websocket.send(JSON.stringify({ action: "client.set-capo", params: { capo: capo } }));
+      send_message("client.set-capo", { capo: capo });
     } else {
       update_music();
     }
@@ -548,6 +533,11 @@ function update_display_state(json_data) {
   } else {
     document.querySelector("body").style.borderTop = "6px solid red";
   }
+}
+
+function send_message(action, params) {
+  params["lang"] = "en";
+  websocket.send(JSON.stringify({ action: action, params: params }));
 }
 
 function start_websocket() {
