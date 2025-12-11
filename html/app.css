@@ -1220,6 +1220,14 @@ p.ml_bibleverse {
   display: inline-block;
 }
 
+.help_icon_large {
+  margin-top: 0.25em;
+  margin-right: 0.25em;
+  height: 1.5em;
+  width: 1.5em;
+  display: inline-block;
+}
+
 #fill_editor {
   display: inline-flex;
   font-family: "Roboto Mono", "Courier New", Courier, monospace;

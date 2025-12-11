@@ -495,6 +495,11 @@ const i18n_ids_attributes = {
     en: 'Search by reference (John 3:16-17) or words ("righteousness")',
     es: 'Busque versículos (John 3:16-17) o palabras ("justicia")',
   },
+  bible_search_hint: {
+    attribute: "data-tooltip",
+    en: 'To search for verses containing particular word(s), enclose them in speech marks (e.g. "grace and peace")',
+    es: 'Para buscar versículos que contengan palabras específicas, enciérrelas entre comillas (p.ej. "gracia y paz")',
+  },
   f_name: {
     attribute: "placeholder",
     en: "Service name",
