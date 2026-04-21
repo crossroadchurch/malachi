@@ -1008,5 +1008,153 @@
         </div>
       </div>
     </div>
+
+    <template id="pres_list_row">
+      <div class='ml_row'>
+        <div class='ml_text'></div>
+        <a class='ml_button ml_icon ml_icon_plus' onclick=""></a>
+      </div>
+    </template>
+
+    <template id="video_list_row">
+      <div class='ml_row'>
+        <img />
+        <div class='ml_text'></div>
+        <a class='ml_button ml_icon ml_icon_plus' onclick=""></a>
+      </div>
+    </template>
+
+    <template id="loop_list_row">
+      <div class='ml_row'>
+        <img />
+        <div class='ml_text'></div>
+        <a class='ml_button ml_icon ml_icon_plus' onclick=""></a>
+      </div>
+    </template>
+
+    <template id="bg_list_row">
+      <div class='ml_row'>
+        <img />
+        <div class='ml_text'></div>
+        <a class='ml_button ml_icon ml_icon_song' onclick=""></a>
+        <a class='ml_button ml_icon ml_icon_bible' onclick=""></a>
+      </div>
+    </template>
+
+    <template id="song_search_row">
+      <div class='ml_row'>
+        <div class='ml_text'></div>
+        <a class='ml_button ml_icon ml_icon_edit' onclick=""></a>
+        <a class='ml_button ml_icon ml_icon_plus' onclick=""></a>
+      </div>
+    </template>
+
+    <template id="max_song_search_row">
+      <div class='ml_row'>
+        <div class='ml_text'></div>
+      </div>
+    </template>
+
+    <template id="recycle_row">
+      <div class='ml_row'>
+        <div class='ml_text'></div>
+        <a class='ml_button ml_icon ml_icon_edit' onclick=""></a>
+        <a class='ml_button ml_icon ml_icon_undo' onclick=""></a>
+      </div>
+    </template>
+
+    <template id="file_list_row">
+      <div class='ml_row' onclick="">
+        <div class='ml_text'></div>
+      </div>
+    </template>
+
+    <template id="empty_file_list">
+      <div class='ml_row'>
+        <div class='ml_text'>
+          <em></em>
+        </div>
+      <div>
+    </template>
+
+    <template id="current_item_song_row">
+      <div class='ml_row ml_expand_row'>
+        <div class='ml_text ml_multitext' onclick=''>
+          <p class='ml_songlyric'>
+            <span class='ml_songpart'></span>
+            <span class="ml_slidecontent"></span>
+          </p>
+        </div>
+      </div>
+    </template>
+
+    <template id="current_item_other_row">
+      <div class='ml_row ml_expand_row'>
+        <div class='ml_text ml_multitext' onclick=''>
+          <p class='ml_slidecontent'>
+          </p>
+        </div>
+      </div>
+    </template>
+
+    <template id="mp3_list_row">
+      <div class='ml_row' onclick=''>
+        <div class='ml_text'></div>
+      </div>
+    </template>
+
+    <template id="empty_mp3_list">
+      <div class='ml_row'>
+        <div class='ml_text'>
+          <em></em>
+        </div>
+      <div>
+    </template>
+
+    <template id="bible_verse_row">
+      <div class='ml_row ml_expand_row selected'>
+        <div class='ml_text ml_multitext' name='v_list' onclick=''>
+          <p class='ml_bibleverse'>
+            <strong></strong>&nbsp;<span></span>
+          </p>
+        </div>
+      </div>
+    </template>
+
+    <template id="service_list_row">
+      <div class='ml_row' draggable='true' ondragstart='drag_start(event)'>
+        <a class='ml_button ml_icon ml_icon_display' onclick=''></a>
+        <div class='ml_text' ondblclick=''>
+          <img class='ml_small_icon' src='' draggable='false' />
+          <span></span>
+        </div>
+        <a class='ml_button ml_icon ml_icon_minus' onclick=''></a>
+      </div>
+    </template>
+
+    <template id="service_list_song_a">
+      <a class='ml_button ml_icon ml_icon_edit' onclick=''></a>
+    </template>
+
+    <template id="b_version_entry">
+      <input type="radio" name="b_version" data-bv="" data-role="none"/>
+      <label for=""></label>
+    </template>
+
+    <template id="b_main_version_entry">
+      <input type="radio" name="b_main_version" data-bv="" data-role="none"/>
+      <label for=""></label>
+    </template>
+    
+    <template id="b_alt_version_entry">
+      <input type="checkbox" name="b_alt_version" data-bv="" data-role="none"/>
+      <label for=""></label>
+    </template>
+    
+    <template id="d_version_entry">
+      <input type="radio" name="d_version" data-dv="" data-role="none"/>
+      <label for=""></label>
+    </template>
+
   </body>
 </html>

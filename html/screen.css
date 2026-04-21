@@ -1,26 +1,33 @@
 @font-face {
   font-family: "Inter Semi Bold";
   font-style: normal;
-  src: local("Inter-SemiBold"), url(/html/fonts/Inter-SemiBold.otf) format("opentype");
+  src:
+    local("Inter-SemiBold"),
+    url(/html/fonts/Inter-SemiBold.otf) format("opentype");
 }
 
 @font-face {
   font-family: "Inter Medium";
   font-style: normal;
-  src: local("Inter-Medium"), url(/html/fonts/Inter-Medium.otf) format("opentype");
+  src:
+    local("Inter-Medium"),
+    url(/html/fonts/Inter-Medium.otf) format("opentype");
 }
 
 @font-face {
   font-family: "CMG Sans MonoDigits";
   font-style: normal;
-  src: local("CMGSans-BoldMonoDigits"),
+  src:
+    local("CMGSans-BoldMonoDigits"),
     url(/html/fonts/CMGSans-BoldMonoDigits.ttf) format("truetype");
 }
 
 @font-face {
   font-family: "Dancing Script Bold";
   font-style: normal;
-  src: local("DancingScript-Bold"), url(/html/fonts/DancingScript-Bold.ttf) format("truetype");
+  src:
+    local("DancingScript-Bold"),
+    url(/html/fonts/DancingScript-Bold.ttf) format("truetype");
 }
 
 body {
@@ -93,8 +100,14 @@ body {
 }
 
 .outline {
-  text-shadow: -0.025em -0.025em 0 #000, 0 -0.025em 0 #000, 0.025em -0.025em 0 #000,
-    0.025em 0 0 #000, 0.025em 0.025em 0 #000, 0 0.025em 0 #000, -0.025em 0.025em 0 #000,
+  text-shadow:
+    -0.025em -0.025em 0 #000,
+    0 -0.025em 0 #000,
+    0.025em -0.025em 0 #000,
+    0.025em 0 0 #000,
+    0.025em 0.025em 0 #000,
+    0 0.025em 0 #000,
+    -0.025em 0.025em 0 #000,
     -0.025em 0 0 #000;
 }
 
@@ -176,4 +189,11 @@ sup {
   position: absolute;
   top: 0;
   left: 0;
+}
+
+.selah {
+  font-size: 0.5em;
+  font-style: italic;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
 }

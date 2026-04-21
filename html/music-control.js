@@ -378,7 +378,7 @@ function change_capo(new_capo) {
 function change_key(new_key) {
   if (played_key !== "") {
     const transpose_amount = (valid_keys.indexOf(new_key) - valid_keys.indexOf(noncapo_key)) % 12;
-    send_message("commmand.transpose-by", { amount: transpose_amount });
+    send_message("command.transpose-by", { amount: transpose_amount });
   }
   view_music_options(false);
 }

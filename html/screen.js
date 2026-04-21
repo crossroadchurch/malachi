@@ -6,6 +6,7 @@ let loop_width = 0;
 let loop_height = 0;
 let loop_ar = 0;
 let display_copyright = false;
+let first_slide_copyright_toggle = false;
 let display_verseorder = false;
 let song_background = { url: "none", width: 1, height: 1 };
 let bible_background = { url: "none", width: 1, height: 1 };
@@ -27,6 +28,18 @@ function DOM_get(key) {
     DOM_dict[key] = document.getElementById(key);
   }
   return DOM_dict[key];
+}
+
+function selah_format(bible_text) {
+  formatted_text = "";
+  for (const segment of bible_text.split(/(\(Selah\)|Selah\.|Selah)/)) {
+    if (segment == "(Selah)" || segment == "Selah." || segment == "Selah") {
+      formatted_text += "<span class='selah'>" + segment + "</span>";
+    } else {
+      formatted_text += segment;
+    }
+  }
+  return formatted_text;
 }
 
 function display_current_slide(slide_index) {
@@ -65,7 +78,7 @@ function display_current_slide(slide_index) {
     verseorder += "</p>";
   } else if (current_item.type == "bible") {
     if (current_item.parallel_version == "") {
-      slide_text = "<p>" + current_slide + "</p>";
+      slide_text = "<p>" + selah_format(current_slide) + "</p>";
       current_parallel = false;
     } else {
       pl_left_text = "<p>" + current_slide + "</p>";
@@ -111,8 +124,9 @@ function clear_current_slide() {
 }
 
 function update_optional_areas() {
-  if (display_copyright && screen_state) {
+  if (display_copyright && screen_state && first_slide_copyright_toggle) {
     DOM_get("copyright_area").style.display = "block";
+    first_slide_copyright_toggle = false;
   } else {
     DOM_get("copyright_area").style.display = "none";
   }
@@ -343,6 +357,7 @@ function update_display_init(json_data) {
   if (screen_state) {
     DOM_get("slide_area").style.display = "block";
     DOM_get("pl_columns").style.display = "block";
+    first_slide_copyright_toggle = true;
   } else {
     DOM_get("slide_area").style.display = "none";
     DOM_get("pl_columns").style.display = "none";
@@ -358,6 +373,7 @@ function update_item_index_update(json_data) {
   current_item = json_data.params.current_item;
   update_background();
   if (json_data.params.item_index != -1) {
+    first_slide_copyright_toggle = true;
     display_current_slide(json_data.params.slide_index);
   } else {
     clear_current_slide();
@@ -365,7 +381,6 @@ function update_item_index_update(json_data) {
 }
 
 function update_slide_index_update(json_data) {
-  stop_countdown();
   display_current_slide(json_data.params.slide_index);
 }
 
@@ -375,6 +390,7 @@ function update_display_state(json_data) {
     stop_countdown();
     DOM_get("slide_area").style.display = "block";
     DOM_get("pl_columns").style.display = "block";
+    first_slide_copyright_toggle = true;
   } else {
     DOM_get("slide_area").style.display = "none";
     DOM_get("pl_columns").style.display = "none";
@@ -490,7 +506,7 @@ function trigger_start_countdown(json_data) {
       now.getDate(),
       json_data.params.hr,
       json_data.params.min,
-      0
+      0,
     );
     const countdown_left = Math.floor((countdown_to.getTime() - now.getTime()) / 1000);
     if (countdown_left > 0) {
@@ -505,7 +521,7 @@ function trigger_start_countdown(json_data) {
         notices_slide_time,
         notices_cycle_gap,
         notices_end_gap,
-        countdown_left
+        countdown_left,
       );
     }
   }
@@ -575,7 +591,7 @@ function trigger_start_notices(num_slides, slide_time, cycle_gap, end_gap, total
         offset: all_time_keyframes[slide],
         easing: ["step-end"],
       },
-      { duration: total_time * 1000, iterations: 1 }
+      { duration: total_time * 1000, iterations: 1 },
     );
   }
 }

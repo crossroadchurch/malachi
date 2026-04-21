@@ -17,6 +17,10 @@ let video_interval;
 let e_transpose = 0;
 let drag_data = { start_idx: -1, dy: -1, max_idx: -1 };
 let saved_style = null;
+let saved_pres_urls = [];
+let saved_video_urls = [];
+let saved_loop_urls = [];
+let saved_bg_data = [];
 const VALID_KEYS = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const LINE_SEGMENT_REGEX = /\[[\w\+\¬#|\/"='' ]*\]/;
 // prettier-ignore
@@ -293,7 +297,7 @@ function start_countdown(show_notices) {
     now.getDate(),
     target[0],
     target[1],
-    0
+    0,
   );
   const cd_length = Math.floor((target_date.getTime() - now.getTime()) / 1000);
   if (cd_length > 0) {
@@ -378,11 +382,11 @@ function save_song() {
         } else {
           current_lines = [];
         }
-      } else if (line[0] == "[") {
+      } else if (line.trimStart()[0] == "[") {
         // Only [br] lines should start with [, this ensures no mismatched brackets occur
         current_lines.push("[br]");
       } else {
-        if (line != "") {
+        if (line.trim() != "") {
           // Skip completely blank lines
           current_lines.push(line.replace(/\s+$/, "")); // Trim trailing whitespace only
         }
@@ -563,29 +567,31 @@ function display_current_item(current_item, slide_index) {
     DOM_get("bible_controls").style.display = "none";
   }
 
-  let item_list = "";
-  let slide_text = "";
+  DOM_get("current_item_list").innerHTML = "";
+  let slide_text;
+  let row;
   for (const [idx, slide] of current_item.slides.entries()) {
     if (current_item.type == "song") {
+      row = document.importNode(document.querySelector("#current_item_song_row").content, true);
+      row.querySelector(".ml_songpart").textContent = max_verse_order[idx];
+
       let slide_lines = slide.split(/\n/);
-      slide_text =
-        "<p class='ml_songlyric'><span class='ml_songpart'>" + max_verse_order[idx] + "</span>";
+      slide_text = "";
       for (const line of slide_lines) {
         for (const segment of line.split(LINE_SEGMENT_REGEX)) {
           slide_text += segment;
         }
         slide_text += "<br />";
       }
-      slide_text += "</p>";
     } else {
-      slide_text = "<p>" + slide + "</p>";
+      row = document.importNode(document.querySelector("#current_item_other_row").content, true);
+      slide_text = slide;
     }
-    item_list += "<div class='ml_row ml_expand_row'>";
-    item_list += "<div class='ml_text ml_multitext' onclick='goto_slide(" + idx + ")'>";
-    item_list += slide_text + "</div>";
-    item_list += "</div>";
+
+    row.querySelector(".ml_multitext").setAttribute("onclick", "goto_slide(" + idx + ")");
+    row.querySelector(".ml_slidecontent").innerHTML = slide_text;
+    DOM_get("current_item_list").appendChild(row);
   }
-  DOM_get("current_item_list").innerHTML = item_list;
 
   // Stop audio playback if necessary
   stop_audio();
@@ -622,7 +628,7 @@ function indicate_current_slide(slide_index) {
   if (slide_index != -1) {
     document
       .querySelector(
-        "#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ") div.ml_text"
+        "#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ") div.ml_text",
       )
       .classList.add("selected");
     const item_top =
@@ -630,7 +636,7 @@ function indicate_current_slide(slide_index) {
         .querySelector("#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ")")
         .getBoundingClientRect().top + document.body.scrollTop;
     const item_height = document.querySelector(
-      "#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ")"
+      "#current_item_list div.ml_row:nth-child(" + (slide_index + 1) + ")",
     ).offsetHeight;
     const viewable_top =
       DOM_get("current_item").getBoundingClientRect().top + document.body.scrollTop;
@@ -653,7 +659,7 @@ function indicate_current_item(item_index) {
   });
   if (item_index != -1) {
     document.querySelector(
-      "#service_list div.ml_row:nth-child(" + (item_index + 1) + ") div.ml_text"
+      "#service_list div.ml_row:nth-child(" + (item_index + 1) + ") div.ml_text",
     ).style.backgroundColor = SELECTED_COLOR;
   }
 }
@@ -743,7 +749,7 @@ function update_transpose_output() {
   }
 }
 
-function set_background_songs(bg_url, bg_w, bg_h) {
+function set_bg_songs(bg_url, bg_w, bg_h) {
   send_message("command.edit-style-params", {
     style_params: [
       { param: "song-background-url", value: bg_url },
@@ -753,7 +759,7 @@ function set_background_songs(bg_url, bg_w, bg_h) {
   });
 }
 
-function set_background_bible(bg_url, bg_w, bg_h) {
+function set_bg_bible(bg_url, bg_w, bg_h) {
   send_message("command.edit-style-params", {
     style_params: [
       { param: "bible-background-url", value: bg_url },
@@ -939,7 +945,7 @@ function update_app_init(json_data) {
   populate_service_plan(
     json_data.params.items,
     json_data.params.types,
-    json_data.params.item_index
+    json_data.params.item_index,
   );
 
   // Populate current item title and list
@@ -963,30 +969,32 @@ function update_app_init(json_data) {
 }
 
 function populate_service_plan(items, item_types, cur_index) {
-  let service_list = "";
+  DOM_get("service_list").innerHTML = "";
+  let row;
   for (const [idx, item] of items.entries()) {
-    service_list += "<div class='ml_row' draggable='true' data-idx='" + idx + "' ";
-    service_list += "ondragstart='drag_start(event)'>";
-    service_list += "<a class='ml_button ml_icon ml_icon_display' ";
-    service_list += "onclick='goto_item(" + idx + ")'></a>";
-    service_list += "<div class='ml_text' ondblclick='goto_item(" + idx + ")'>";
+    row = document.importNode(document.querySelector("#service_list_row").content, true);
+    row.querySelector(".ml_row").setAttribute("data-idx", idx);
+    row.querySelector(".ml_icon_display").setAttribute("onclick", "goto_item(" + idx + ")");
+    row.querySelector(".ml_text").setAttribute("ondblclick", "goto_item(" + idx + ")");
+    row.querySelector("img").setAttribute("data-idx", idx);
+    row.querySelector("span").textContent = item;
     if (item_types[idx].substr(0, 4) == "song") {
-      service_list += "<img class='ml_small_icon' src='" + icon_dict["song"] + "' ";
-      service_list += "data-idx='" + idx + "' draggable='false' />";
+      row.querySelector("img").src = icon_dict["song"];
+      row
+        .querySelector(".ml_row")
+        .insertBefore(
+          document.importNode(document.querySelector("#service_list_song_a").content, true),
+          row.querySelector(".ml_icon_minus"),
+        );
+      row
+        .querySelector(".ml_icon_edit")
+        .setAttribute("onclick", "edit_song(" + item_types[idx].substr(5) + ")");
     } else {
-      service_list += "<img class='ml_small_icon' src='" + icon_dict[item_types[idx]] + "' ";
-      service_list += "data-idx='" + idx + "' draggable='false' />";
+      row.querySelector("img").src = icon_dict[item_types[idx]];
     }
-    service_list += item + "</div>";
-    if (item_types[idx].substr(0, 4) == "song") {
-      service_list += "<a class='ml_button ml_icon ml_icon_edit' ";
-      service_list += "onclick='edit_song(" + item_types[idx].substr(5) + ")'></a>";
-    }
-    service_list += "<a class='ml_button ml_icon ml_icon_minus' ";
-    service_list += "onclick='delete_item(" + idx + ")'></a>";
-    service_list += "</div>";
+    row.querySelector(".ml_icon_minus").setAttribute("onclick", "delete_item(" + idx + ")");
+    DOM_get("service_list").appendChild(row);
   }
-  DOM_get("service_list").innerHTML = service_list;
   indicate_current_item(cur_index);
 }
 
@@ -1008,7 +1016,7 @@ function update_service_overview_update(json_data) {
   populate_service_plan(
     json_data.params.items,
     json_data.params.types,
-    json_data.params.item_index
+    json_data.params.item_index,
   );
 
   // Populate current item list
@@ -1026,70 +1034,69 @@ function update_display_state(json_data) {
 }
 
 function result_all_presentations(json_data) {
-  let saved_list = DOM_get("presentation_list").innerHTML;
-  let pres_list = "";
+  if (JSON.stringify(saved_pres_urls) == JSON.stringify(json_data.params.urls)) {
+    return;
+  }
+  let row;
+  DOM_get("presentation_list").innerHTML = "";
   for (const url of json_data.params.urls) {
-    pres_list += "<div class='ml_row'>";
-    pres_list += "<div class='ml_text'>" + url.substring(16) + "</div>";
-    pres_list += "<a class='ml_button ml_icon ml_icon_plus' ";
-    pres_list += "onclick='add_presentation(\"" + url + "\");'></a>";
-    pres_list += "</div>";
+    row = document.importNode(document.querySelector("#pres_list_row").content, true);
+    row.querySelector(".ml_text").textContent = url.substring(16);
+    row.querySelector("a").setAttribute("onclick", "add_presentation('" + url + "')");
+    DOM_get("presentation_list").appendChild(row);
   }
-  if (pres_list != saved_list) {
-    DOM_get("presentation_list").innerHTML = pres_list;
-  }
+  saved_pres_urls = json_data.params.urls;
 }
 
 function result_all_videos(json_data) {
-  let saved_list = DOM_get("video_list").innerHTML;
-  let vid_list = "";
+  if (JSON.stringify(saved_video_urls) == JSON.stringify(json_data.params.urls)) {
+    return;
+  }
+  let row;
+  DOM_get("video_list").innerHTML = "";
   for (const url of json_data.params.urls) {
-    vid_list += "<div class='ml_row'>";
-    vid_list += "<img src='" + url + ".jpg' />";
-    vid_list += "<div class='ml_text'>" + url.substring(9) + "</div>";
-    vid_list += "<a class='ml_button ml_icon ml_icon_plus' ";
-    vid_list += "onclick='add_video(\"" + url + "\");'></a>";
-    vid_list += "</div>";
+    row = document.importNode(document.querySelector("#video_list_row").content, true);
+    row.querySelector("img").setAttribute("src", url + ".jpg");
+    row.querySelector(".ml_text").textContent = url.substring(9);
+    row.querySelector("a").setAttribute("onclick", "add_video('" + url + "')");
+    DOM_get("video_list").appendChild(row);
   }
-  if (vid_list != saved_list) {
-    DOM_get("video_list").innerHTML = vid_list;
-  }
+  saved_video_urls = json_data.params.urls;
 }
 
 function result_all_loops(json_data) {
-  let saved_list = DOM_get("loop_list").innerHTML;
-  let loop_list = "";
+  if (JSON.stringify(saved_loop_urls) == JSON.stringify(json_data.params.urls)) {
+    return;
+  }
+  let row;
+  DOM_get("loop_list").innerHTML = "";
   for (const url of json_data.params.urls) {
-    loop_list += "<div class='ml_row'>";
-    loop_list += "<img src='" + url + ".jpg' />";
-    loop_list += "<div class='ml_text'>" + url.substring(8) + "</div>";
-    loop_list += "<a class='ml_button ml_icon ml_icon_plus' ";
-    loop_list += "onclick='set_loop(\"" + url + "\");'></a>";
-    loop_list += "</div>";
+    row = document.importNode(document.querySelector("#loop_list_row").content, true);
+    row.querySelector("img").setAttribute("src", url + ".jpg");
+    row.querySelector(".ml_text").textContent = url.substring(8);
+    row.querySelector("a").setAttribute("onclick", "set_loop('" + url + "')");
+    DOM_get("loop_list").appendChild(row);
   }
-  if (loop_list != saved_list) {
-    DOM_get("loop_list").innerHTML = loop_list;
-  }
+  saved_loop_urls = json_data.params.urls;
 }
 
 function result_all_backgrounds(json_data) {
-  let saved_list = DOM_get("background_list").innerHTML;
-  let bg_list = "";
+  if (JSON.stringify(saved_bg_data) == JSON.stringify(json_data.params.bg_data)) {
+    return;
+  }
+  let row;
+  DOM_get("background_list").innerHTML = "";
   for (const bg of json_data.params.bg_data) {
     short_url = bg["url"].substring(14);
     fn_params = "'" + bg["url"] + "', " + bg["width"] + ", " + bg["height"];
-    bg_list += "<div class='ml_row'>";
-    bg_list += "<img src='./backgrounds/thumbnails/" + short_url + "'/>";
-    bg_list += "<div class='ml_text'>" + short_url + "</div>";
-    bg_list += "<a class='ml_button ml_icon ml_icon_song' ";
-    bg_list += 'onclick="set_background_songs(' + fn_params + ');"></a>';
-    bg_list += "<a class='ml_button ml_icon ml_icon_bible' ";
-    bg_list += 'onclick="set_background_bible(' + fn_params + ');"></a>';
-    bg_list += "</div>";
+    row = document.importNode(document.querySelector("#bg_list_row").content, true);
+    row.querySelector("img").setAttribute("src", "./backgrounds/thumbnails/" + short_url);
+    row.querySelector(".ml_text").textContent = short_url;
+    row.querySelector(".ml_icon_song").setAttribute("onclick", "set_bg_songs(" + fn_params + ")");
+    row.querySelector(".ml_icon_bible").setAttribute("onclick", "set_bg_bible(" + fn_params + ")");
+    DOM_get("background_list").appendChild(row);
   }
-  if (bg_list != saved_list) {
-    DOM_get("background_list").innerHTML = bg_list;
-  }
+  saved_bg_data = json_data.params.bg_data;
 }
 
 function result_song_details(json_data) {
@@ -1169,39 +1176,35 @@ function response_load_service(json_data) {
 }
 
 function result_song_titles(json_data) {
-  let song_list = "";
+  DOM_get("song_list").innerHTML = "";
+  let row;
   for (const [idx, song] of json_data.params.songs.entries()) {
     if (idx < MAX_LIST_ITEMS) {
-      song_list += "<div class='ml_row'>";
-      song_list += "<div class='ml_text'>" + song[1] + "</div>";
-      song_list += "<a class='ml_button ml_icon ml_icon_edit' ";
-      song_list += "onclick='edit_song(" + song[0] + ");'></a>";
-      song_list += "<a class='ml_button ml_icon ml_icon_plus' ";
-      song_list += "onclick='add_song(" + song[0] + ");'></a>";
-      song_list += "</div>";
+      row = document.importNode(document.querySelector("#song_search_row").content, true);
+      row.querySelector(".ml_text").textContent = song[1];
+      row.querySelector(".ml_icon_edit").setAttribute("onclick", "edit_song(" + song[0] + ")");
+      row.querySelector(".ml_icon_plus").setAttribute("onclick", "add_song(" + song[0] + ")");
+      DOM_get("song_list").appendChild(row);
     } else {
-      song_list += "<div class='ml_row'>";
-      song_list +=
-        "<div class='ml_text'>" + t8("maximum_search_results") + " (" + MAX_LIST_ITEMS + ")</div>";
-      song_list += "</div>";
+      row = document.importNode(document.querySelector("#max_song_search_row").content, true);
+      row.querySelector(".ml_text").textContent =
+        t8("maximum_search_results") + " (" + MAX_LIST_ITEMS + ")";
+      DOM_get("song_list").appendChild(row);
       break;
     }
   }
-  DOM_get("song_list").innerHTML = song_list;
 }
 
 function result_recycle_bin(json_data) {
-  let song_list = "";
+  DOM_get("recycle_bin").innerHTML = "";
+  let row;
   for (const [idx, song] of json_data.params.songs.entries()) {
-    song_list += "<div class='ml_row'>";
-    song_list += "<div class='ml_text'>" + song[1] + "</div>";
-    song_list += "<a class='ml_button ml_icon ml_icon_edit' ";
-    song_list += "onclick='edit_song(" + song[0] + ");'></a>";
-    song_list += "<a class='ml_button ml_icon ml_icon_undo' ";
-    song_list += "onclick='restore_song(" + song[0] + ");'></a>";
-    song_list += "</div>";
+    row = document.importNode(document.querySelector("#recycle_row").content, true);
+    row.querySelector(".ml_text").textContent = song[1];
+    row.querySelector(".ml_icon_edit").setAttribute("onclick", "edit_song(" + song[0] + ")");
+    row.querySelector(".ml_icon_undo").setAttribute("onclick", "restore_song(" + song[0] + ")");
+    DOM_get("recycle_bin").appendChild(row);
   }
-  DOM_get("recycle_bin").innerHTML = song_list;
 }
 
 function response_save_service(json_data) {
@@ -1229,52 +1232,53 @@ function select_file(idx) {
       elt.classList.remove("selected");
     }
   });
-  DOM_get("load_files_radio").childNodes[idx].classList.add("selected");
+  DOM_get("load_files_radio").children[idx].classList.add("selected");
 }
 
 function result_all_services(json_data) {
-  let files_list = "";
+  DOM_get("load_files_radio").innerHTML = "";
+  let row;
   if (json_data.params.filenames.length != 0) {
     for (const [idx, file] of json_data.params.filenames.entries()) {
-      files_list += "<div class='ml_row' id='files-" + idx + "' ";
-      files_list += "onclick=select_file(" + idx + ")>";
-      files_list += "<div class='ml_text'>" + file.replace(".json", "") + "</div>";
-      files_list += "</div>";
+      row = document.importNode(document.querySelector("#file_list_row").content, true);
+      row.querySelector(".ml_row").id = "files-" + idx;
+      row.querySelector(".ml_row").setAttribute("onclick", "select_file(" + idx + ")");
+      row.querySelector(".ml_text").textContent = file.replace(".json", "");
+      DOM_get("load_files_radio").appendChild(row);
     }
-    DOM_get("load_files_radio").innerHTML = files_list;
     document.getElementById("files-0").classList.add("selected");
   } else {
-    files_list += "<div class='ml_row'><div class='ml_text'>";
-    files_list += "<em>" + t8("no_saved_services") + "</em></div><div>";
-    DOM_get("load_files_radio").innerHTML = files_list;
+    row = document.importNode(document.querySelector("#empty_file_list").content, true);
+    row.querySelector("em").textContent = t8("no_saved_services");
+    DOM_get("load_files_radio").appendChild(row);
   }
   DOM_get("popup_load_service").style.display = "flex";
   DOM_get("load_files_radio").scrollTop = 0;
 }
 
 function result_bible_versions(json_data) {
-  let radios_html = "";
-  let radios_main_html = "<span>" + t8("primary_version") + "</span>";
-  let radios_alt_html = "<span>" + t8("parallel_version") + "</span>";
-  let radios_def_html = "<span id='d_version_text'>" + t8("default_version") + "</span>";
+  DOM_get("b_version_radios").innerHTML = "";
+  DOM_get("b_main_version_radios").innerHTML = "<span>" + t8("primary_version") + "</span>";
+  DOM_get("b_alt_version_radios").innerHTML = "<span>" + t8("parallel_version") + "</span>";
+  DOM_get("d_version_radios").innerHTML =
+    "<span id='d_version_text'>" + t8("default_version") + "</span>";
+  let templates = [
+    ["b_version", "bv"],
+    ["b_main_version", "bv"],
+    ["b_alt_version", "bv"],
+    ["d_version", "dv"],
+  ];
+  let entry;
   for (const [idx, version] of json_data.params.versions.entries()) {
-    radios_html += '<input type="radio" name="b_version" id="b_version_' + idx;
-    radios_main_html += '<input type="radio" name="b_main_version" id="b_main_version_' + idx;
-    radios_alt_html += '<input type="checkbox" name="b_alt_version" id="b_alt_version_' + idx;
-    radios_def_html += '<input type="radio" name="d_version" id="d_version_' + idx;
-    radios_html += '" data-bv="' + version + '" data-role="none"/>';
-    radios_main_html += '" data-bv="' + version + '" data-role="none"/>';
-    radios_alt_html += '" data-bv="' + version + '" data-role="none"/>';
-    radios_def_html += '" data-dv="' + version + '" data-role="none"/>';
-    radios_html += '<label for="b_version_' + idx + '">' + version + "</label>";
-    radios_main_html += '<label for="b_main_version_' + idx + '">' + version + "</label>";
-    radios_alt_html += '<label for="b_alt_version_' + idx + '">' + version + "</label>";
-    radios_def_html += '<label for="d_version_' + idx + '">' + version + "</label>";
+    for (const t of templates) {
+      entry = document.importNode(document.querySelector("#" + t[0] + "_entry").content, true);
+      entry.querySelector("input").id = t[0] + "_" + idx;
+      entry.querySelector("input").setAttribute("data-" + t[1], version);
+      entry.querySelector("label").setAttribute("for", t[0] + "_" + idx);
+      entry.querySelector("label").textContent = version;
+      DOM_get(t[0] + "_radios").appendChild(entry);
+    }
   }
-  DOM_get("b_version_radios").innerHTML = radios_html;
-  DOM_get("b_main_version_radios").innerHTML = radios_main_html;
-  DOM_get("b_alt_version_radios").innerHTML = radios_alt_html;
-  DOM_get("d_version_radios").innerHTML = radios_def_html;
 
   // Attach event listeners
   document.querySelectorAll('input[name="b_version"]').forEach((elt) => {
@@ -1327,7 +1331,7 @@ function result_bible_versions(json_data) {
     // Use querySelectorAll to enable graceful fail if saved Bible version no longer available
     document
       .querySelectorAll(
-        "#b_version_radios input[data-bv='" + saved_style[style_dict["d_version"]] + "']"
+        "#b_version_radios input[data-bv='" + saved_style[style_dict["d_version"]] + "']",
       )
       .forEach((elt) => {
         elt.checked = true;
@@ -1357,30 +1361,29 @@ function trigger_seek_video(json_data) {
 }
 
 function result_bible_verses(json_data) {
-  let bible_list = "";
+  DOM_get("passage_list").innerHTML = "";
+  let row;
   if (json_data.params.status !== "ok") {
     toast_response(json_data, t8("toast_bible_search_ok"), t8("toast_bible_search_error"));
   }
   for (const [idx, verse] of json_data.params.verses.entries()) {
     if (idx < MAX_VERSE_ITEMS) {
       bible_ref = verse[1] + " " + verse[2] + ":" + verse[3];
-      bible_list += "<div class='ml_row ml_expand_row selected'>";
-      bible_list += "<div class='ml_text ml_multitext' name='v_list' ";
-      bible_list += "id='v-" + verse[0] + "' onclick='toggle_verse(" + idx;
-      bible_list += ")'><p class='ml_bibleverse'>";
-      bible_list += "<strong>" + bible_ref + "</strong>&nbsp; " + verse[4];
-      bible_list += "</p></div>";
-      bible_list += "</div>";
+      row = document.importNode(document.querySelector("#bible_verse_row").content, true);
+      row.querySelector(".ml_text").id = "v-" + verse[0];
+      row.querySelector(".ml_text").setAttribute("onclick", "toggle_verse(" + idx + ")");
+      row.querySelector("strong").textContent = bible_ref;
+      row.querySelector("span").textContent = verse[4];
+      DOM_get("passage_list").appendChild(row);
     }
   }
-  DOM_get("passage_list").innerHTML = bible_list;
 }
 
 function toggle_verse(idx) {
-  if (DOM_get("passage_list").childNodes[idx].classList.contains("selected")) {
-    DOM_get("passage_list").childNodes[idx].classList.remove("selected");
+  if (DOM_get("passage_list").children[idx].classList.contains("selected")) {
+    DOM_get("passage_list").children[idx].classList.remove("selected");
   } else {
-    DOM_get("passage_list").childNodes[idx].classList.add("selected");
+    DOM_get("passage_list").children[idx].classList.add("selected");
   }
 }
 
@@ -1400,24 +1403,25 @@ function select_audio(idx) {
       elt.classList.remove("selected");
     }
   });
-  DOM_get("attach_audio_radio").childNodes[idx].classList.add("selected");
+  DOM_get("attach_audio_radio").children[idx].classList.add("selected");
 }
 
 function show_audio_popup(json_data) {
-  let mp3_list = "";
+  DOM_get("attach_audio_radio").innerHTML = "";
+  let row;
   if (json_data.params.urls.length != 0) {
     for (const [idx, url] of json_data.params.urls.entries()) {
-      mp3_list += "<div class='ml_row' id='mp3-" + idx + "' ";
-      mp3_list += "onclick=select_audio(" + idx + ")>";
-      mp3_list += "<div class='ml_text'>" + url + "</div>";
-      mp3_list += "</div>";
+      row = document.importNode(document.querySelector("#mp3_list_row").content, true);
+      row.querySelector(".ml_row").id = "mp3-" + idx;
+      row.querySelector(".ml_row").setAttribute("onclick", "select_audio(" + idx + ")");
+      row.querySelector(".ml_text").textContent = url;
+      DOM_get("attach_audio_radio").appendChild(row);
     }
-    DOM_get("attach_audio_radio").innerHTML = mp3_list;
     document.getElementById("mp3-0").classList.add("selected");
   } else {
-    mp3_list += "<div class='ml_row'><div class='ml_text'>";
-    mp3_list += "<em>" + t8("no_audio_files_found") + "</em></div><div>";
-    DOM_get("attach_audio_radio").innerHTML = mp3_list;
+    row = document.importNode(document.querySelector("#empty_mp3_list").content, true);
+    row.querySelector("em").textContent = t8("no_audio_files_found");
+    DOM_get("attach_audio_radio").appendChild(row);
   }
   DOM_get("popup_edit_song").style.display = "none";
   DOM_get("popup_attach_audio").style.display = "flex";
@@ -1426,7 +1430,7 @@ function show_audio_popup(json_data) {
 
 function attach_audio() {
   const sel_text = document.querySelector(
-    "#attach_audio_radio .ml_row.selected .ml_text"
+    "#attach_audio_radio .ml_row.selected .ml_text",
   ).innerText;
   DOM_get("e_audio").value = sel_text;
   DOM_get("add_audio_btn").style.display = "none";
@@ -1653,14 +1657,14 @@ function start_websocket() {
         toast_response(
           json_data,
           t8("toast_parallel_change_ok"),
-          t8("toast_parallel_change_error")
+          t8("toast_parallel_change_error"),
         );
         break;
       case "response.remove-bible-pl-version":
         toast_response(
           json_data,
           t8("toast_parallel_remove_ok"),
-          t8("toast_parallel_remove_error")
+          t8("toast_parallel_remove_error"),
         );
         break;
       case "response.remove-item":
